@@ -26,8 +26,6 @@ const (
 	CloudControllerManagerImageName = "cloud-controller-manager"
 	// MachineControllerManagerImageName is the name of the MachineControllerManager image.
 	MachineControllerManagerImageName = "machine-controller-manager"
-	// ETCDBackupRestoreImageName is the name of the etcd backup and restore image.
-	ETCDBackupRestoreImageName = "etcd-backup-restore"
 
 	// BucketName is a constant for the key in a backup secret that holds the bucket name.
 	// The bucket name is written to the backup secret by Gardener as a temporary solution.
