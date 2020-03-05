@@ -45,10 +45,6 @@ images:
   sourceRepository: https://github.com/packethost/csi-packet
   repository: docker.io/packethost/csi-packet
   tag: "v1.0.0"
-- name: etcd-backup-restore
-  sourceRepository: github.com/gardener/etcd-backup-restore
-  repository: eu.gcr.io/gardener-project/gardener/etcdbrctl
-  tag: "0.7.3"
 - name: metabot
   sourceRepository: https://github.com/packethost/metabot
   repository: packethost/metabot
