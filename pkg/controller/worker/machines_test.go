@@ -18,23 +18,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	api "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
 	apiv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
 	. "github.com/gardener/gardener-extension-provider-packet/pkg/controller/worker"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+
 	extensionscontroller "github.com/gardener/gardener-extensions/pkg/controller"
 	"github.com/gardener/gardener-extensions/pkg/controller/common"
 	"github.com/gardener/gardener-extensions/pkg/controller/worker"
 	genericworkeractuator "github.com/gardener/gardener-extensions/pkg/controller/worker/genericactuator"
 	mockclient "github.com/gardener/gardener-extensions/pkg/mock/controller-runtime/client"
 	mockkubernetes "github.com/gardener/gardener-extensions/pkg/mock/gardener/client/kubernetes"
-
-	"path/filepath"
-
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/gardener/pkg/client/kubernetes"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -344,12 +344,12 @@ var _ = Describe("Machines", func() {
 
 					chartApplier.
 						EXPECT().
-						ApplyChart(
+						Apply(
 							context.TODO(),
 							filepath.Join(packet.InternalChartsPath, "machineclass"),
 							namespace,
 							"machineclass",
-							machineClasses,
+							kubernetes.Values(machineClasses),
 							nil,
 						).
 						Return(nil)
@@ -458,7 +458,7 @@ func copyMachineClass(def map[string]interface{}) map[string]interface{} {
 func addNameAndSecretToMachineClass(class map[string]interface{}, packetAPIToken, name string) {
 	class["name"] = name
 	class["labels"] = map[string]string{
-		v1beta1constants.GardenPurpose: genericworkeractuator.GardenPurposeMachineClass,
+		v1beta1constants.GardenerPurpose: genericworkeractuator.GardenPurposeMachineClass,
 	}
 	class["secret"].(map[string]interface{})[packet.APIToken] = packetAPIToken
 }
