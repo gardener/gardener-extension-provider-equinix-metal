@@ -15,21 +15,89 @@
 package packet_test
 
 import (
+	"context"
+	"errors"
+
 	. "github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 
+	mockclient "github.com/gardener/gardener-extensions/pkg/mock/controller-runtime/client"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Secret", func() {
-	var secret *corev1.Secret
+	Describe("#GetCredentialsFromSecretRef", func() {
+		var (
+			ctrl *gomock.Controller
+			c    *mockclient.MockClient
 
-	BeforeEach(func() {
-		secret = &corev1.Secret{}
+			ctx       = context.TODO()
+			namespace = "namespace"
+			name      = "name"
+
+			secretRef = corev1.SecretReference{
+				Name:      name,
+				Namespace: namespace,
+			}
+		)
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+
+			c = mockclient.NewMockClient(ctrl)
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		It("should return an error because secret could not be read", func() {
+			fakeErr := errors.New("error")
+
+			c.EXPECT().Get(ctx, kutil.Key(namespace, name), gomock.AssignableToTypeOf(&corev1.Secret{})).Return(fakeErr)
+
+			credentials, err := GetCredentialsFromSecretRef(ctx, c, secretRef)
+
+			Expect(credentials).To(BeNil())
+			Expect(err).To(Equal(fakeErr))
+		})
+
+		It("should return the correct credentials object", func() {
+			var (
+				apiToken  = []byte("foo")
+				projectID = []byte("bar")
+			)
+
+			c.EXPECT().Get(ctx, kutil.Key(namespace, name), gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret) error {
+				secret.Data = map[string][]byte{
+					APIToken:  apiToken,
+					ProjectID: projectID,
+				}
+				return nil
+			})
+
+			credentials, err := GetCredentialsFromSecretRef(ctx, c, secretRef)
+
+			Expect(credentials).To(Equal(&Credentials{
+				APIToken:  apiToken,
+				ProjectID: projectID,
+			}))
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 
 	Describe("#ReadCredentialsSecret", func() {
+
+		var secret *corev1.Secret
+
+		BeforeEach(func() {
+			secret = &corev1.Secret{}
+		})
+
 		It("should return an error because api token is missing", func() {
 			credentials, err := ReadCredentialsSecret(secret)
 
