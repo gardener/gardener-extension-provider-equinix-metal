@@ -41,11 +41,11 @@ type ensurer struct {
 }
 
 // EnsureETCD ensures that the etcd conform to the provider requirements.
-func (e *ensurer) EnsureETCD(ctx context.Context, ectx genericmutator.EnsurerContext, etcd *druidv1alpha1.Etcd) error {
+func (e *ensurer) EnsureETCD(ctx context.Context, ectx genericmutator.EnsurerContext, new, old *druidv1alpha1.Etcd) error {
 	capacity := resource.MustParse("10Gi")
 	class := ""
 
-	if etcd.Name == v1beta1constants.ETCDMain && e.etcdStorage != nil {
+	if new.Name == v1beta1constants.ETCDMain && e.etcdStorage != nil {
 		if e.etcdStorage.Capacity != nil {
 			capacity = *e.etcdStorage.Capacity
 		}
@@ -54,8 +54,8 @@ func (e *ensurer) EnsureETCD(ctx context.Context, ectx genericmutator.EnsurerCon
 		}
 	}
 
-	etcd.Spec.StorageClass = &class
-	etcd.Spec.StorageCapacity = &capacity
+	new.Spec.StorageClass = &class
+	new.Spec.StorageCapacity = &capacity
 
 	return nil
 }
