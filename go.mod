@@ -3,17 +3,15 @@ module github.com/gardener/gardener-extension-provider-packet
 go 1.13
 
 require (
-	github.com/Masterminds/semver v1.5.0
 	github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
-	github.com/gardener/etcd-druid v0.1.1-0.20200206100633-e7606e1225d7
-	github.com/gardener/gardener v1.1.1-0.20200306090858-1aa0c7eb14d1
-	github.com/gardener/gardener-extensions v1.4.1-0.20200306095919-e316500c1379
+	github.com/gardener/etcd-druid v0.1.3
+	github.com/gardener/gardener v1.1.1-0.20200311075931-7f7e52b986e7
+	github.com/gardener/gardener-extensions v1.4.1-0.20200322183545-5329339c95e9
 	github.com/gardener/machine-controller-manager v0.26.0
 	github.com/go-logr/logr v0.1.0
 	github.com/gobuffalo/packr/v2 v2.1.0
 	github.com/golang/mock v1.3.1
-	github.com/json-iterator/go v1.1.9
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/packethost/packngo v0.0.0-20181217122008-b3b45f1b4979
@@ -25,7 +23,6 @@ require (
 	k8s.io/apimachinery v0.17.0
 	k8s.io/apiserver v0.17.0
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/cluster-bootstrap v0.0.0-20191016114958-5aa5f2bc1590
 	k8s.io/code-generator v0.17.0
 	k8s.io/component-base v0.17.0
 	k8s.io/kubelet v0.0.0-20190918162654-250a1838aa2c

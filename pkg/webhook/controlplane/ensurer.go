@@ -51,18 +51,18 @@ func (e *ensurer) InjectClient(client client.Client) error {
 }
 
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the provider requirements.
-func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, ectx genericmutator.EnsurerContext, dep *appsv1.Deployment) error {
-	ps := &dep.Spec.Template.Spec
+func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, ectx genericmutator.EnsurerContext, new, old *appsv1.Deployment) error {
+	ps := &new.Spec.Template.Spec
 	if c := extensionswebhook.ContainerWithName(ps.Containers, "kube-apiserver"); c != nil {
 		ensureKubeAPIServerCommandLineArgs(c)
 		ensureEnvVars(c)
 	}
-	return controlplane.EnsureSecretChecksumAnnotation(ctx, &dep.Spec.Template, e.client, dep.Namespace, v1beta1constants.SecretNameCloudProvider)
+	return controlplane.EnsureSecretChecksumAnnotation(ctx, &new.Spec.Template, e.client, new.Namespace, v1beta1constants.SecretNameCloudProvider)
 }
 
 // EnsureKubeControllerManagerDeployment ensures that the kube-controller-manager deployment conforms to the provider requirements.
-func (e *ensurer) EnsureKubeControllerManagerDeployment(ctx context.Context, ectx genericmutator.EnsurerContext, dep *appsv1.Deployment) error {
-	ps := &dep.Spec.Template.Spec
+func (e *ensurer) EnsureKubeControllerManagerDeployment(ctx context.Context, ectx genericmutator.EnsurerContext, new, old *appsv1.Deployment) error {
+	ps := &new.Spec.Template.Spec
 	if c := extensionswebhook.ContainerWithName(ps.Containers, "kube-controller-manager"); c != nil {
 		ensureKubeControllerManagerCommandLineArgs(c)
 	}
@@ -116,13 +116,13 @@ func ensureEnvVars(c *corev1.Container) {
 }
 
 // EnsureKubeletServiceUnitOptions ensures that the kubelet.service unit options conform to the provider requirements.
-func (e *ensurer) EnsureKubeletServiceUnitOptions(ctx context.Context, ectx genericmutator.EnsurerContext, opts []*unit.UnitOption) ([]*unit.UnitOption, error) {
-	if opt := extensionswebhook.UnitOptionWithSectionAndName(opts, "Service", "ExecStart"); opt != nil {
+func (e *ensurer) EnsureKubeletServiceUnitOptions(ctx context.Context, ectx genericmutator.EnsurerContext, new, old []*unit.UnitOption) ([]*unit.UnitOption, error) {
+	if opt := extensionswebhook.UnitOptionWithSectionAndName(new, "Service", "ExecStart"); opt != nil {
 		command := extensionswebhook.DeserializeCommandLine(opt.Value)
 		command = ensureKubeletCommandLineArgs(command)
 		opt.Value = extensionswebhook.SerializeCommandLine(command, 1, " \\\n    ")
 	}
-	return opts, nil
+	return new, nil
 }
 
 func ensureKubeletCommandLineArgs(command []string) []string {
@@ -132,13 +132,13 @@ func ensureKubeletCommandLineArgs(command []string) []string {
 }
 
 // EnsureKubeletConfiguration ensures that the kubelet configuration conforms to the provider requirements.
-func (e *ensurer) EnsureKubeletConfiguration(ctx context.Context, ectx genericmutator.EnsurerContext, kubeletConfig *kubeletconfigv1beta1.KubeletConfiguration) error {
+func (e *ensurer) EnsureKubeletConfiguration(ctx context.Context, ectx genericmutator.EnsurerContext, new, old *kubeletconfigv1beta1.KubeletConfiguration) error {
 	// Ensure CSI-related feature gates
-	if kubeletConfig.FeatureGates == nil {
-		kubeletConfig.FeatureGates = make(map[string]bool)
+	if new.FeatureGates == nil {
+		new.FeatureGates = make(map[string]bool)
 	}
-	kubeletConfig.FeatureGates["VolumeSnapshotDataSource"] = true
-	kubeletConfig.FeatureGates["CSINodeInfo"] = true
-	kubeletConfig.FeatureGates["CSIDriverRegistry"] = true
+	new.FeatureGates["VolumeSnapshotDataSource"] = true
+	new.FeatureGates["CSINodeInfo"] = true
+	new.FeatureGates["CSIDriverRegistry"] = true
 	return nil
 }
