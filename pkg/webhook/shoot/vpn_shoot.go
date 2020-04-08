@@ -19,7 +19,7 @@ import (
 
 	"github.com/gardener/gardener-extension-provider-packet/pkg/imagevector"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	extensionswebhook "github.com/gardener/gardener-extensions/pkg/webhook"
+	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

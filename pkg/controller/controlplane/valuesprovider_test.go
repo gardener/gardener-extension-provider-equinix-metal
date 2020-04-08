@@ -20,8 +20,8 @@ import (
 
 	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	extensionscontroller "github.com/gardener/gardener-extensions/pkg/controller"
-	mockclient "github.com/gardener/gardener-extensions/pkg/mock/controller-runtime/client"
+	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"

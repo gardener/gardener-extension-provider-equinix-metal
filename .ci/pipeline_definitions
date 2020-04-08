@@ -12,7 +12,6 @@ gardener-extension-provider-packet:
             image: 'eu.gcr.io/gardener-project/gardener/extensions/provider-packet'
             dockerfile: 'Dockerfile'
             target: gardener-extension-provider-packet
-    steps: ~
   jobs:
     head-update:
       traits:
