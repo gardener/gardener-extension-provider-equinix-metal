@@ -15,7 +15,7 @@
 package config
 
 import (
-	healthcheck "github.com/gardener/gardener-extensions/pkg/controller/healthcheck/config"
+	healthcheck "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

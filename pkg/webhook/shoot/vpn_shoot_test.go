@@ -17,7 +17,7 @@ package shoot
 import (
 	"context"
 
-	extensionswebhook "github.com/gardener/gardener-extensions/pkg/webhook"
+	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

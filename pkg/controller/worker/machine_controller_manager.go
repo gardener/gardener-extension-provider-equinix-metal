@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	extensionscontroller "github.com/gardener/gardener-extensions/pkg/controller"
+	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 
 	"github.com/gardener/gardener/pkg/utils/chart"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"

@@ -23,7 +23,8 @@ This extension controller supports the following Kubernetes versions:
 
 | Version         | Support     | Conformance test results |
 | --------------- | ----------- | ------------------------ |
-| Kubernetes 1.17 | unknown     | N/A                      |
+| Kubernetes 1.18 | untested    | N/A                      |
+| Kubernetes 1.17 | untested    | N/A                      |
 | Kubernetes 1.16 | 1.16.0+     | N/A                      |
 | Kubernetes 1.15 | 1.15.0+     | N/A                      |
 | Kubernetes 1.14 | 1.14.0+     | N/A                      |
@@ -56,5 +57,5 @@ Please find further resources about out project here:
 * [GEP-1 (Gardener Enhancement Proposal) on extensibility](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md)
 * [GEP-4 (New `core.gardener.cloud/v1alpha1` API)](https://github.com/gardener/gardener/blob/master/docs/proposals/04-new-core-gardener-cloud-apis.md)
 * [Extensibility API documentation](https://github.com/gardener/gardener/tree/master/docs/extensions)
-* [Gardener Extensions Golang library](https://godoc.org/github.com/gardener/gardener-extensions/pkg)
+* [Gardener Extensions Golang library](https://godoc.org/github.com/gardener/gardener/extensions/pkg)
 * [Gardener API Reference](https://gardener.cloud/api-reference/)

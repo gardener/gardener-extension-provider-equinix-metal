@@ -15,6 +15,6 @@
 // +k8s:deepcopy-gen=package
 // +groupName="packet.provider.extensions.gardener.cloud"
 
-//go:generate ../../../hack/generate-code
+//go:generate ../../../hack/update-codegen.sh
 
 package packet // import "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
