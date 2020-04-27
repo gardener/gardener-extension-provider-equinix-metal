@@ -37,7 +37,7 @@ var logger = log.Log.WithName("packet-shoot-webhook")
 // AddToManagerWithOptions creates a webhook with the given options and adds it to the manager.
 func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) (*extensionswebhook.Webhook, error) {
 	logger.Info("Adding webhook to manager")
-	return shoot.Add(mgr, shoot.AddArgs{
+	return shoot.New(mgr, shoot.Args{
 		Types:   []runtime.Object{&appsv1.Deployment{}},
 		Mutator: NewMutator(),
 	})

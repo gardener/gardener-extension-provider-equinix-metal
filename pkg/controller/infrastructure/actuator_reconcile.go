@@ -33,17 +33,16 @@ import (
 )
 
 func (a *actuator) Reconcile(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
+	return a.reconcile(ctx, infrastructure, cluster, terraformer.StateConfigMapInitializerFunc(terraformer.CreateState))
+}
+
+func (a *actuator) reconcile(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster, stateInitializer terraformer.StateConfigMapInitializer) error {
 	credentials, err := packet.GetCredentialsFromSecretRef(ctx, a.Client(), infrastructure.Spec.SecretRef)
 	if err != nil {
 		return err
 	}
 
 	terraformConfig := GenerateTerraformInfraConfig(infrastructure, string(credentials.ProjectID))
-
-	terraformState, err := terraformer.UnmarshalRawState(infrastructure.Status.State)
-	if err != nil {
-		return fmt.Errorf("could not retrieve raw terraform state: %+v", err)
-	}
 
 	release, err := a.ChartRenderer().Render(filepath.Join(packet.InternalChartsPath, "packet-infra"), "packet-infra", infrastructure.Namespace, terraformConfig)
 	if err != nil {
@@ -62,7 +61,7 @@ func (a *actuator) Reconcile(ctx context.Context, infrastructure *extensionsv1al
 			release.FileContent("main.tf"),
 			release.FileContent("variables.tf"),
 			[]byte(release.FileContent("terraform.tfvars")),
-			terraformState.Data,
+			stateInitializer,
 		)).
 		Apply(); err != nil {
 
