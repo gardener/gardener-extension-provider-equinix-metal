@@ -18,13 +18,11 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	packetv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	controllererrors "github.com/gardener/gardener/extensions/pkg/controller/error"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,10 +64,7 @@ func (a *actuator) reconcile(ctx context.Context, infrastructure *extensionsv1al
 		Apply(); err != nil {
 
 		a.logger.Error(err, "failed to apply the terraform config", "infrastructure", infrastructure.Name)
-		return &controllererrors.RequeueAfterError{
-			Cause:        err,
-			RequeueAfter: 30 * time.Second,
-		}
+		return err
 	}
 
 	return a.updateProviderStatus(ctx, tf, infrastructure)
