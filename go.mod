@@ -1,13 +1,13 @@
 module github.com/gardener/gardener-extension-provider-packet
 
-go 1.13
+go 1.14
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
 	github.com/frankban/quicktest v1.9.0 // indirect
-	github.com/gardener/etcd-druid v0.1.12
-	github.com/gardener/gardener v1.3.1-0.20200424112810-331bbbf46108
+	github.com/gardener/etcd-druid v0.1.15
+	github.com/gardener/gardener v1.4.1
 	github.com/gardener/machine-controller-manager v0.27.0
 	github.com/go-logr/logr v0.1.0
 	github.com/gobuffalo/packr/v2 v2.8.0
@@ -21,13 +21,13 @@ require (
 	github.com/spf13/cobra v0.0.6
 	github.com/spf13/pflag v1.0.5
 	github.com/ulikunitz/xz v0.5.7 // indirect
-	k8s.io/api v0.17.0
+	k8s.io/api v0.16.8
 	k8s.io/apiextensions-apiserver v0.17.0
 	k8s.io/apimachinery v0.17.0
-	k8s.io/apiserver v0.17.0
+	k8s.io/apiserver v0.16.8
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/code-generator v0.17.0
-	k8s.io/component-base v0.17.0
+	k8s.io/code-generator v0.16.8
+	k8s.io/component-base v0.16.8
 	k8s.io/kubelet v0.16.8
 	sigs.k8s.io/controller-runtime v0.4.0
 )
