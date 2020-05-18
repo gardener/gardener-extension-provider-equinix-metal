@@ -63,8 +63,7 @@ func (a *actuator) reconcile(ctx context.Context, infrastructure *extensionsv1al
 		)).
 		Apply(); err != nil {
 
-		a.logger.Error(err, "failed to apply the terraform config", "infrastructure", infrastructure.Name)
-		return err
+		return fmt.Errorf("failed to apply the terraform config: %+v", err)
 	}
 
 	return a.updateProviderStatus(ctx, tf, infrastructure)
