@@ -98,6 +98,7 @@ var controlPlaneChart = &chart.Chart{
 			Name:   "packet-cloud-controller-manager",
 			Images: []string{packet.CloudControllerManagerImageName},
 			Objects: []*chart.Object{
+				{Type: &corev1.Service{}, Name: "cloud-controller-manager"},
 				{Type: &appsv1.Deployment{}, Name: "cloud-controller-manager"},
 				{Type: &corev1.ConfigMap{}, Name: "cloud-controller-manager-monitoring-config"},
 			},
