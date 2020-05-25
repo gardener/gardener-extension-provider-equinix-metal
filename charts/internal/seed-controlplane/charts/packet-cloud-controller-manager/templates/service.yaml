@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-controller-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: cloud-controller-manager
+    garden.sapcloud.io/role: controlplane
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: metrics
+    port: {{ include "cloud-controller-manager.port" . }}
+    protocol: TCP
+  selector:
+    app: kubernetes
+    role: cloud-controller-manager
