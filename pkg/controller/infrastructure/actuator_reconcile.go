@@ -25,6 +25,7 @@ import (
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/util/retry"
@@ -63,7 +64,7 @@ func (a *actuator) reconcile(ctx context.Context, infrastructure *extensionsv1al
 		)).
 		Apply(); err != nil {
 
-		return fmt.Errorf("failed to apply the terraform config: %+v", err)
+		return errors.Wrap(err, "failed to apply the terraform config")
 	}
 
 	return a.updateProviderStatus(ctx, tf, infrastructure)
