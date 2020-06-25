@@ -80,6 +80,9 @@ var _ = Describe("ValuesProvider", func() {
 					},
 					Kubernetes: gardencorev1beta1.Kubernetes{
 						Version: "1.13.4",
+						VerticalPodAutoscaler: &gardencorev1beta1.VerticalPodAutoscaler{
+							Enabled: true,
+						},
 					},
 				},
 			},
@@ -135,6 +138,7 @@ var _ = Describe("ValuesProvider", func() {
 					"projectID": "YmFy",
 				},
 				"kubernetesVersion": "1.13.4",
+				"vpaEnabled":        true,
 			},
 		}
 
