@@ -25,6 +25,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/util"
 
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	"github.com/gardener/gardener/pkg/utils/secrets"
@@ -146,6 +147,7 @@ var controlPlaneShootChart = &chart.Chart{
 				{Type: &corev1.ServiceAccount{}, Name: "csi-provisioner"},
 				{Type: &rbacv1.ClusterRole{}, Name: "packet.provider.extensions.gardener.cloud:kube-system:csi-provisioner"},
 				{Type: &rbacv1.ClusterRoleBinding{}, Name: "packet.provider.extensions.gardener.cloud:csi-provisioner"},
+				{Type: extensionscontroller.GetVerticalPodAutoscalerObject(), Name: "csi-node"},
 			},
 		},
 	},
@@ -259,6 +261,7 @@ func getControlPlaneShootChartValues(
 				"projectID": base64.StdEncoding.EncodeToString([]byte(credentials.ProjectID)),
 			},
 			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
+			"vpaEnabled":        gardencorev1beta1helper.ShootWantsVerticalPodAutoscaler(cluster.Shoot),
 		},
 	}
 

@@ -5,3 +5,4 @@ credential:
   apiToken: apiToken
   projectID: projectID
 kubernetesVersion: v1.13.0
+csiEnabled: false
