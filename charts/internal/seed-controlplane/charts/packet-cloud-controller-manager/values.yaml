@@ -3,6 +3,7 @@ kubernetesVersion: 1.7.5
 podAnnotations: {}
 images:
   cloud-controller-manager: image-repository
+port: 443
 resources:
   requests:
     cpu: 100m

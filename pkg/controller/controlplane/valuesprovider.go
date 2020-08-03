@@ -22,13 +22,13 @@ import (
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
-	"github.com/gardener/gardener/extensions/pkg/util"
-
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/chart"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/secrets"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -207,11 +207,11 @@ func (vp *valuesProvider) getCredentials(
 ) (*packet.Credentials, error) {
 	secret, err := extensionscontroller.GetSecretByReference(ctx, vp.Client(), &cp.Spec.SecretRef)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not get secret by reference for controlplane '%s'", util.ObjectName(cp))
+		return nil, errors.Wrapf(err, "could not get secret by reference for controlplane '%s'", kutil.ObjectName(cp))
 	}
 	credentials, err := packet.ReadCredentialsSecret(secret)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not read credentials from secret '%s'", util.ObjectName(secret))
+		return nil, errors.Wrapf(err, "could not read credentials from secret '%s'", kutil.ObjectName(secret))
 	}
 	return credentials, nil
 }
