@@ -18,13 +18,13 @@ import (
 	"context"
 	"testing"
 
+	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
-	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
-
-	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	"github.com/gardener/gardener/pkg/utils"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 const (
@@ -46,8 +47,8 @@ func TestController(t *testing.T) {
 var _ = Describe("Ensurer", func() {
 	var (
 		etcdStorage = &config.ETCDStorage{
-			ClassName: util.StringPtr("gardener.cloud-fast"),
-			Capacity:  util.QuantityPtr(resource.MustParse("25Gi")),
+			ClassName: pointer.StringPtr("gardener.cloud-fast"),
+			Capacity:  utils.QuantityPtr(resource.MustParse("25Gi")),
 		}
 
 		ctrl *gomock.Controller

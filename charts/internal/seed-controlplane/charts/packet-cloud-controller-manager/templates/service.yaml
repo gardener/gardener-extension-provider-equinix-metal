@@ -12,7 +12,7 @@ spec:
   clusterIP: None
   ports:
   - name: metrics
-    port: {{ include "cloud-controller-manager.port" . }}
+    port: {{  .Values.port }}
     protocol: TCP
   selector:
     app: kubernetes
