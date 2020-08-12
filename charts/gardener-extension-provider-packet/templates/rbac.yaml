@@ -49,6 +49,7 @@ rules:
   - networking.k8s.io
   resources:
   - namespaces
+  - namespaces/finalizers
   - events
   - secrets
   - configmaps
