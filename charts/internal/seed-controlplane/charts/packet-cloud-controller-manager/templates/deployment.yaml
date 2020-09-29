@@ -39,6 +39,7 @@ spec:
           - --cloud-provider=packet
           - --leader-elect=false
           - --allow-untagged-cloud=true
+          - --authentication-skip-lookup=true
           - --kubeconfig=/var/lib/cloud-controller-manager/kubeconfig
         env:
         - name: PACKET_API_KEY
