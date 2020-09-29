@@ -35,13 +35,13 @@ spec:
         image: {{ index .Values.images "cloud-controller-manager" }}
         imagePullPolicy: IfNotPresent
         command:
-          - ./cloud-controller-manager
+          - ./packet-cloud-controller-manager
           - --cloud-provider=packet
           - --leader-elect=false
           - --allow-untagged-cloud=true
           - --kubeconfig=/var/lib/cloud-controller-manager/kubeconfig
         env:
-        - name: PACKET_AUTH_TOKEN
+        - name: PACKET_API_KEY
           valueFrom:
             secretKeyRef:
               name: cloudprovider
