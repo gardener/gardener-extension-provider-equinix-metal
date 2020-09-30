@@ -50,7 +50,7 @@ spec:
             - "--kubeconfig=/var/lib/csi-provisioner/kubeconfig"
           env:
             - name: ADDRESS
-              value: /csi/csi.sock
+              value: /var/lib/kubelet/plugins/csi.packet.com/csi.sock
 {{- if .Values.provisionerResources }}
           resources:
 {{ toYaml .Values.provisionerResources | indent 12 }}
@@ -92,7 +92,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: PACKET_AUTH_TOKEN
+            - name: PACKET_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: cloudprovider
