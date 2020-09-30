@@ -27,6 +27,7 @@ spec:
 {{ toYaml .Values.podAnnotations | indent 8 }}
 {{- end }}
     spec:
+      serviceAccountName: cloud-controller-manager
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
@@ -40,7 +41,6 @@ spec:
           - --leader-elect=false
           - --allow-untagged-cloud=true
           - --authentication-skip-lookup=true
-          - --kubeconfig=/var/lib/cloud-controller-manager/kubeconfig
         env:
         - name: PACKET_API_KEY
           valueFrom:
