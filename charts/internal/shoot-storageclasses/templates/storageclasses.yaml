@@ -6,7 +6,7 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
     resources.gardener.cloud/delete-on-invalid-update: "true"
-provisioner: net.packet.csi
+provisioner: csi.packet.net
 parameters:
   type: standard
 ---
@@ -16,6 +16,6 @@ metadata:
   name: csi-packet-performance
   annotations:
     resources.gardener.cloud/delete-on-invalid-update: "true"
-provisioner: net.packet.csi
+provisioner: csi.packet.net
 parameters:
   type: performance
