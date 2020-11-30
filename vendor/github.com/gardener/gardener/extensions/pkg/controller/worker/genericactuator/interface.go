@@ -26,15 +26,20 @@ import (
 
 // WorkerDelegate is used for the Worker reconciliation.
 type WorkerDelegate interface {
-	// GetMachineControllerManagerChart should return the the chart and the values for the machine-controller-manager
+	// GetMachineControllerManagerChartValues should return the the chart and the values for the machine-controller-manager
 	// deployment.
 	GetMachineControllerManagerChartValues(context.Context) (map[string]interface{}, error)
-	// GetMachineControllerManagerShootChart should return the values to render the chart containing resources
+	// GetMachineControllerManagerShootChartValues should return the values to render the chart containing resources
 	// that are required by the machine-controller-manager inside the shoot cluster itself.
 	GetMachineControllerManagerShootChartValues(context.Context) (map[string]interface{}, error)
+	// GetMachineControllerManagerCloudCredentials should return the IaaS credentials
+	// with the secret keys used by the machine-controller-manager.
+	GetMachineControllerManagerCloudCredentials(context.Context) (map[string][]byte, error)
 
 	// MachineClassKind yields the name of the provider specific machine class.
 	MachineClassKind() string
+	// MachineClass yields a newly initialized machine class object.
+	MachineClass() runtime.Object
 	// MachineClassList yields a newly initialized machine class list object.
 	MachineClassList() runtime.Object
 	// DeployMachineClasses generates and creates the provider specific machine classes.
@@ -43,10 +48,17 @@ type WorkerDelegate interface {
 	// GenerateMachineDeployments generates the configuration for the desired machine deployments.
 	GenerateMachineDeployments(context.Context) (worker.MachineDeployments, error)
 
-	// GetMachineImages returns the list of used machine images for this `Worker` resource. It will be stored in the
-	// `.status.providerStatus` field of the `Worker` resource such that the controller can look up its provider-specific
-	// machine image information in case the required version has been removed from its componentconfig.
-	GetMachineImages(context.Context) (runtime.Object, error)
+	// UpdateMachineImagesStatus will store a list of machine images used by the
+	// machines associated with this Worker resource in its provider status.
+	// The controller can look up its provider-specific machine image information
+	// in case the required version has been removed from the `CloudProfile`.
+	UpdateMachineImagesStatus(context.Context) error
+
+	// DeployMachineDependencies is a hook to create external machine dependencies.
+	DeployMachineDependencies(context.Context) error
+
+	// CleanupMachineDependencies is a hook to cleanup external machine dependencies.
+	CleanupMachineDependencies(context.Context) error
 }
 
 // DelegateFactory acts upon Worker resources.

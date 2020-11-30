@@ -212,18 +212,9 @@ func PodExecByLabel(ctx context.Context, podLabels labels.Selector, podContainer
 	return NewPodExecutor(client).Execute(ctx, pod.Namespace, pod.Name, podContainer, command)
 }
 
-// DeleteResource deletes a kubernetes resource
-func DeleteResource(ctx context.Context, k8sClient kubernetes.Interface, resource runtime.Object) error {
-	err := k8sClient.DirectClient().Delete(ctx, resource)
-	if apierrors.IsNotFound(err) {
-		return nil
-	}
-	return err
-}
-
 // DeleteAndWaitForResource deletes a kubernetes resource and waits for its deletion
 func DeleteAndWaitForResource(ctx context.Context, k8sClient kubernetes.Interface, resource runtime.Object, timeout time.Duration) error {
-	if err := DeleteResource(ctx, k8sClient, resource); err != nil {
+	if err := kutil.DeleteObject(ctx, k8sClient.DirectClient(), resource); err != nil {
 		return err
 	}
 	return retry.UntilTimeout(ctx, 5*time.Second, timeout, func(ctx context.Context) (done bool, err error) {
@@ -321,10 +312,13 @@ func ShootCreationCompleted(newShoot *gardencorev1beta1.Shoot) (bool, string) {
 
 	if newShoot.Status.LastOperation != nil {
 		if newShoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeCreate ||
-			newShoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeReconcile {
+			newShoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeReconcile ||
+			newShoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeRestore {
 			if newShoot.Status.LastOperation.State != gardencorev1beta1.LastOperationStateSucceeded {
-				return false, "last operation type was create or reconcile but state was not succeeded"
+				return false, "last operation type was create, reconcile or restore but state was not succeeded"
 			}
+		} else if newShoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeMigrate {
+			return false, "last operation type was migrate, the migration process is not finished yet"
 		}
 	}
 

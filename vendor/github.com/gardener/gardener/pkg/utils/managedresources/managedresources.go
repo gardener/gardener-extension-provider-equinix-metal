@@ -16,15 +16,19 @@ package managedresources
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	"github.com/gardener/gardener/pkg/utils/kubernetes/health"
+	"github.com/gardener/gardener/pkg/utils/retry"
 
 	resourcesv1alpha1 "github.com/gardener/gardener-resource-manager/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener-resource-manager/pkg/manager"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8sretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -89,6 +93,31 @@ func DeleteManagedResource(ctx context.Context, client client.Client, namespace 
 	return nil
 }
 
+// IntervalWait is the interval when waiting for managed resources.
+var IntervalWait = 2 * time.Second
+
+// WaitUntilManagedResourceHealthy waits until the given managed resource is healthy.
+func WaitUntilManagedResourceHealthy(ctx context.Context, client client.Client, namespace, name string) error {
+	obj := &resourcesv1alpha1.ManagedResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	return retry.Until(ctx, IntervalWait, func(ctx context.Context) (done bool, err error) {
+		if err := client.Get(ctx, kutil.Key(namespace, name), obj); err != nil {
+			return retry.SevereError(err)
+		}
+
+		if err := health.CheckManagedResource(obj); err != nil {
+			return retry.MinorError(fmt.Errorf("managed resource %s/%s is not healthy", namespace, name))
+		}
+
+		return retry.Ok()
+	})
+}
+
 // WaitUntilManagedResourceDeleted waits until the given managed resource is deleted.
 func WaitUntilManagedResourceDeleted(ctx context.Context, client client.Client, namespace, name string) error {
 	mr := &resourcesv1alpha1.ManagedResource{
@@ -97,5 +126,23 @@ func WaitUntilManagedResourceDeleted(ctx context.Context, client client.Client, 
 			Namespace: namespace,
 		},
 	}
-	return kutil.WaitUntilResourceDeleted(ctx, client, mr, 2*time.Second)
+	return kutil.WaitUntilResourceDeleted(ctx, client, mr, IntervalWait)
+}
+
+// KeepManagedResourceObjects updates the keepObjects field of the managed resource with the given name in the given namespace.
+func KeepManagedResourceObjects(ctx context.Context, c client.Client, namespace, name string, keepObjects bool) error {
+	resource := &resourcesv1alpha1.ManagedResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	if err := kutil.TryUpdate(ctx, k8sretry.DefaultBackoff, c, resource, func() error {
+		resource.Spec.KeepObjects = &keepObjects
+		return nil
+	}); client.IgnoreNotFound(err) != nil {
+		return errors.Wrapf(err, "could not update managed resource '%s/%s'", namespace, name)
+	}
+
+	return nil
 }
