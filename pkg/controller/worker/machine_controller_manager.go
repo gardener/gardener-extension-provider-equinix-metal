@@ -73,3 +73,9 @@ func (w *workerDelegate) GetMachineControllerManagerShootChartValues(ctx context
 		"providerName": packet.Name,
 	}, nil
 }
+
+// GetMachineControllerManagerCloudCredentials should return the IaaS credentials
+// with the secret keys used by the machine-controller-manager.
+func (w *workerDelegate) GetMachineControllerManagerCloudCredentials(ctx context.Context) (map[string][]byte, error) {
+	return w.generateMachineClassSecretData(ctx)
+}
