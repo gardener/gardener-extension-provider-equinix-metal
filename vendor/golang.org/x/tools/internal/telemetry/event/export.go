@@ -2,20 +2,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package core
+package event
 
 import (
 	"context"
 	"sync/atomic"
 	"time"
 	"unsafe"
-
-	"golang.org/x/tools/internal/event/label"
 )
 
 // Exporter is a function that handles events.
 // It may return a modified context and event.
-type Exporter func(context.Context, Event, label.Map) context.Context
+type Exporter func(context.Context, Event, TagMap) context.Context
 
 var (
 	exporter unsafe.Pointer
@@ -37,16 +35,16 @@ func SetExporter(e Exporter) {
 }
 
 // deliver is called to deliver an event to the supplied exporter.
-// it will fill in the time.
+// it will fill in the time and generate the basic tag source.
 func deliver(ctx context.Context, exporter Exporter, ev Event) context.Context {
 	// add the current time to the event
-	ev.at = time.Now()
+	ev.At = time.Now()
 	// hand the event off to the current exporter
 	return exporter(ctx, ev, ev)
 }
 
-// Export is called to deliver an event to the global exporter if set.
-func Export(ctx context.Context, ev Event) context.Context {
+// dispatch is called to deliver an event to the global exporter if set.
+func dispatch(ctx context.Context, ev Event) context.Context {
 	// get the global exporter and abort early if there is not one
 	exporterPtr := (*Exporter)(atomic.LoadPointer(&exporter))
 	if exporterPtr == nil {
@@ -55,11 +53,11 @@ func Export(ctx context.Context, ev Event) context.Context {
 	return deliver(ctx, *exporterPtr, ev)
 }
 
-// ExportPair is called to deliver a start event to the supplied exporter.
+// dispatchPair is called to deliver a start event to the supplied exporter.
 // It also returns a function that will deliver the end event to the same
 // exporter.
-// It will fill in the time.
-func ExportPair(ctx context.Context, begin, end Event) (context.Context, func()) {
+// it will fill in the time and generate the basic tag source.
+func dispatchPair(ctx context.Context, begin, end Event) (context.Context, func()) {
 	// get the global exporter and abort early if there is not one
 	exporterPtr := (*Exporter)(atomic.LoadPointer(&exporter))
 	if exporterPtr == nil {

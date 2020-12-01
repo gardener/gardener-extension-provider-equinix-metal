@@ -34,6 +34,7 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	mockkubernetes "github.com/gardener/gardener/pkg/mock/gardener/client/kubernetes"
@@ -49,18 +50,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	ctx context.Context
+)
+
 var _ = Describe("Machines", func() {
 	var (
 		ctrl         *gomock.Controller
 		c            *mockclient.MockClient
 		chartApplier *mockkubernetes.MockChartApplier
+		statusWriter *mockclient.MockStatusWriter
 	)
 
 	BeforeEach(func() {
+		ctx = context.TODO()
 		ctrl = gomock.NewController(GinkgoT())
 
 		c = mockclient.NewMockClient(ctrl)
 		chartApplier = mockkubernetes.NewMockChartApplier(ctrl)
+		statusWriter = mockclient.NewMockStatusWriter(ctrl)
 	})
 
 	AfterEach(func() {
@@ -351,7 +359,7 @@ var _ = Describe("Machines", func() {
 					chartApplier.
 						EXPECT().
 						Apply(
-							context.TODO(),
+							ctx,
 							filepath.Join(packet.InternalChartsPath, "machineclass"),
 							namespace,
 							"machineclass",
@@ -359,29 +367,23 @@ var _ = Describe("Machines", func() {
 						).
 						Return(nil)
 
-					err := workerDelegate.DeployMachineClasses(context.TODO())
+					err := workerDelegate.DeployMachineClasses(ctx)
 					Expect(err).NotTo(HaveOccurred())
 
-					// Test workerDelegate.GetMachineImages()
-					machineImages, err := workerDelegate.GetMachineImages(context.TODO())
-					Expect(machineImages).To(Equal(&apiv1alpha1.WorkerStatus{
-						TypeMeta: metav1.TypeMeta{
-							APIVersion: apiv1alpha1.SchemeGroupVersion.String(),
-							Kind:       "WorkerStatus",
+					// Test workerDelegate.UpdateMachineImagesStatus()
+					expectStatusContainsMachineImages(ctx, c, statusWriter, w, []apiv1alpha1.MachineImage{
+						{
+							Name:    machineImageName,
+							Version: machineImageVersion,
+							ID:      machineImage,
 						},
-						MachineImages: []apiv1alpha1.MachineImage{
-							{
-								Name:    machineImageName,
-								Version: machineImageVersion,
-								ID:      machineImage,
-							},
-						},
-					}))
+					})
+					err = workerDelegate.UpdateMachineImagesStatus(ctx)
 					Expect(err).NotTo(HaveOccurred())
 
 					// Test workerDelegate.GenerateMachineDeployments()
 
-					result, err := workerDelegate.GenerateMachineDeployments(context.TODO())
+					result, err := workerDelegate.GenerateMachineDeployments(ctx)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(result).To(Equal(machineDeployments))
 				})
@@ -389,10 +391,10 @@ var _ = Describe("Machines", func() {
 
 			It("should fail because the secret cannot be read", func() {
 				c.EXPECT().
-					Get(context.TODO(), gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
+					Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
 					Return(fmt.Errorf("error"))
 
-				result, err := workerDelegate.GenerateMachineDeployments(context.TODO())
+				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
 				Expect(result).To(BeNil())
 			})
@@ -403,7 +405,7 @@ var _ = Describe("Machines", func() {
 				clusterWithoutImages.Shoot.Spec.Kubernetes.Version = "invalid"
 				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
 
-				result, err := workerDelegate.GenerateMachineDeployments(context.TODO())
+				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
 				Expect(result).To(BeNil())
 			})
@@ -415,7 +417,7 @@ var _ = Describe("Machines", func() {
 
 				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
 
-				result, err := workerDelegate.GenerateMachineDeployments(context.TODO())
+				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
 				Expect(result).To(BeNil())
 			})
@@ -425,7 +427,7 @@ var _ = Describe("Machines", func() {
 
 				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, clusterWithoutImages)
 
-				result, err := workerDelegate.GenerateMachineDeployments(context.TODO())
+				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
 				Expect(result).To(BeNil())
 			})
@@ -448,7 +450,7 @@ var _ = Describe("Machines", func() {
 
 				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
 
-				result, err := workerDelegate.GenerateMachineDeployments(context.TODO())
+				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				resultSettings := result[0].MachineConfiguration
 				resultNodeConditions := strings.Join(testNodeConditions, ",")
 
@@ -470,7 +472,7 @@ func encode(obj runtime.Object) []byte {
 
 func expectGetSecretCallToWork(c *mockclient.MockClient, packetAPIToken, packetProjectID string) {
 	c.EXPECT().
-		Get(context.TODO(), gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
+		Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
 		DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret) error {
 			secret.Data = map[string][]byte{
 				packet.APIToken:  []byte(packetAPIToken),
@@ -478,6 +480,26 @@ func expectGetSecretCallToWork(c *mockclient.MockClient, packetAPIToken, packetP
 			}
 			return nil
 		})
+}
+
+func expectStatusContainsMachineImages(ctx context.Context, c *mockclient.MockClient, statusWriter *mockclient.MockStatusWriter, worker *extensionsv1alpha1.Worker, images []apiv1alpha1.MachineImage) {
+	expectedProviderStatus := &apiv1alpha1.WorkerStatus{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: apiv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "WorkerStatus",
+		},
+		MachineImages: images,
+	}
+	workerWithExpectedStatus := worker.DeepCopy()
+	workerWithExpectedStatus.Status.ProviderStatus = &runtime.RawExtension{
+		Object: expectedProviderStatus,
+	}
+
+	c.EXPECT().Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&extensionsv1alpha1.Worker{})).DoAndReturn(func(_ context.Context, _ client.ObjectKey, worker *extensionsv1alpha1.Worker) error {
+		return nil
+	})
+	c.EXPECT().Status().Return(statusWriter)
+	statusWriter.EXPECT().Update(ctx, workerWithExpectedStatus).Return(nil)
 }
 
 func copyMachineClass(def map[string]interface{}) map[string]interface{} {

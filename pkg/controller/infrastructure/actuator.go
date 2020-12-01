@@ -23,8 +23,8 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
-	glogger "github.com/gardener/gardener/pkg/logger"
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -43,8 +43,8 @@ func NewActuator() infrastructure.Actuator {
 
 // Helper functions
 
-func (a *actuator) newTerraformer(purpose, namespace, name string) (terraformer.Terraformer, error) {
-	tf, err := terraformer.NewForConfig(glogger.NewLogger("info"), a.RESTConfig(), purpose, namespace, name, imagevector.TerraformerImage())
+func (a *actuator) newTerraformer(logger logr.Logger, purpose, namespace, name string) (terraformer.Terraformer, error) {
+	tf, err := terraformer.NewForConfig(logger, a.RESTConfig(), purpose, namespace, name, imagevector.TerraformerImage())
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +55,18 @@ func (a *actuator) newTerraformer(purpose, namespace, name string) (terraformer.
 		SetDeadlinePod(15 * time.Minute), nil
 }
 
-func generateTerraformInfraVariablesEnvironment(credentials *packet.Credentials) map[string]string {
-	return map[string]string{
-		"TF_VAR_PACKET_API_KEY": string(credentials.APIToken),
+func generateTerraformInfraVariablesEnvironment(secretRef corev1.SecretReference) []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name: "TF_VAR_PACKET_API_KEY",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: secretRef.Name,
+					},
+					Key: packet.APIToken,
+				},
+			},
+		},
 	}
 }

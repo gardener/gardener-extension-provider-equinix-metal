@@ -23,7 +23,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/test"
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 
-	"github.com/coreos/go-systemd/unit"
+	"github.com/coreos/go-systemd/v22/unit"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -39,6 +39,10 @@ import (
 
 const (
 	namespace = "test"
+)
+
+var (
+	ctx context.Context
 )
 
 func TestController(t *testing.T) {
@@ -65,6 +69,7 @@ var _ = Describe("Ensurer", func() {
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
+		ctx = context.TODO()
 	})
 
 	AfterEach(func() {
@@ -92,7 +97,7 @@ var _ = Describe("Ensurer", func() {
 
 			// Create mock client
 			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(context.TODO(), secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
 			ensurer := NewEnsurer(logger)
@@ -100,7 +105,7 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(context.TODO(), dummyContext, dep, nil)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, annotations)
 		})
@@ -133,7 +138,7 @@ var _ = Describe("Ensurer", func() {
 
 			// Create mock client
 			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(context.TODO(), secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
 			ensurer := NewEnsurer(logger)
@@ -141,7 +146,7 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(context.TODO(), dummyContext, dep, nil)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, annotations)
 		})
@@ -170,7 +175,7 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(logger)
 
 			// Call EnsureKubeControllerManagerDeployment method and check the result
-			err := ensurer.EnsureKubeControllerManagerDeployment(context.TODO(), dummyContext, dep, nil)
+			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeControllerManagerDeployment(dep)
 		})
@@ -203,7 +208,7 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(logger)
 
 			// Call EnsureKubeControllerManagerDeployment method and check the result
-			err := ensurer.EnsureKubeControllerManagerDeployment(context.TODO(), dummyContext, dep, nil)
+			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeControllerManagerDeployment(dep)
 		})
@@ -236,7 +241,7 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(logger)
 
 			// Call EnsureKubeletServiceUnitOptions method and check the result
-			opts, err := ensurer.EnsureKubeletServiceUnitOptions(context.TODO(), dummyContext, oldUnitOptions, nil)
+			opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, oldUnitOptions, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(opts).To(Equal(newUnitOptions))
 		})
@@ -265,7 +270,7 @@ var _ = Describe("Ensurer", func() {
 
 			// Call EnsureKubeletConfiguration method and check the result
 			kubeletConfig := *oldKubeletConfig
-			err := ensurer.EnsureKubeletConfiguration(context.TODO(), dummyContext, &kubeletConfig, nil)
+			err := ensurer.EnsureKubeletConfiguration(ctx, dummyContext, &kubeletConfig, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(&kubeletConfig).To(Equal(newKubeletConfig))
 		})

@@ -21,10 +21,12 @@ import (
 
 	packetv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	"github.com/go-logr/logr"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,10 +34,11 @@ import (
 )
 
 func (a *actuator) Reconcile(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
-	return a.reconcile(ctx, infrastructure, cluster, terraformer.StateConfigMapInitializerFunc(terraformer.CreateState))
+	logger := a.logger.WithValues("infrastructure", kutil.KeyFromObject(infrastructure), "operation", "reconcile")
+	return a.reconcile(ctx, logger, infrastructure, cluster, terraformer.StateConfigMapInitializerFunc(terraformer.CreateState))
 }
 
-func (a *actuator) reconcile(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster, stateInitializer terraformer.StateConfigMapInitializer) error {
+func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster, stateInitializer terraformer.StateConfigMapInitializer) error {
 	credentials, err := packet.GetCredentialsFromSecretRef(ctx, a.Client(), infrastructure.Spec.SecretRef)
 	if err != nil {
 		return err
@@ -48,21 +51,22 @@ func (a *actuator) reconcile(ctx context.Context, infrastructure *extensionsv1al
 		return fmt.Errorf("could not render Terraform chart: %+v", err)
 	}
 
-	tf, err := a.newTerraformer(packet.TerraformerPurposeInfra, infrastructure.Namespace, infrastructure.Name)
+	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure.Namespace, infrastructure.Name)
 	if err != nil {
 		return fmt.Errorf("could not create terraformer object: %+v", err)
 	}
 
 	if err := tf.
-		SetVariablesEnvironment(generateTerraformInfraVariablesEnvironment(credentials)).
-		InitializeWith(terraformer.DefaultInitializer(
-			a.Client(),
-			release.FileContent("main.tf"),
-			release.FileContent("variables.tf"),
-			[]byte(release.FileContent("terraform.tfvars")),
-			stateInitializer,
-		)).
-		Apply(); err != nil {
+		SetEnvVars(generateTerraformInfraVariablesEnvironment(infrastructure.Spec.SecretRef)...).
+		InitializeWith(ctx,
+			terraformer.DefaultInitializer(
+				a.Client(),
+				release.FileContent("main.tf"),
+				release.FileContent("variables.tf"),
+				[]byte(release.FileContent("terraform.tfvars")),
+				stateInitializer,
+			)).
+		Apply(ctx); err != nil {
 
 		return errors.Wrap(err, "failed to apply the terraform config")
 	}
@@ -89,7 +93,7 @@ func (a *actuator) updateProviderStatus(ctx context.Context, tf terraformer.Terr
 		packet.SSHKeyID,
 	}
 
-	output, err := tf.GetStateOutputVariables(outputVarKeys...)
+	output, err := tf.GetStateOutputVariables(ctx, outputVarKeys...)
 	if err != nil {
 		return err
 	}
