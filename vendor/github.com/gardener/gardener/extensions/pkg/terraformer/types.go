@@ -18,29 +18,35 @@ import (
 	"context"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // terraformer is a struct containing configuration parameters for the Terraform script it acts on.
+// * useV2 indicates if it should use flags compatible with terraformer@v2 (defaults to false)
 // * purpose is a one-word description depicting what the Terraformer does (e.g. 'infrastructure').
 // * namespace is the namespace in which the Terraformer will act.
 // * image is the Docker image name of the Terraformer image.
 // * configName is the name of the ConfigMap containing the main Terraform file ('main.tf').
 // * variablesName is the name of the Secret containing the Terraform variables ('terraform.tfvars').
 // * stateName is the name of the ConfigMap containing the Terraform state ('terraform.tfstate').
-// * variablesEnvironment is a map of environment variables which will be injected in the resulting
-//   Terraform job/pod. These variables should contain Terraform variables (i.e., must be prefixed
+// * envVars is a list of environment variables which will be injected in the resulting
+//   Terraform pod. These variables can contain Terraform variables (i.e., must be prefixed
 //   with TF_VAR_).
 // * configurationDefined indicates whether the required configuration ConfigMaps/Secrets have been
 //   successfully defined.
+// * logLevel configures the log level for the Terraformer Pod (only compatible with terraformer@v2,
+//   defaults to "info")
 // * terminationGracePeriodSeconds is the respective Pod spec field passed to Terraformer Pods.
 // * deadlineCleaning is the timeout to wait Terraformer Pods to be cleaned up.
 // * deadlinePod is the time to wait apply/destroy Pod to be completed.
 type terraformer struct {
-	logger       logrus.FieldLogger
+	useV2 bool
+
+	logger       logr.Logger
 	client       client.Client
 	coreV1Client corev1client.CoreV1Interface
 
@@ -52,9 +58,10 @@ type terraformer struct {
 	configName           string
 	variablesName        string
 	stateName            string
-	variablesEnvironment map[string]string
+	envVars              []corev1.EnvVar
 	configurationDefined bool
 
+	logLevel                      string
 	terminationGracePeriodSeconds int64
 
 	deadlineCleaning time.Duration
@@ -88,33 +95,35 @@ const (
 
 // Terraformer is the Terraformer interface.
 type Terraformer interface {
-	SetVariablesEnvironment(tfVarsEnvironment map[string]string) Terraformer
+	UseV2(bool) Terraformer
+	SetLogLevel(string) Terraformer
+	SetEnvVars(envVars ...corev1.EnvVar) Terraformer
 	SetTerminationGracePeriodSeconds(int64) Terraformer
 	SetDeadlineCleaning(time.Duration) Terraformer
 	SetDeadlinePod(time.Duration) Terraformer
-	InitializeWith(initializer Initializer) Terraformer
-	Apply() error
-	Destroy() error
-	GetRawState(context.Context) (*RawState, error)
-	GetState() ([]byte, error)
-	IsStateEmpty() bool
+	InitializeWith(ctx context.Context, initializer Initializer) Terraformer
+	Apply(ctx context.Context) error
+	Destroy(ctx context.Context) error
+	GetRawState(ctx context.Context) (*RawState, error)
+	GetState(ctx context.Context) ([]byte, error)
+	IsStateEmpty(ctx context.Context) bool
 	CleanupConfiguration(ctx context.Context) error
-	GetStateOutputVariables(variables ...string) (map[string]string, error)
-	ConfigExists() (bool, error)
-	NumberOfResources(context.Context) (int, error)
+	GetStateOutputVariables(ctx context.Context, variables ...string) (map[string]string, error)
+	ConfigExists(ctx context.Context) (bool, error)
+	NumberOfResources(ctx context.Context) (int, error)
 	EnsureCleanedUp(ctx context.Context) error
 	WaitForCleanEnvironment(ctx context.Context) error
 }
 
 // Initializer can initialize a Terraformer.
 type Initializer interface {
-	Initialize(config *InitializerConfig) error
+	Initialize(ctx context.Context, config *InitializerConfig) error
 }
 
 // Factory is a factory that can produce Terraformer and Initializer.
 type Factory interface {
-	NewForConfig(logger logrus.FieldLogger, config *rest.Config, purpose, namespace, name, image string) (Terraformer, error)
-	New(logger logrus.FieldLogger, client client.Client, coreV1Client corev1client.CoreV1Interface, purpose, namespace, name, image string) Terraformer
+	NewForConfig(logger logr.Logger, config *rest.Config, purpose, namespace, name, image string) (Terraformer, error)
+	New(logger logr.Logger, client client.Client, coreV1Client corev1client.CoreV1Interface, purpose, namespace, name, image string) Terraformer
 	DefaultInitializer(c client.Client, main, variables string, tfVars []byte, stateInitializer StateConfigMapInitializer) Initializer
 }
 

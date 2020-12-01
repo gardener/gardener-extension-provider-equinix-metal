@@ -22,10 +22,12 @@ import (
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 )
 
 func (a *actuator) Delete(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
-	tf, err := a.newTerraformer(packet.TerraformerPurposeInfra, infrastructure.Namespace, infrastructure.Name)
+	logger := a.logger.WithValues("infrastructure", kutil.KeyFromObject(infrastructure), "operation", "delete")
+	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure.Namespace, infrastructure.Name)
 	if err != nil {
 		return fmt.Errorf("could not create the Terraformer: %+v", err)
 	}
@@ -37,18 +39,13 @@ func (a *actuator) Delete(ctx context.Context, infrastructure *extensionsv1alpha
 
 	// If the Terraform state is empty then we can exit early as we didn't create anything. Though, we clean up potentially
 	// created configmaps/secrets related to the Terraformer.
-	stateIsEmpty := tf.IsStateEmpty()
+	stateIsEmpty := tf.IsStateEmpty(ctx)
 	if stateIsEmpty {
 		a.logger.Info("exiting early as infrastructure state is empty - nothing to do")
 		return tf.CleanupConfiguration(ctx)
 	}
 
-	credentials, err := packet.GetCredentialsFromSecretRef(ctx, a.Client(), infrastructure.Spec.SecretRef)
-	if err != nil {
-		return err
-	}
-
 	return tf.
-		SetVariablesEnvironment(generateTerraformInfraVariablesEnvironment(credentials)).
-		Destroy()
+		SetEnvVars(generateTerraformInfraVariablesEnvironment(infrastructure.Spec.SecretRef)...).
+		Destroy(ctx)
 }

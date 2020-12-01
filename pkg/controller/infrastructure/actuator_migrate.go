@@ -22,10 +22,12 @@ import (
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 )
 
 func (a *actuator) Migrate(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
-	tf, err := a.newTerraformer(packet.TerraformerPurposeInfra, infrastructure.Namespace, infrastructure.Name)
+	logger := a.logger.WithValues("infrastructure", kutil.KeyFromObject(infrastructure), "operation", "migrate")
+	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure.Namespace, infrastructure.Name)
 	if err != nil {
 		return fmt.Errorf("could not create the Terraformer: %+v", err)
 	}
