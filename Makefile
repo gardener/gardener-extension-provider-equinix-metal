@@ -14,7 +14,7 @@
 
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := provider-packet
-REGISTRY                    := eu.gcr.io/gardener-project
+REGISTRY                    := eu.gcr.io/gardener-project/gardener
 IMAGE_PREFIX                := $(REGISTRY)/extensions
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                    := $(REPO_ROOT)/hack
@@ -112,11 +112,11 @@ format:
 
 .PHONY: test
 test:
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test.sh ./cmd/... ./pkg/...
+	@SKIP_FETCH_TOOLS=1 $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test.sh ./cmd/... ./pkg/...
 
 .PHONY: test-cov
 test-cov:
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test-cover.sh ./cmd/... ./pkg/...
+	@SKIP_FETCH_TOOLS=1 $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test-cover.sh ./cmd/... ./pkg/...
 
 .PHONY: test-clean
 test-clean:

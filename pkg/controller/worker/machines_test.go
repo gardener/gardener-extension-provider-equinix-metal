@@ -33,7 +33,6 @@ import (
 	genericworkeractuator "github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
@@ -133,7 +132,7 @@ var _ = Describe("Machines", func() {
 				decoder                runtime.Decoder
 				clusterWithoutImages   *extensionscontroller.Cluster
 				cluster                *extensionscontroller.Cluster
-				w                      *extensionsv1alpha.Worker
+				w                      *extensionsv1alpha1.Worker
 			)
 
 			BeforeEach(func() {
@@ -214,11 +213,11 @@ var _ = Describe("Machines", func() {
 					Shoot: clusterWithoutImages.Shoot,
 				}
 
-				w = &extensionsv1alpha.Worker{
+				w = &extensionsv1alpha1.Worker{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: namespace,
 					},
-					Spec: extensionsv1alpha.WorkerSpec{
+					Spec: extensionsv1alpha1.WorkerSpec{
 						SecretRef: corev1.SecretReference{
 							Name:      "secret",
 							Namespace: namespace,
@@ -229,7 +228,7 @@ var _ = Describe("Machines", func() {
 								SSHKeyID: sshKeyID,
 							}),
 						},
-						Pools: []extensionsv1alpha.WorkerPool{
+						Pools: []extensionsv1alpha1.WorkerPool{
 							{
 								Name:           namePool1,
 								Minimum:        minPool1,
@@ -237,7 +236,7 @@ var _ = Describe("Machines", func() {
 								MaxSurge:       maxSurgePool1,
 								MaxUnavailable: maxUnavailablePool1,
 								MachineType:    machineType,
-								MachineImage: extensionsv1alpha.MachineImage{
+								MachineImage: extensionsv1alpha1.MachineImage{
 									Name:    machineImageName,
 									Version: machineImageVersion,
 								},
@@ -254,7 +253,7 @@ var _ = Describe("Machines", func() {
 								MaxSurge:       maxSurgePool2,
 								MaxUnavailable: maxUnavailablePool2,
 								MachineType:    machineType,
-								MachineImage: extensionsv1alpha.MachineImage{
+								MachineImage: extensionsv1alpha1.MachineImage{
 									Name:    machineImageName,
 									Version: machineImageVersion,
 								},
@@ -495,9 +494,7 @@ func expectStatusContainsMachineImages(ctx context.Context, c *mockclient.MockCl
 		Object: expectedProviderStatus,
 	}
 
-	c.EXPECT().Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&extensionsv1alpha1.Worker{})).DoAndReturn(func(_ context.Context, _ client.ObjectKey, worker *extensionsv1alpha1.Worker) error {
-		return nil
-	})
+	c.EXPECT().Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&extensionsv1alpha1.Worker{}))
 	c.EXPECT().Status().Return(statusWriter)
 	statusWriter.EXPECT().Update(ctx, workerWithExpectedStatus).Return(nil)
 }
