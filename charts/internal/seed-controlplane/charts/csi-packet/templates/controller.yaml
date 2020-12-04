@@ -41,7 +41,7 @@ spec:
     spec:
       serviceAccountName: csi-packet-controller-sa
       containers:
-        - name: csi-external-provisioner
+        - name: packet-csi-external-provisioner
           imagePullPolicy: IfNotPresent
           image: {{ index .Values.images "csi-provisioner" }}
           args:
@@ -60,7 +60,7 @@ spec:
             mountPath: /var/lib/kubelet/plugins/csi.packet.com
           - name: csi-provisioner
             mountPath: /var/lib/csi-provisioner
-        - name: csi-attacher
+        - name: packet-csi-attacher
           imagePullPolicy: IfNotPresent
           image: {{ index .Values.images "csi-attacher" }}
           args:
@@ -78,7 +78,7 @@ spec:
               mountPath: /var/lib/csi-attacher
             - name: socket-dir
               mountPath: /var/lib/kubelet/plugins/csi.packet.com
-        - name: packet-driver
+        - name: packet-csi-driver
           imagePullPolicy: IfNotPresent
           image: {{ index .Values.images "packet-storage-interface" }}
           args:

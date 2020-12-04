@@ -101,7 +101,7 @@ var controlPlaneChart = &chart.Chart{
 			Objects: []*chart.Object{
 				{Type: &corev1.Service{}, Name: "cloud-controller-manager"},
 				{Type: &appsv1.Deployment{}, Name: "cloud-controller-manager"},
-				{Type: &corev1.ConfigMap{}, Name: "cloud-controller-manager-monitoring-config"},
+				{Type: &corev1.ConfigMap{}, Name: "cloud-controller-manager-observability-config"},
 			},
 		},
 		{
@@ -109,6 +109,7 @@ var controlPlaneChart = &chart.Chart{
 			Images: []string{packet.CSIAttacherImageName, packet.CSIProvisionerImageName, packet.CSIPluginImageName},
 			Objects: []*chart.Object{
 				{Type: &corev1.Service{}, Name: "csi-packet-pd"},
+				{Type: &corev1.ConfigMap{}, Name: "csi-packet-controller-observability-config"},
 				{Type: &appsv1.StatefulSet{}, Name: "csi-packet-controller"},
 			},
 		},
@@ -179,6 +180,10 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 	checksums map[string]string,
 	scaledDown bool,
 ) (map[string]interface{}, error) {
+	// TODO: Remove this code in next version. Delete old config
+	if err := vp.deleteCCMMonitoringConfig(ctx, cp.Namespace); err != nil {
+		return nil, err
+	}
 	// Get control plane chart values
 	return getControlPlaneChartValues(cp, cluster, checksums, scaledDown)
 }
