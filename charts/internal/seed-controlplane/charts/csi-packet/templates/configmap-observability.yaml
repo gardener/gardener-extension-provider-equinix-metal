@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: csi-packet-controller-observability-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    extensions.gardener.cloud/configuration: monitoring
+data:
+  dashboard_operators: |
+    csi-packet-controller-dashboard.json: |-
+{{- .Files.Get "csi-packet-controller-dashboard.json" | nindent 6 }}
+
+  dashboard_users: |
+    csi-packet-controller-dashboard.json: |-
+{{- .Files.Get "csi-packet-controller-dashboard.json" | nindent 6 }}
