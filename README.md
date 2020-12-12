@@ -23,6 +23,7 @@ This extension controller supports the following Kubernetes versions:
 
 | Version         | Support     | Conformance test results |
 | --------------- | ----------- | ------------------------ |
+| Kubernetes 1.20 | untested    | N/A                      |
 | Kubernetes 1.19 | untested    | N/A                      |
 | Kubernetes 1.18 | untested    | N/A                      |
 | Kubernetes 1.17 | untested    | N/A                      |
