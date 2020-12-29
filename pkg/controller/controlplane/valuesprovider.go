@@ -238,6 +238,7 @@ func getControlPlaneChartValues(
 				"checksum/secret-cloud-controller-manager": checksums[packet.CloudControllerManagerImageName],
 				"checksum/secret-cloudprovider":            checksums[v1beta1constants.SecretNameCloudProvider],
 			},
+			"facility": cluster.Shoot.Spec.Region,
 		},
 		"csi-packet": map[string]interface{}{
 			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
