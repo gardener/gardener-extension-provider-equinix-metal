@@ -118,9 +118,6 @@ var _ = Describe("Machines", func() {
 				maxSurgePool2       intstr.IntOrString
 				maxUnavailablePool2 intstr.IntOrString
 
-				zone1 = region + "a"
-				zone2 = region + "b"
-
 				machineConfiguration *machinev1alpha1.MachineConfiguration
 
 				workerPoolHash1 string
@@ -139,7 +136,7 @@ var _ = Describe("Machines", func() {
 				namespace = "shoot--foobar--packet"
 				cloudProfileName = "packet"
 
-				region = "eu-west-1"
+				region = "ewr1"
 				packetAPIToken = "api-token"
 				packetProjectID = "project-id"
 
@@ -162,9 +159,6 @@ var _ = Describe("Machines", func() {
 				maxPool2 = 45
 				maxSurgePool2 = intstr.FromInt(10)
 				maxUnavailablePool2 = intstr.FromInt(15)
-
-				zone1 = region + "a"
-				zone2 = region + "b"
 
 				machineConfiguration = &machinev1alpha1.MachineConfiguration{}
 
@@ -242,8 +236,7 @@ var _ = Describe("Machines", func() {
 								},
 								UserData: userData,
 								Zones: []string{
-									zone1,
-									zone2,
+									region,
 								},
 							},
 							{
@@ -259,8 +252,7 @@ var _ = Describe("Machines", func() {
 								},
 								UserData: userData,
 								Zones: []string{
-									zone1,
-									zone2,
+									region,
 								},
 							},
 						},
@@ -292,8 +284,7 @@ var _ = Describe("Machines", func() {
 						"billingCycle": "hourly",
 						"machineType":  machineType,
 						"facility": []string{
-							zone1,
-							zone2,
+							region,
 						},
 						"sshKeys": []string{sshKeyID},
 						"tags": []string{
