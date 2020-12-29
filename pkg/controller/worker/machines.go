@@ -122,7 +122,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			"projectID":    string(machineClassSecretData[packet.ProjectID]),
 			"billingCycle": "hourly",
 			"machineType":  pool.MachineType,
-			"facility":     pool.Zones,
+			"facility":     []string{w.worker.Spec.Region},
 			"sshKeys":      []string{infrastructureStatus.SSHKeyID},
 			"tags": []string{
 				fmt.Sprintf("kubernetes.io/cluster/%s", w.worker.Namespace),
