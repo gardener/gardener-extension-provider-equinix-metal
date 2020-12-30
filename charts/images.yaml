@@ -2,24 +2,24 @@ images:
 - name: terraformer
   sourceRepository: github.com/gardener/terraformer
   repository: eu.gcr.io/gardener-project/gardener/terraformer
-  tag: "v1.5.0"
+  tag: v1.5.0
 - name: cloud-controller-manager
-  sourceRepository: https://github.com/packethost/packet-ccm
+  sourceRepository: github.com/packethost/packet-ccm
   repository: docker.io/packethost/packet-ccm
   tag: v2.0.0
 - name: machine-controller-manager
   sourceRepository: github.com/gardener/machine-controller-manager
   repository: eu.gcr.io/gardener-project/gardener/machine-controller-manager
-  tag: "v0.36.0"
+  tag: v0.36.0
 - name: metabot
-  sourceRepository: https://github.com/packethost/metabot
+  sourceRepository: github.com/packethost/metabot
   repository: packethost/metabot
-  tag: "v1.0.0"
+  tag: v1.0.0
 - name: metallb-controller
-  sourceRepository: https://github.com/metallb/metallb
+  sourceRepository: github.com/metallb/metallb
   repository: quay.io/metallb/controller
   tag: v0.9.5
 - name: metallb-speaker
-  sourceRepository: https://github.com/metallb/metallb
+  sourceRepository: github.com/metallb/metallb
   repository: quay.io/metallb/speaker
   tag: v0.9.5
