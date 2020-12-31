@@ -49,3 +49,11 @@ images:
   sourceRepository: https://github.com/packethost/metabot
   repository: packethost/metabot
   tag: "v1.0.0"
+- name: metallb-controller
+  sourceRepository: https://github.com/metallb/metallb
+  repository: quay.io/metallb/controller
+  tag: v0.9.5
+- name: metallb-speaker
+  sourceRepository: https://github.com/metallb/metallb
+  repository: quay.io/metallb/speaker
+  tag: v0.9.5

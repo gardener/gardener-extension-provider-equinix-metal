@@ -128,6 +128,11 @@ var controlPlaneShootChart = &chart.Chart{
 			},
 		},
 		{
+			Name:    "metallb",
+			Images:  []string{packet.MetalLBControllerImageName, packet.MetalLBSpeakerImageName},
+			Objects: []*chart.Object{},
+		},
+		{
 			Name:   "csi-packet",
 			Images: []string{packet.CSINodeDriverRegistrarImageName, packet.CSIPluginImageName},
 			Objects: []*chart.Object{
@@ -240,6 +245,7 @@ func getControlPlaneChartValues(
 			},
 			"facility": cluster.Shoot.Spec.Region,
 		},
+		"metallb": map[string]interface{}{},
 		"csi-packet": map[string]interface{}{
 			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
