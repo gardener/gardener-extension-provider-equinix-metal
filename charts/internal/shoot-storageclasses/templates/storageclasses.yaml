@@ -1,21 +1,3 @@
----
-apiVersion: {{ include "storageclassversion" . }}
-kind: StorageClass
-metadata:
-  name: csi-packet-standard
-  annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
-    resources.gardener.cloud/delete-on-invalid-update: "true"
-provisioner: csi.packet.net
-parameters:
-  type: standard
----
-apiVersion: {{ include "storageclassversion" . }}
-kind: StorageClass
-metadata:
-  name: csi-packet-performance
-  annotations:
-    resources.gardener.cloud/delete-on-invalid-update: "true"
-provisioner: csi.packet.net
-parameters:
-  type: performance
+# The Packet CSI implementation is being deprecated. We keep this empty chart since Gardener
+# expects a storage class chart and crashes when the chart is removed.
+# TODO: When an alternative storage solution is implemented, populate this chart.
