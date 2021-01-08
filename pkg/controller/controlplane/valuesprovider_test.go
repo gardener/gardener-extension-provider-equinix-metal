@@ -129,6 +129,7 @@ var _ = Describe("ValuesProvider", func() {
 				},
 				"facility": "ewr1",
 			},
+			"metallb": map[string]interface{}{},
 			"csi-packet": map[string]interface{}{
 				"replicas":          1,
 				"kubernetesVersion": "1.13.4",

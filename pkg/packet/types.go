@@ -48,6 +48,10 @@ const (
 	CSIPluginImageName = "packet-storage-interface"
 	// MetabotImageName is the name of the metabot image.
 	MetabotImageName = "metabot"
+	// MetalLBControllerImageName is the name of the MetalLB controller image.
+	MetalLBControllerImageName = "metallb-controller"
+	// MetalLBSpeakerImageName is the name of the MetalLB speaker image.
+	MetalLBSpeakerImageName = "metallb-speaker"
 
 	// TerraformerPurposeInfra is a constant for the complete Terraform setup with purpose 'infrastructure'.
 	TerraformerPurposeInfra = "infra"
