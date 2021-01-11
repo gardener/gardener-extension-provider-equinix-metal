@@ -11,40 +11,6 @@ images:
   sourceRepository: github.com/gardener/machine-controller-manager
   repository: eu.gcr.io/gardener-project/gardener/machine-controller-manager
   tag: "v0.36.0"
-- name: csi-attacher
-  sourceRepository: https://github.com/kubernetes-csi/external-attacher
-  repository: quay.io/k8scsi/csi-attacher
-  tag: v1.0.1
-  runtimeVersion: 1.13.x
-- name: csi-attacher
-  sourceRepository: https://github.com/kubernetes-csi/external-attacher
-  repository: quay.io/k8scsi/csi-attacher
-  tag: v1.1.0
-  runtimeVersion: 1.14.x
-- name: csi-node-driver-registrar
-  sourceRepository: https://github.com/kubernetes-csi/node-driver-registrar
-  repository: quay.io/k8scsi/csi-node-driver-registrar
-  tag: v1.0.1
-  runtimeVersion: 1.13.x
-- name: csi-node-driver-registrar
-  sourceRepository: https://github.com/kubernetes-csi/node-driver-registrar
-  repository: quay.io/k8scsi/csi-node-driver-registrar
-  tag: v1.1.0
-  runtimeVersion: 1.14.x
-- name: csi-provisioner
-  sourceRepository: https://github.com/kubernetes-csi/external-provisioner
-  repository: quay.io/k8scsi/csi-provisioner
-  tag: v1.0.1
-  runtimeVersion: 1.13.x
-- name: csi-provisioner
-  sourceRepository: https://github.com/kubernetes-csi/external-provisioner
-  repository: quay.io/k8scsi/csi-provisioner
-  tag: v1.1.0
-  runtimeVersion: 1.14.x
-- name: packet-storage-interface
-  sourceRepository: https://github.com/packethost/csi-packet
-  repository: docker.io/packethost/csi-packet
-  tag: "v1.1.0"
 - name: metabot
   sourceRepository: https://github.com/packethost/metabot
   repository: packethost/metabot

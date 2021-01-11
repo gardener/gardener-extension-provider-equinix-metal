@@ -16,14 +16,12 @@ package controlplane
 
 import (
 	"context"
-	"encoding/base64"
 	"path/filepath"
 
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
@@ -33,7 +31,6 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
 )
@@ -61,32 +58,6 @@ var controlPlaneSecrets = &secrets.Secrets{
 					APIServerURL: v1beta1constants.DeploymentNameKubeAPIServer,
 				},
 			},
-			&secrets.ControlPlaneSecretConfig{
-				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:         "csi-attacher",
-					CommonName:   "system:csi-attacher",
-					Organization: []string{user.SystemPrivilegedGroup},
-					CertType:     secrets.ClientCert,
-					SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-				},
-				KubeConfigRequest: &secrets.KubeConfigRequest{
-					ClusterName:  clusterName,
-					APIServerURL: v1beta1constants.DeploymentNameKubeAPIServer,
-				},
-			},
-			&secrets.ControlPlaneSecretConfig{
-				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:         "csi-provisioner",
-					CommonName:   "system:csi-provisioner",
-					Organization: []string{user.SystemPrivilegedGroup},
-					CertType:     secrets.ClientCert,
-					SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-				},
-				KubeConfigRequest: &secrets.KubeConfigRequest{
-					ClusterName:  clusterName,
-					APIServerURL: v1beta1constants.DeploymentNameKubeAPIServer,
-				},
-			},
 		}
 	},
 }
@@ -102,15 +73,6 @@ var controlPlaneChart = &chart.Chart{
 				{Type: &corev1.Service{}, Name: "cloud-controller-manager"},
 				{Type: &appsv1.Deployment{}, Name: "cloud-controller-manager"},
 				{Type: &corev1.ConfigMap{}, Name: "cloud-controller-manager-observability-config"},
-			},
-		},
-		{
-			Name:   "csi-packet",
-			Images: []string{packet.CSIAttacherImageName, packet.CSIProvisionerImageName, packet.CSIPluginImageName},
-			Objects: []*chart.Object{
-				{Type: &corev1.Service{}, Name: "csi-packet-pd"},
-				{Type: &corev1.ConfigMap{}, Name: "csi-packet-controller-observability-config"},
-				{Type: &appsv1.StatefulSet{}, Name: "csi-packet-controller"},
 			},
 		},
 	},
@@ -131,30 +93,6 @@ var controlPlaneShootChart = &chart.Chart{
 			Name:    "metallb",
 			Images:  []string{packet.MetalLBControllerImageName, packet.MetalLBSpeakerImageName},
 			Objects: []*chart.Object{},
-		},
-		{
-			Name:   "csi-packet",
-			Images: []string{packet.CSINodeDriverRegistrarImageName, packet.CSIPluginImageName},
-			Objects: []*chart.Object{
-				{Type: &appsv1.DaemonSet{}, Name: "csi-node"},
-				{Type: &corev1.Secret{}, Name: "csi-diskplugin-packet"},
-				{Type: &rbacv1.ClusterRole{}, Name: "packet.com:csi-node-sa"},
-				{Type: &corev1.ServiceAccount{}, Name: "csi-node-sa"},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: "packet.com:csi-node-sa"},
-				{Type: &policyv1beta1.PodSecurityPolicy{}, Name: "gardener.kube-system.csi-disk-plugin-packet"},
-				{Type: &corev1.ServiceAccount{}, Name: "csi-attacher"},
-				{Type: &rbacv1.ClusterRole{}, Name: "packet.provider.extensions.gardener.cloud:kube-system:csi-attacher"},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: "packet.provider.extensions.gardener.cloud:csi-attacher"},
-				{Type: &rbacv1.Role{}, Name: "csi-attacher"},
-				{Type: &rbacv1.RoleBinding{}, Name: "csi-attacher"},
-				{Type: &corev1.ServiceAccount{}, Name: "csi-disk-plugin-packet"},
-				{Type: &rbacv1.ClusterRole{}, Name: "packet.provider.extensions.gardener.cloud:psp:kube-system:csi-disk-plugin-packet"},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: "packet.provider.extensions.gardener.cloud:psp:csi-disk-plugin-packet"},
-				{Type: &corev1.ServiceAccount{}, Name: "csi-provisioner"},
-				{Type: &rbacv1.ClusterRole{}, Name: "packet.provider.extensions.gardener.cloud:kube-system:csi-provisioner"},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: "packet.provider.extensions.gardener.cloud:csi-provisioner"},
-				{Type: extensionscontroller.GetVerticalPodAutoscalerObject(), Name: "csi-node"},
-			},
 		},
 	},
 }
@@ -246,16 +184,6 @@ func getControlPlaneChartValues(
 			"facility": cluster.Shoot.Spec.Region,
 		},
 		"metallb": map[string]interface{}{},
-		"csi-packet": map[string]interface{}{
-			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
-			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
-			"regionID":          cp.Spec.Region,
-			"podAnnotations": map[string]interface{}{
-				"checksum/secret-csi-attacher":    checksums[packet.CSIAttacherImageName],
-				"checksum/secret-csi-provisioner": checksums[packet.CSIProvisionerImageName],
-				"checksum/secret-cloudprovider":   checksums[v1beta1constants.SecretNameCloudProvider],
-			},
-		},
 	}
 
 	return values, nil
@@ -266,16 +194,6 @@ func getControlPlaneShootChartValues(
 	cluster *extensionscontroller.Cluster,
 	credentials *packet.Credentials,
 ) (map[string]interface{}, error) {
-	values := map[string]interface{}{
-		"csi-packet": map[string]interface{}{
-			"credential": map[string]interface{}{
-				"apiToken":  base64.StdEncoding.EncodeToString([]byte(credentials.APIToken)),
-				"projectID": base64.StdEncoding.EncodeToString([]byte(credentials.ProjectID)),
-			},
-			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
-			"vpaEnabled":        gardencorev1beta1helper.ShootWantsVerticalPodAutoscaler(cluster.Shoot),
-		},
-	}
 
-	return values, nil
+	return map[string]interface{}{}, nil
 }

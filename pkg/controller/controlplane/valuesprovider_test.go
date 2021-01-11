@@ -113,8 +113,6 @@ var _ = Describe("ValuesProvider", func() {
 		checksums = map[string]string{
 			v1beta1constants.SecretNameCloudProvider: "8bafb35ff1ac60275d62e1cbd495aceb511fb354f74a20f7d06ecb48b3a68432",
 			"cloud-controller-manager":               "3d791b164a808638da9a8df03924be2a41e34cd664e42231c00fe369e3588272",
-			"csi-attacher":                           "2da58ad61c401a2af779a909d22fb42eed93a1524cbfdab974ceedb413fcb914",
-			"csi-provisioner":                        "f75b42d40ab501428c383dfb2336cb1fc892bbee1fc1d739675171e4acc4d911",
 		}
 
 		controlPlaneChartValues = map[string]interface{}{
@@ -130,28 +128,9 @@ var _ = Describe("ValuesProvider", func() {
 				"facility": "ewr1",
 			},
 			"metallb": map[string]interface{}{},
-			"csi-packet": map[string]interface{}{
-				"replicas":          1,
-				"kubernetesVersion": "1.13.4",
-				"regionID":          "EWR1",
-				"podAnnotations": map[string]interface{}{
-					"checksum/secret-csi-attacher":    "2da58ad61c401a2af779a909d22fb42eed93a1524cbfdab974ceedb413fcb914",
-					"checksum/secret-csi-provisioner": "f75b42d40ab501428c383dfb2336cb1fc892bbee1fc1d739675171e4acc4d911",
-					"checksum/secret-cloudprovider":   "8bafb35ff1ac60275d62e1cbd495aceb511fb354f74a20f7d06ecb48b3a68432",
-				},
-			},
 		}
 
-		controlPlaneShootChartValues = map[string]interface{}{
-			"csi-packet": map[string]interface{}{
-				"credential": map[string]interface{}{
-					"apiToken":  "Zm9v",
-					"projectID": "YmFy",
-				},
-				"kubernetesVersion": "1.13.4",
-				"vpaEnabled":        true,
-			},
-		}
+		controlPlaneShootChartValues = map[string]interface{}{}
 
 		logger = log.Log.WithName("test")
 	)
