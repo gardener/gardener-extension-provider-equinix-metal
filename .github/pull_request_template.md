@@ -16,6 +16,7 @@ For Gardener Enhancement Proposals (GEPs), please check the following [documenta
 /area TODO
 /kind TODO
 /priority normal
+/platform equinix-metal
 
 **What this PR does / why we need it**:
 
