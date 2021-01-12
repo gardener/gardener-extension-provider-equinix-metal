@@ -6,7 +6,7 @@ COPY . .
 RUN make install
 
 ############# gardener-extension-provider-packet
-FROM eu.gcr.io/gardener-project/3rd/alpine:3.12.1 AS gardener-extension-provider-packet
+FROM eu.gcr.io/gardener-project/3rd/alpine:3.12.3 AS gardener-extension-provider-packet
 
 COPY charts /charts
 COPY --from=builder /go/bin/gardener-extension-provider-packet /gardener-extension-provider-packet

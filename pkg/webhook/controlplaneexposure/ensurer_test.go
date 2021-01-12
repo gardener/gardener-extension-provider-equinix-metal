@@ -18,13 +18,13 @@ import (
 	"context"
 	"testing"
 
-	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
+
+	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
-	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
+	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/utils"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -53,7 +53,7 @@ var _ = Describe("Ensurer", func() {
 
 		ctrl *gomock.Controller
 
-		dummyContext = genericmutator.NewEnsurerContext(nil, nil)
+		dummyContext = gcontext.NewGardenContext(nil, nil)
 	)
 
 	BeforeEach(func() {

@@ -50,7 +50,7 @@ github.com/gardener/etcd-druid/api/v1alpha1
 # github.com/gardener/external-dns-management v0.7.18
 github.com/gardener/external-dns-management/pkg/apis/dns
 github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1
-# github.com/gardener/gardener v1.14.1-0.20201223082400-f6b4e243beae
+# github.com/gardener/gardener v1.15.1-0.20210112065447-570ae178874b
 ## explicit
 github.com/gardener/gardener/.github
 github.com/gardener/gardener/.github/ISSUE_TEMPLATE
@@ -79,6 +79,7 @@ github.com/gardener/gardener/extensions/pkg/terraformer
 github.com/gardener/gardener/extensions/pkg/util
 github.com/gardener/gardener/extensions/pkg/webhook
 github.com/gardener/gardener/extensions/pkg/webhook/cmd
+github.com/gardener/gardener/extensions/pkg/webhook/context
 github.com/gardener/gardener/extensions/pkg/webhook/controlplane
 github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator
 github.com/gardener/gardener/extensions/pkg/webhook/controlplane/test
@@ -455,7 +456,6 @@ go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
 # golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
-golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
 golang.org/x/crypto/chacha20
@@ -707,6 +707,7 @@ k8s.io/apimachinery/pkg/types
 k8s.io/apimachinery/pkg/util/cache
 k8s.io/apimachinery/pkg/util/clock
 k8s.io/apimachinery/pkg/util/diff
+k8s.io/apimachinery/pkg/util/duration
 k8s.io/apimachinery/pkg/util/errors
 k8s.io/apimachinery/pkg/util/framer
 k8s.io/apimachinery/pkg/util/httpstream

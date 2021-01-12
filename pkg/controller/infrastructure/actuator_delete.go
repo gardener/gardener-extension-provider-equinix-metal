@@ -27,7 +27,7 @@ import (
 
 func (a *actuator) Delete(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
 	logger := a.logger.WithValues("infrastructure", kutil.KeyFromObject(infrastructure), "operation", "delete")
-	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure.Namespace, infrastructure.Name)
+	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure)
 	if err != nil {
 		return fmt.Errorf("could not create the Terraformer: %+v", err)
 	}

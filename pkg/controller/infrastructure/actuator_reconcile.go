@@ -51,7 +51,7 @@ func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastruc
 		return fmt.Errorf("could not render Terraform chart: %+v", err)
 	}
 
-	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure.Namespace, infrastructure.Name)
+	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure)
 	if err != nil {
 		return fmt.Errorf("could not create terraformer object: %+v", err)
 	}

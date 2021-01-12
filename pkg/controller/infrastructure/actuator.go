@@ -23,8 +23,10 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -43,18 +45,20 @@ func NewActuator() infrastructure.Actuator {
 
 // Helper functions
 
-func (a *actuator) newTerraformer(logger logr.Logger, purpose, namespace, name string) (terraformer.Terraformer, error) {
-	tf, err := terraformer.NewForConfig(logger, a.RESTConfig(), purpose, namespace, name, imagevector.TerraformerImage())
+func (a *actuator) newTerraformer(logger logr.Logger, purpose string, infra *extensionsv1alpha1.Infrastructure) (terraformer.Terraformer, error) {
+	tf, err := terraformer.NewForConfig(logger, a.RESTConfig(), purpose, infra.GetNamespace(), infra.GetName(), imagevector.TerraformerImage())
 	if err != nil {
 		return nil, err
 	}
 
+	owner := metav1.NewControllerRef(infra, extensionsv1alpha1.SchemeGroupVersion.WithKind(extensionsv1alpha1.InfrastructureResource))
 	return tf.
 		UseV2(true).
 		SetLogLevel("debug").
 		SetTerminationGracePeriodSeconds(630).
 		SetDeadlineCleaning(5 * time.Minute).
-		SetDeadlinePod(15 * time.Minute), nil
+		SetDeadlinePod(15 * time.Minute).
+		SetOwnerRef(owner), nil
 }
 
 func generateTerraformInfraVariablesEnvironment(secretRef corev1.SecretReference) []corev1.EnvVar {
