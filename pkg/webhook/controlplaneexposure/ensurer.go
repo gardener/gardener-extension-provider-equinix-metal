@@ -17,13 +17,14 @@ package controlplaneexposure
 import (
 	"context"
 
-	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
-	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
-	"k8s.io/apimachinery/pkg/api/resource"
 
+	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
+	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
+	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // NewEnsurer creates a new controlplaneexposure ensurer.
@@ -41,7 +42,7 @@ type ensurer struct {
 }
 
 // EnsureETCD ensures that the etcd conform to the provider requirements.
-func (e *ensurer) EnsureETCD(ctx context.Context, ectx genericmutator.EnsurerContext, new, old *druidv1alpha1.Etcd) error {
+func (e *ensurer) EnsureETCD(ctx context.Context, gctx gcontext.GardenContext, new, old *druidv1alpha1.Etcd) error {
 	capacity := resource.MustParse("10Gi")
 	class := ""
 
