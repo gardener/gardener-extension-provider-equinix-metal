@@ -127,7 +127,8 @@ var _ = Describe("ValuesProvider", func() {
 				},
 				"facility": "ewr1",
 			},
-			"metallb": map[string]interface{}{},
+			"metallb":   map[string]interface{}{},
+			"rook-ceph": map[string]interface{}{},
 		}
 
 		controlPlaneShootChartValues = map[string]interface{}{}

@@ -23,3 +23,13 @@ images:
   sourceRepository: github.com/metallb/metallb
   repository: quay.io/metallb/speaker
   tag: v0.9.5
+- name: rook-ceph
+  sourceRepository: github.com/rook/rook
+  # TODO: Figure out whether the Docker hub throttling policy is a problem.
+  repository: rook/ceph
+  tag: v1.5.4
+# - name: ceph
+#   sourceRepository: github.com/rook/rook
+#   # TODO: Figure out whether the Docker hub throttling policy is a problem.
+#   repository: ceph/ceph
+#   tag: v15.2.8

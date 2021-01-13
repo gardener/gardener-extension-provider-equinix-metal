@@ -94,6 +94,11 @@ var controlPlaneShootChart = &chart.Chart{
 			Images:  []string{packet.MetalLBControllerImageName, packet.MetalLBSpeakerImageName},
 			Objects: []*chart.Object{},
 		},
+		{
+			Name:    "rook-ceph",
+			Images:  []string{packet.RookCephImageName},
+			Objects: []*chart.Object{},
+		},
 	},
 }
 
@@ -183,7 +188,8 @@ func getControlPlaneChartValues(
 			},
 			"facility": cluster.Shoot.Spec.Region,
 		},
-		"metallb": map[string]interface{}{},
+		"metallb":   map[string]interface{}{},
+		"rook-ceph": map[string]interface{}{},
 	}
 
 	return values, nil
