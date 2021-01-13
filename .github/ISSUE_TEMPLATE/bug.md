@@ -21,6 +21,7 @@ If multiple identifiers make sense you can also state the commands multiple time
 /area TODO
 /kind bug
 /priority normal
+/platform equinix-metal
 
 **What happened**:
 
