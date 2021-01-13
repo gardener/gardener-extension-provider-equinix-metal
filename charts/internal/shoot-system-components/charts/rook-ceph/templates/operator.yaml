@@ -251,7 +251,8 @@ data:
   #        cpu: 100m
 
   # Configure CSI CSI Ceph FS grpc and liveness metrics port
-  # CSI_CEPHFS_GRPC_METRICS_PORT: "9091"
+  # Override default value to avoid colliding with Calico's metrics port.
+  CSI_CEPHFS_GRPC_METRICS_PORT: "9092"
   # CSI_CEPHFS_LIVENESS_METRICS_PORT: "9081"
   # Configure CSI RBD grpc and liveness metrics port
   # CSI_RBD_GRPC_METRICS_PORT: "9090"
