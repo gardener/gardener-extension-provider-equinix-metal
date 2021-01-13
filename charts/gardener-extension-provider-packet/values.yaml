@@ -1,7 +1,7 @@
 image:
-  repository: eu.gcr.io/gardener-project/gardener/extensions/provider-packet
+  repository: quay.io/jlieb/gardener-provider-packet
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 replicaCount: 1
 maxUnavailable: 1
