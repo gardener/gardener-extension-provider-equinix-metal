@@ -23,4 +23,11 @@ import (
 // ControlPlaneConfig contains configuration settings for the control plane.
 type ControlPlaneConfig struct {
 	metav1.TypeMeta
+
+	Persistence *Persistence
+}
+
+// PersistenceConfig contains configuration options for shoot persistent storage.
+type Persistence struct {
+	Enabled *bool
 }

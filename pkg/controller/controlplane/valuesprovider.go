@@ -16,10 +16,13 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
+	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -117,6 +120,7 @@ func NewValuesProvider(logger logr.Logger) genericactuator.ValuesProvider {
 // valuesProvider is a ValuesProvider that provides Packet-specific values for the 2 charts applied by the generic actuator.
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
+	common.ClientContext
 	logger logr.Logger
 }
 
@@ -150,7 +154,7 @@ func (vp *valuesProvider) GetControlPlaneShootChartValues(
 	}
 
 	// Get control plane shoot chart values
-	return getControlPlaneShootChartValues(cluster, credentials)
+	return vp.getControlPlaneShootChartValues(cp, cluster, credentials)
 }
 
 // getCredentials determines the credentials from the secret referenced in the ControlPlane resource.
@@ -169,7 +173,7 @@ func (vp *valuesProvider) getCredentials(
 	return credentials, nil
 }
 
-// getCCMChartValues collects and returns the CCM chart values.
+// getControlPlaneChartValues collects and returns the control plane chart values.
 func getControlPlaneChartValues(
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
@@ -196,10 +200,31 @@ func getControlPlaneChartValues(
 }
 
 // getControlPlaneShootChartValues collects and returns the control plane shoot chart values.
-func getControlPlaneShootChartValues(
+func (vp *valuesProvider) getControlPlaneShootChartValues(
+	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
 	credentials *packet.Credentials,
 ) (map[string]interface{}, error) {
 
-	return map[string]interface{}{}, nil
+	cpConfig := &apispacket.ControlPlaneConfig{}
+	if cp.Spec.ProviderConfig != nil {
+		fmt.Printf("decoder: %v", vp.Decoder())
+		_, _, err := vp.Decoder().Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not decode providerConfig of controlplane '%s'", kutil.ObjectName(cp))
+		}
+	}
+
+	var persistenceEnabled bool
+	if cpConfig.Persistence != nil && cpConfig.Persistence.Enabled != nil {
+		persistenceEnabled = *cpConfig.Persistence.Enabled
+	}
+
+	values := map[string]interface{}{
+		"rook-ceph": map[string]interface{}{
+			"enabled": persistenceEnabled,
+		},
+	}
+
+	return values, nil
 }

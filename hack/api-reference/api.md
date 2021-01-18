@@ -95,6 +95,18 @@ string
 </td>
 <td><code>ControlPlaneConfig</code></td>
 </tr>
+<tr>
+<td>
+<code>persistence</code></br>
+<em>
+<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.Persistence">
+Persistence
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.InfrastructureConfig">InfrastructureConfig
@@ -336,6 +348,35 @@ string
 </td>
 <td>
 <p>Versions contains versions and a provider-specific identifier.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.Persistence">Persistence
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.ControlPlaneConfig">ControlPlaneConfig</a>)
+</p>
+<p>
+<p>PersistenceConfig contains configuration options for shoot persistent storage.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>enabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
 </td>
 </tr>
 </tbody>

@@ -15,10 +15,13 @@
 package controlplane
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
 
 	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
+	apispacketv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
@@ -32,6 +35,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
@@ -44,6 +49,17 @@ const (
 var _ = Describe("ValuesProvider", func() {
 	var (
 		ctrl *gomock.Controller
+
+		encoder runtime.Encoder
+		encode  = func(obj runtime.Object) []byte {
+			b := &bytes.Buffer{}
+			Expect(encoder.Encode(obj, b)).To(Succeed())
+
+			data, err := ioutil.ReadAll(b)
+			Expect(err).ToNot(HaveOccurred())
+
+			return data
+		}
 
 		// Build scheme
 		scheme = runtime.NewScheme()
@@ -62,7 +78,11 @@ var _ = Describe("ValuesProvider", func() {
 				},
 				DefaultSpec: extensionsv1alpha1.DefaultSpec{
 					ProviderConfig: &runtime.RawExtension{
-						Raw: encode(&apispacket.ControlPlaneConfig{}),
+						Raw: encode(&apispacket.ControlPlaneConfig{
+							Persistence: &apispacket.Persistence{
+								Enabled: pointer.BoolPtr(true),
+							},
+						}),
 					},
 				},
 				InfrastructureProviderStatus: &runtime.RawExtension{
@@ -131,12 +151,23 @@ var _ = Describe("ValuesProvider", func() {
 			"rook-ceph": map[string]interface{}{},
 		}
 
-		controlPlaneShootChartValues = map[string]interface{}{}
+		controlPlaneShootChartValues = map[string]interface{}{
+			"rook-ceph": map[string]interface{}{
+				"enabled": true,
+			},
+		}
 
 		logger = log.Log.WithName("test")
 	)
 
 	BeforeEach(func() {
+		codec := serializer.NewCodecFactory(scheme, serializer.EnableStrict)
+
+		info, found := runtime.SerializerInfoForMediaType(codec.SupportedMediaTypes(), runtime.ContentTypeJSON)
+		Expect(found).To(BeTrue(), "should be able to decode")
+
+		encoder = codec.EncoderForVersion(info.Serializer, apispacketv1alpha1.SchemeGroupVersion)
+
 		ctrl = gomock.NewController(GinkgoT())
 	})
 
