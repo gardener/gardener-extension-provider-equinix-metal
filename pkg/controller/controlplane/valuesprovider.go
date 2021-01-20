@@ -205,24 +205,30 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	credentials *packet.Credentials,
 ) (map[string]interface{}, error) {
 
-	cpConfig := &apispacket.ControlPlaneConfig{}
-	if cp.Spec.ProviderConfig != nil {
-		_, _, err := vp.Decoder().Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not decode providerConfig of controlplane '%s'", kutil.ObjectName(cp))
-		}
-	}
-
-	var persistenceEnabled bool
-	if cpConfig.Persistence != nil && cpConfig.Persistence.Enabled != nil {
-		persistenceEnabled = *cpConfig.Persistence.Enabled
+	cpConfig, err := vp.decodeControlPlaneConfig(cp)
+	if err != nil {
+		return nil, errors.Wrapf(err, "decoding control plane config")
 	}
 
 	values := map[string]interface{}{
 		"rook-ceph": map[string]interface{}{
-			"enabled": persistenceEnabled,
+			"enabled": cpConfig.Persistence != nil && *cpConfig.Persistence.Enabled,
 		},
 	}
 
 	return values, nil
+}
+
+func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.ControlPlane) (*apispacket.ControlPlaneConfig, error) {
+	cpConfig := &apispacket.ControlPlaneConfig{}
+
+	if cp.Spec.ProviderConfig == nil {
+		return cpConfig, nil
+	}
+
+	if _, _, err := vp.Decoder().Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig); err != nil {
+		return nil, errors.Wrapf(err, "decoding '%s'", kutil.ObjectName(cp))
+	}
+
+	return cpConfig, nil
 }

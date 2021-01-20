@@ -231,6 +231,92 @@ var _ = Describe("ValuesProvider", func() {
 			Expect(values).To(Equal(controlPlaneShootChartValues))
 		})
 	})
+
+	Describe("#GetControlPlaneShootChartValues", func() {
+		It("enables storage when persistance is enabled in configuration", func() {
+			// Create mock client
+			client := mockclient.NewMockClient(ctrl)
+			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
+
+			// Create valuesProvider
+			vp := NewValuesProvider(logger)
+			err := vp.(inject.Scheme).InjectScheme(scheme)
+			Expect(err).NotTo(HaveOccurred())
+			err = vp.(inject.Client).InjectClient(client)
+			Expect(err).NotTo(HaveOccurred())
+
+			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&apispacket.ControlPlaneConfig{
+				Persistence: &apispacket.Persistence{
+					Enabled: pointer.BoolPtr(true),
+				},
+			})
+
+			controlPlaneShootChartValues["rook-ceph"] = map[string]interface{}{
+				"enabled": true,
+			}
+
+			// Call GetControlPlaneChartValues method and check the result
+			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(values).To(Equal(controlPlaneShootChartValues))
+		})
+	})
+
+	Describe("#GetControlPlaneShootChartValues", func() {
+		It("disables storage when persistance is disabled in configuration", func() {
+			// Create mock client
+			client := mockclient.NewMockClient(ctrl)
+			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
+
+			// Create valuesProvider
+			vp := NewValuesProvider(logger)
+			err := vp.(inject.Scheme).InjectScheme(scheme)
+			Expect(err).NotTo(HaveOccurred())
+			err = vp.(inject.Client).InjectClient(client)
+			Expect(err).NotTo(HaveOccurred())
+
+			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&apispacket.ControlPlaneConfig{
+				Persistence: &apispacket.Persistence{
+					Enabled: pointer.BoolPtr(false),
+				},
+			})
+
+			controlPlaneShootChartValues["rook-ceph"] = map[string]interface{}{
+				"enabled": false,
+			}
+
+			// Call GetControlPlaneChartValues method and check the result
+			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(values).To(Equal(controlPlaneShootChartValues))
+		})
+	})
+
+	Describe("#GetControlPlaneShootChartValues", func() {
+		It("disables storage when persistance is not specified in configuration", func() {
+			// Create mock client
+			client := mockclient.NewMockClient(ctrl)
+			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
+
+			// Create valuesProvider
+			vp := NewValuesProvider(logger)
+			err := vp.(inject.Scheme).InjectScheme(scheme)
+			Expect(err).NotTo(HaveOccurred())
+			err = vp.(inject.Client).InjectClient(client)
+			Expect(err).NotTo(HaveOccurred())
+
+			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&apispacket.ControlPlaneConfig{})
+
+			controlPlaneShootChartValues["rook-ceph"] = map[string]interface{}{
+				"enabled": false,
+			}
+
+			// Call GetControlPlaneChartValues method and check the result
+			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(values).To(Equal(controlPlaneShootChartValues))
+		})
+	})
 })
 
 func encode(obj runtime.Object) []byte {
