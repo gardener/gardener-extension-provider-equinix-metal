@@ -64,6 +64,7 @@ var _ = Describe("ValuesProvider", func() {
 		// Build scheme
 		scheme = runtime.NewScheme()
 		_      = apispacket.AddToScheme(scheme)
+		_      = apispacketv1alpha1.AddToScheme(scheme)
 
 		cp *extensionsv1alpha1.ControlPlane
 
