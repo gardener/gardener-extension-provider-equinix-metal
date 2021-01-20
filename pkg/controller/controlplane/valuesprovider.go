@@ -16,7 +16,6 @@ package controlplane
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
@@ -208,7 +207,6 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 
 	cpConfig := &apispacket.ControlPlaneConfig{}
 	if cp.Spec.ProviderConfig != nil {
-		fmt.Printf("decoder: %v", vp.Decoder())
 		_, _, err := vp.Decoder().Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode providerConfig of controlplane '%s'", kutil.ObjectName(cp))
