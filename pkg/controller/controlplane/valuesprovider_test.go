@@ -65,31 +65,7 @@ var _ = Describe("ValuesProvider", func() {
 		scheme = runtime.NewScheme()
 		_      = apispacket.AddToScheme(scheme)
 
-		cp = &extensionsv1alpha1.ControlPlane{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "control-plane",
-				Namespace: namespace,
-			},
-			Spec: extensionsv1alpha1.ControlPlaneSpec{
-				Region: "EWR1",
-				SecretRef: corev1.SecretReference{
-					Name:      v1beta1constants.SecretNameCloudProvider,
-					Namespace: namespace,
-				},
-				DefaultSpec: extensionsv1alpha1.DefaultSpec{
-					ProviderConfig: &runtime.RawExtension{
-						Raw: encode(&apispacket.ControlPlaneConfig{
-							Persistence: &apispacket.Persistence{
-								Enabled: pointer.BoolPtr(true),
-							},
-						}),
-					},
-				},
-				InfrastructureProviderStatus: &runtime.RawExtension{
-					Raw: encode(&apispacket.InfrastructureStatus{}),
-				},
-			},
-		}
+		cp *extensionsv1alpha1.ControlPlane
 
 		cidr    = "10.250.0.0/19"
 		cluster = &extensionscontroller.Cluster{
@@ -167,6 +143,32 @@ var _ = Describe("ValuesProvider", func() {
 		Expect(found).To(BeTrue(), "should be able to decode")
 
 		encoder = codec.EncoderForVersion(info.Serializer, apispacketv1alpha1.SchemeGroupVersion)
+
+		cp = &extensionsv1alpha1.ControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "control-plane",
+				Namespace: namespace,
+			},
+			Spec: extensionsv1alpha1.ControlPlaneSpec{
+				Region: "EWR1",
+				SecretRef: corev1.SecretReference{
+					Name:      v1beta1constants.SecretNameCloudProvider,
+					Namespace: namespace,
+				},
+				DefaultSpec: extensionsv1alpha1.DefaultSpec{
+					ProviderConfig: &runtime.RawExtension{
+						Raw: encode(&apispacket.ControlPlaneConfig{
+							Persistence: &apispacket.Persistence{
+								Enabled: pointer.BoolPtr(true),
+							},
+						}),
+					},
+				},
+				InfrastructureProviderStatus: &runtime.RawExtension{
+					Raw: encode(&apispacket.InfrastructureStatus{}),
+				},
+			},
+		}
 
 		ctrl = gomock.NewController(GinkgoT())
 	})
