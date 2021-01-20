@@ -220,7 +220,9 @@ var _ = Describe("ValuesProvider", func() {
 
 			// Create valuesProvider
 			vp := NewValuesProvider(logger)
-			err := vp.(inject.Client).InjectClient(client)
+			err := vp.(inject.Scheme).InjectScheme(scheme)
+			Expect(err).NotTo(HaveOccurred())
+			err = vp.(inject.Client).InjectClient(client)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Call GetControlPlaneChartValues method and check the result
