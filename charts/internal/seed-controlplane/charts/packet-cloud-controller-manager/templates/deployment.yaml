@@ -35,27 +35,30 @@ spec:
         image: {{ index .Values.images "cloud-controller-manager" }}
         imagePullPolicy: IfNotPresent
         command:
-          - ./packet-cloud-controller-manager
-          - --cloud-provider=packet
+          - ./cloud-provider-equinix-metal
+          - --cloud-provider=equinixmetal
           - --leader-elect=false
           - --allow-untagged-cloud=true
           - --authentication-skip-lookup=true
           - --kubeconfig=/var/lib/cloud-controller-manager/kubeconfig
         env:
-        - name: PACKET_API_KEY
+        - name: METAL_API_KEY
           valueFrom:
             secretKeyRef:
               name: cloudprovider
               key: apiToken
-        - name: PACKET_PROJECT_ID
+        - name: METAL_PROJECT_ID
           valueFrom:
             secretKeyRef:
               name: cloudprovider
               key: projectID
         {{- if .Values.facility }}
-        - name: PACKET_FACILITY_NAME
+        - name: METAL_FACILITY_NAME
           value: {{ .Values.facility }}
         {{- end }}
+        # Required to make CCM manage MetalLB ConfigMap.
+        - name: METAL_LB
+          value: metallb://
         ports:
         # Packet's CCM is based on K8S 1.11 and uses 10253 port by default.
         - containerPort: 10253
