@@ -23,7 +23,9 @@ import (
 	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
+	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/test"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	"github.com/gardener/gardener/pkg/utils"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -32,11 +34,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
 const (
-	namespace = "test"
+	namespace    = "test"
+	testIP       = "1.1.1.1"
+	testHostname = "foo"
+)
+
+var (
+	ctx context.Context
 )
 
 func TestController(t *testing.T) {
@@ -54,10 +65,27 @@ var _ = Describe("Ensurer", func() {
 		ctrl *gomock.Controller
 
 		dummyContext = gcontext.NewGardenContext(nil, nil)
+
+		serviceKey = client.ObjectKey{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer}
+
+		service = &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
+			Status: corev1.ServiceStatus{
+				LoadBalancer: corev1.LoadBalancerStatus{
+					Ingress: []corev1.LoadBalancerIngress{
+						{
+							Hostname: testHostname,
+							IP:       testIP,
+						},
+					},
+				},
+			},
+		}
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
+		ctx = context.TODO()
 	})
 
 	AfterEach(func() {
@@ -83,8 +111,13 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
+			// Create mock client
+			client := mockclient.NewMockClient(ctrl)
+			client.EXPECT().Get(ctx, serviceKey, &corev1.Service{}).DoAndReturn(clientGet(service))
+
 			// Create ensurer
 			ensurer := NewEnsurer(etcdStorage, logger)
+			Expect(ensurer.(inject.Client).InjectClient(client)).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureKubeAPIServerDeployment(context.TODO(), dummyContext, dep, nil)
@@ -111,8 +144,13 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
+			// Create mock client
+			client := mockclient.NewMockClient(ctrl)
+			client.EXPECT().Get(ctx, serviceKey, &corev1.Service{}).DoAndReturn(clientGet(service))
+
 			// Create ensurer
 			ensurer := NewEnsurer(etcdStorage, logger)
+			Expect(ensurer.(inject.Client).InjectClient(client)).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureKubeAPIServerDeployment(context.TODO(), dummyContext, dep, nil)
@@ -200,6 +238,8 @@ func checkKubeAPIServerDeployment(dep *appsv1.Deployment) {
 	// Check that the kube-apiserver container still exists and contains all needed command line args
 	c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "kube-apiserver")
 	Expect(c).To(Not(BeNil()))
+
+	Expect(c.Command).To(test.ContainElementWithPrefixContaining("--advertise-address=", testIP, ","))
 }
 
 func checkETCDMain(etcd *druidv1alpha1.Etcd) {
@@ -210,4 +250,14 @@ func checkETCDMain(etcd *druidv1alpha1.Etcd) {
 func checkETCDEvents(etcd *druidv1alpha1.Etcd) {
 	Expect(*etcd.Spec.StorageClass).To(Equal(""))
 	Expect(*etcd.Spec.StorageCapacity).To(Equal(resource.MustParse("10Gi")))
+}
+
+func clientGet(result runtime.Object) interface{} {
+	return func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+		switch obj.(type) {
+		case *corev1.Service:
+			*obj.(*corev1.Service) = *result.(*corev1.Service)
+		}
+		return nil
+	}
 }
