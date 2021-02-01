@@ -17,8 +17,9 @@ spec:
   type: packet
   kubernetes:
     versions:
-    - version: 1.16.1
-    - version: 1.16.0
+    - version: 1.20.2
+    - version: 1.19.7
+    - version: 1.18.15
       #expirationDate: "2020-04-05T01:02:03Z"
   machineImages:
   - name: coreos
