@@ -1,0 +1,5 @@
+dependencies:
+- name: rook-ceph
+  repository: http://locwalhost:10191
+  version: 0.1.0
+  condition: rook-ceph.enabled

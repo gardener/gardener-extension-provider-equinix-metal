@@ -1,0 +1,2 @@
+rook-ceph:
+  enabled: true
