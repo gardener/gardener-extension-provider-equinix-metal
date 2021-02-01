@@ -93,7 +93,10 @@ spec:
         size: 50Gi
         type: storage_1
   networking:
-    nodes: 10.250.0.0/16
+    # This field must be set to Management CIDR allocated by Packet when you create first machine
+    # in a selected region.
+    # See also https://github.com/gardener/gardener-extension-provider-packet/issues/107.
+    nodes: 10.250.0.0/25
     type: calico
   kubernetes:
     version: 1.20.2
