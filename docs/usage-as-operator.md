@@ -19,7 +19,7 @@ spec:
     versions:
     - version: 1.16.1
     - version: 1.16.0
-      expirationDate: "2020-04-05T01:02:03Z"
+      #expirationDate: "2020-04-05T01:02:03Z"
   machineImages:
   - name: coreos
     versions:
