@@ -39,7 +39,7 @@ spec:
     class: performance
     usable: true
   regions:
-  - name: EWR1
+  - name: ewr1
   providerConfig:
     apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
     kind: CloudProfileConfig

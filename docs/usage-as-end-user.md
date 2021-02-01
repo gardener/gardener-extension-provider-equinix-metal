@@ -73,7 +73,7 @@ metadata:
   namespace: garden-dev
 spec:
   cloudProfileName: packet
-  region: EWR1
+  region: ewr1
   secretBindingName: core-packet
   provider:
     type: packet
