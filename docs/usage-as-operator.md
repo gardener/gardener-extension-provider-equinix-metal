@@ -4,23 +4,6 @@ The [`core.gardener.cloud/v1alpha1.CloudProfile` resource](https://github.com/ga
 
 In this document we are describing how this configuration looks like for Packet and provide an example `CloudProfile` manifest with minimal configuration that you can use to allow creating Packet shoot clusters.
 
-## `CloudProfileConfig`
-
-The cloud profile configuration contains information about the real machine image IDs in the Packet environment (IDs).
-You have to map every version that you specify in `.spec.machineImages[].versions` here such that the Packet extension knows the ID for every version you want to offer.
-
-An example `CloudProfileConfig` for the Packet extension looks as follows:
-
-```yaml
-apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
-kind: CloudProfileConfig
-machineImages:
-- name: coreos
-  versions:
-  - version: 2135.6.0
-    id: coreos-2135.6.0-id
-```
-
 ## Example `CloudProfile` manifest
 
 Please find below an example `CloudProfile` manifest:
@@ -65,3 +48,22 @@ spec:
       - version: 2135.6.0
         id: coreos-2135.6.0-id
 ```
+
+## `CloudProfileConfig`
+
+The cloud profile configuration contains information about the real machine image IDs in the Packet environment (IDs).
+You have to map every version that you specify in `.spec.machineImages[].versions` here such that the Packet extension knows the ID for every version you want to offer.
+
+An example `CloudProfileConfig` for the Packet extension looks as follows:
+
+```yaml
+apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+kind: CloudProfileConfig
+machineImages:
+- name: coreos
+  versions:
+  - version: 2135.6.0
+    id: coreos-2135.6.0-id
+```
+
+> NOTE: `CloudProfileConfig` is not a Custom Resource, so you cannot create it directly.
