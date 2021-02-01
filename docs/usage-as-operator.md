@@ -22,9 +22,9 @@ spec:
     - version: 1.18.15
       #expirationDate: "2020-04-05T01:02:03Z"
   machineImages:
-  - name: coreos
+  - name: flatcar
     versions:
-    - version: 2135.6.0
+    - version: 0.0.0-stable
   machineTypes:
   - name: t1.small
     cpu: "4"
@@ -44,10 +44,10 @@ spec:
     apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
     kind: CloudProfileConfig
     machineImages:
-    - name: coreos
+    - name: flatcar
       versions:
-      - version: 2135.6.0
-        id: coreos-2135.6.0-id
+      - version: 0.0.0-stable
+        id: flatcar_stable
 ```
 
 ## `CloudProfileConfig`
@@ -61,10 +61,10 @@ An example `CloudProfileConfig` for the Packet extension looks as follows:
 apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
 kind: CloudProfileConfig
 machineImages:
-- name: coreos
+- name: flatcar
   versions:
-  - version: 2135.6.0
-    id: coreos-2135.6.0-id
+  - version: 0.0.0-stable
+    id: flatcar_stable
 ```
 
 > NOTE: `CloudProfileConfig` is not a Custom Resource, so you cannot create it directly.
