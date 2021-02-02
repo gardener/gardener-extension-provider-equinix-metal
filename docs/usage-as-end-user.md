@@ -23,6 +23,19 @@ data:
 
 Please look up https://www.packet.com/developers/api/ as well.
 
+With `Secret` created, create a `SecretBinding` resource referencing it. It may look like this:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: SecretBinding
+metadata:
+  name: core-packet
+  namespace: garden-dev
+secretRef:
+  name: core-packet
+quotas: []
+```
+
 ## `InfrastructureConfig`
 
 Currently, there is no infrastructure configuration possible for the Packet environment.
@@ -60,7 +73,7 @@ metadata:
   namespace: garden-dev
 spec:
   cloudProfileName: packet
-  region: EWR1
+  region: ewr1
   secretBindingName: core-packet
   provider:
     type: packet
@@ -80,10 +93,13 @@ spec:
         size: 50Gi
         type: storage_1
   networking:
-    nodes: 10.250.0.0/16
+    # This field must be set to Management CIDR allocated by Packet when you create first machine
+    # in a selected region.
+    # See also https://github.com/gardener/gardener-extension-provider-packet/issues/107.
+    nodes: 10.250.0.0/25
     type: calico
   kubernetes:
-    version: 1.16.1
+    version: 1.20.2
   maintenance:
     autoUpdate:
       kubernetesVersion: true

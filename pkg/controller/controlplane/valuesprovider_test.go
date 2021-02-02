@@ -55,7 +55,7 @@ var _ = Describe("ValuesProvider", func() {
 				Namespace: namespace,
 			},
 			Spec: extensionsv1alpha1.ControlPlaneSpec{
-				Region: "EWR1",
+				Region: "ewr1",
 				SecretRef: corev1.SecretReference{
 					Name:      v1beta1constants.SecretNameCloudProvider,
 					Namespace: namespace,
