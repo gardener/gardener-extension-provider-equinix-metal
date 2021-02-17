@@ -116,7 +116,7 @@ var _ = Describe("ValuesProvider", func() {
 		}
 
 		controlPlaneChartValues = map[string]interface{}{
-			"packet-cloud-controller-manager": map[string]interface{}{
+			"cloud-provider-equinix-metal": map[string]interface{}{
 				"replicas":          1,
 				"clusterName":       namespace,
 				"kubernetesVersion": "1.13.4",

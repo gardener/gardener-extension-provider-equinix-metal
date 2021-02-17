@@ -67,7 +67,7 @@ var controlPlaneChart = &chart.Chart{
 	Path: filepath.Join(packet.InternalChartsPath, "seed-controlplane"),
 	SubCharts: []*chart.Chart{
 		{
-			Name:   "packet-cloud-controller-manager",
+			Name:   "cloud-provider-equinix-metal",
 			Images: []string{packet.CloudControllerManagerImageName},
 			Objects: []*chart.Object{
 				{Type: &corev1.Service{}, Name: "cloud-controller-manager"},
@@ -83,7 +83,7 @@ var controlPlaneShootChart = &chart.Chart{
 	Path: filepath.Join(packet.InternalChartsPath, "shoot-system-components"),
 	SubCharts: []*chart.Chart{
 		{
-			Name: "packet-cloud-controller-manager",
+			Name: "cloud-provider-equinix-metal",
 			Objects: []*chart.Object{
 				{Type: &rbacv1.ClusterRole{}, Name: "system:controller:cloud-node-controller"},
 				{Type: &rbacv1.ClusterRoleBinding{}, Name: "system:controller:cloud-node-controller"},
@@ -172,7 +172,7 @@ func getControlPlaneChartValues(
 	scaledDown bool,
 ) (map[string]interface{}, error) {
 	values := map[string]interface{}{
-		"packet-cloud-controller-manager": map[string]interface{}{
+		"cloud-provider-equinix-metal": map[string]interface{}{
 			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 			"clusterName":       cp.Namespace,
 			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
