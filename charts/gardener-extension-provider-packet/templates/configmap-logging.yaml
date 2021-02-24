@@ -9,7 +9,7 @@ data:
   filter-kubernetes.conf: |
     [FILTER]
         Name                parser
-        Match               kubernetes.*cloud-controller-manager*packet-cloud-controller-manager*
+        Match               kubernetes.*cloud-controller-manager*cloud-provider-equinix-metal*
         Key_Name            log
         Parser              kubeapiserverParser
         Reserve_Data        True
@@ -24,5 +24,5 @@ data:
     [FILTER]
         Name                rewrite_tag
         Match               kubernetes.*
-        Rule                $tag ^kubernetes\.var\.log\.containers\.(cloud-controller-manager-.+?_.+?_packet-cloud-controller-manager) user-exposed.$TAG true
+        Rule                $tag ^kubernetes\.var\.log\.containers\.(cloud-controller-manager-.+?_.+?_cloud-provider-equinix-metal) user-exposed.$TAG true
         Emitter_Name        re_emitted-provider-alicloud
