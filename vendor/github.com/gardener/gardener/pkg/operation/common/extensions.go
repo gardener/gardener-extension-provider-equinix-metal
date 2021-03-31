@@ -106,14 +106,14 @@ func WaitUntilExtensionCRReady(
 	ctx context.Context,
 	c client.Client,
 	logger logrus.FieldLogger,
-	newObjFunc func() runtime.Object,
+	newObjFunc func() client.Object,
 	kind string,
 	namespace string,
 	name string,
 	interval time.Duration,
 	severeThreshold time.Duration,
 	timeout time.Duration,
-	postReadyFunc func(runtime.Object) error,
+	postReadyFunc func(client.Object) error,
 ) error {
 	return WaitUntilObjectReadyWithHealthFunction(
 		ctx,
@@ -138,14 +138,14 @@ func WaitUntilObjectReadyWithHealthFunction(
 	c client.Client,
 	logger logrus.FieldLogger,
 	healthFunc health.Func,
-	newObjFunc func() runtime.Object,
+	newObjFunc func() client.Object,
 	kind string,
 	namespace string,
 	name string,
 	interval time.Duration,
 	severeThreshold time.Duration,
 	timeout time.Duration,
-	postReadyFunc func(runtime.Object) error,
+	postReadyFunc func(client.Object) error,
 ) error {
 	var (
 		errorWithCode         *gardencorev1beta1helper.ErrorWithCodes
@@ -216,7 +216,7 @@ func DeleteExtensionCR(
 func DeleteExtensionCRs(
 	ctx context.Context,
 	c client.Client,
-	listObj runtime.Object,
+	listObj client.ObjectList,
 	newObjFunc func() extensionsv1alpha1.Object,
 	namespace string,
 	predicateFunc func(obj extensionsv1alpha1.Object) bool,
@@ -246,7 +246,7 @@ func WaitUntilExtensionCRsDeleted(
 	ctx context.Context,
 	c client.Client,
 	logger logrus.FieldLogger,
-	listObj runtime.Object,
+	listObj client.ObjectList,
 	newObjFunc func() extensionsv1alpha1.Object,
 	kind string,
 	namespace string,
@@ -343,8 +343,8 @@ func WaitUntilExtensionCRDeleted(
 // It then restores the state of the extension resource from the ShootState, creates any required state resources and sets the operation annotation to restore.
 func RestoreExtensionWithDeployFunction(
 	ctx context.Context,
-	shootState *gardencorev1alpha1.ShootState,
 	c client.Client,
+	shootState *gardencorev1alpha1.ShootState,
 	resourceKind string,
 	namespace string,
 	deployFunc func(ctx context.Context, operationAnnotation string) (extensionsv1alpha1.Object, error),
@@ -433,7 +433,7 @@ func MigrateExtensionCR(
 func MigrateExtensionCRs(
 	ctx context.Context,
 	c client.Client,
-	listObj runtime.Object,
+	listObj client.ObjectList,
 	newObjFunc func() extensionsv1alpha1.Object,
 	namespace string,
 ) error {
@@ -490,7 +490,7 @@ func WaitUntilExtensionCRMigrated(
 func WaitUntilExtensionCRsMigrated(
 	ctx context.Context,
 	c client.Client,
-	listObj runtime.Object,
+	listObj client.ObjectList,
 	newObjFunc func() extensionsv1alpha1.Object,
 	namespace string,
 	interval time.Duration,
@@ -526,7 +526,7 @@ func AnnotateExtensionObjectWithOperation(ctx context.Context, c client.Client, 
 func applyFuncToExtensionResources(
 	ctx context.Context,
 	c client.Client,
-	listObj runtime.Object,
+	listObj client.ObjectList,
 	namespace string,
 	predicateFunc func(obj extensionsv1alpha1.Object) bool,
 	applyFunc func(ctx context.Context, object extensionsv1alpha1.Object) error,

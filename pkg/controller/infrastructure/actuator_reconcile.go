@@ -21,20 +21,20 @@ import (
 
 	packetv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	"github.com/go-logr/logr"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (a *actuator) Reconcile(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
-	logger := a.logger.WithValues("infrastructure", kutil.KeyFromObject(infrastructure), "operation", "reconcile")
+	logger := a.logger.WithValues("infrastructure", client.ObjectKeyFromObject(infrastructure), "operation", "reconcile")
 	return a.reconcile(ctx, logger, infrastructure, cluster, terraformer.StateConfigMapInitializerFunc(terraformer.CreateState))
 }
 

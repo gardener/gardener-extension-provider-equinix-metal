@@ -38,8 +38,9 @@ import (
 // * envVars is a list of environment variables which will be injected in the resulting
 //   Terraform pod. These variables can contain Terraform variables (i.e., must be prefixed
 //   with TF_VAR_).
-// * configurationDefined indicates whether the required configuration ConfigMaps/Secrets have been
+// * configurationInitialized indicates whether the Terraform variables secret and Terraform script ConfigMap have been
 //   successfully defined.
+// * stateInitialized indicates whether the Terraform state ConfigMap has been successfully defined.
 // * logLevel configures the log level for the Terraformer Pod (only compatible with terraformer@v2,
 //   defaults to "info")
 // * terminationGracePeriodSeconds is the respective Pod spec field passed to Terraformer Pods.
@@ -58,11 +59,13 @@ type terraformer struct {
 	image     string
 	ownerRef  *metav1.OwnerReference
 
-	configName           string
-	variablesName        string
-	stateName            string
-	envVars              []corev1.EnvVar
-	configurationDefined bool
+	configName    string
+	variablesName string
+	stateName     string
+	envVars       []corev1.EnvVar
+
+	configurationInitialized bool
+	stateInitialized         bool
 
 	logLevel                      string
 	terminationGracePeriodSeconds int64
@@ -80,14 +83,14 @@ type RawState struct {
 const (
 	numberOfConfigResources = 3
 
-	// TerraformerConfigSuffix is the suffix used for the ConfigMap which stores the Terraform configuration and variables declaration.
-	TerraformerConfigSuffix = ".tf-config"
+	// ConfigSuffix is the suffix used for the ConfigMap which stores the Terraform configuration and variables declaration.
+	ConfigSuffix = ".tf-config"
 
-	// TerraformerVariablesSuffix is the suffix used for the Secret which stores the Terraform variables definition.
-	TerraformerVariablesSuffix = ".tf-vars"
+	// VariablesSuffix is the suffix used for the Secret which stores the Terraform variables definition.
+	VariablesSuffix = ".tf-vars"
 
-	// TerraformerStateSuffix is the suffix used for the ConfigMap which stores the Terraform state.
-	TerraformerStateSuffix = ".tf-state"
+	// StateSuffix is the suffix used for the ConfigMap which stores the Terraform state.
+	StateSuffix = ".tf-state"
 
 	// Base64Encoding denotes base64 encoding for the RawState.Data
 	Base64Encoding = "base64"
@@ -112,6 +115,7 @@ type Terraformer interface {
 	GetState(ctx context.Context) ([]byte, error)
 	IsStateEmpty(ctx context.Context) bool
 	CleanupConfiguration(ctx context.Context) error
+	RemoveTerraformerFinalizerFromConfig(ctx context.Context) error
 	GetStateOutputVariables(ctx context.Context, variables ...string) (map[string]string, error)
 	ConfigExists(ctx context.Context) (bool, error)
 	NumberOfResources(ctx context.Context) (int, error)

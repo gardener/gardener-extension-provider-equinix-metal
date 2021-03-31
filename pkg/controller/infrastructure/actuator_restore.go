@@ -20,11 +20,11 @@ import (
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (a *actuator) Restore(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
-	logger := a.logger.WithValues("infrastructure", kutil.KeyFromObject(infrastructure), "operation", "restore")
+	logger := a.logger.WithValues("infrastructure", client.ObjectKeyFromObject(infrastructure), "operation", "restore")
 	terraformState, err := terraformer.UnmarshalRawState(infrastructure.Status.State)
 	if err != nil {
 		return err

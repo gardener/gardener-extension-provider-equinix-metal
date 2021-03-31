@@ -47,6 +47,14 @@ type SeedList struct {
 	Items []Seed
 }
 
+// SeedTemplate is a template for creating a Seed object.
+type SeedTemplate struct {
+	// Standard object metadata.
+	metav1.ObjectMeta
+	// Specification of the desired behavior of the Seed.
+	Spec SeedSpec
+}
+
 // SeedSpec is the specification of a Seed.
 type SeedSpec struct {
 	// Backup holds the object store configuration for the backups of shoot (currently only etcd).
@@ -114,7 +122,7 @@ type SeedBackup struct {
 // SeedDNS contains the external domain and configuration for the DNS provider
 type SeedDNS struct {
 	// IngressDomain is the domain of the Seed cluster pointing to the ingress controller endpoint. It will be used
-	// to construct ingress URLs for system applications running in Shoot clusters.
+	// to construct ingress URLs for system applications running in Shoot clusters. Once set this field is immutable.
 	// This will be removed in the next API version and replaced by spec.ingress.domain.
 	IngressDomain *string
 	// Provider configures a DNSProvider
@@ -136,7 +144,7 @@ type SeedDNSProvider struct {
 // Ingress configures the Ingress specific settings of the Seed cluster
 type Ingress struct {
 	// Domain specifies the ingress domain of the Seed cluster pointing to the ingress controller endpoint. It will be used
-	// to construct ingress URLs for system applications running in Shoot clusters.
+	// to construct ingress URLs for system applications running in Shoot clusters. Once set this field is immutable.
 	Domain string
 	// Controller configures a Gardener managed Ingress Controller listening on the ingressDomain
 	Controller IngressController
@@ -268,6 +276,8 @@ type SeedVolumeProvider struct {
 }
 
 const (
+	// SeedBackupBucketsReady is a constant for a condition type indicating that associated BackupBuckets are ready.
+	SeedBackupBucketsReady ConditionType = "BackupBucketsReady"
 	// SeedBootstrapped is a constant for a condition type indicating that the seed cluster has been
 	// bootstrapped.
 	SeedBootstrapped ConditionType = "Bootstrapped"

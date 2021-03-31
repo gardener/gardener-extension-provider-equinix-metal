@@ -48,6 +48,16 @@ type SeedList struct {
 	Items []Seed `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// SeedTemplate is a template for creating a Seed object.
+type SeedTemplate struct {
+	// Standard object metadata.
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	// Specification of the desired behavior of the Seed.
+	// +optional
+	Spec SeedSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+}
+
 // SeedSpec is the specification of a Seed.
 type SeedSpec struct {
 	// Backup holds the object store configuration for the backups of shoot (currently only etcd).
@@ -128,7 +138,7 @@ type SeedBackup struct {
 // SeedDNS contains DNS-relevant information about this seed cluster.
 type SeedDNS struct {
 	// IngressDomain is the domain of the Seed cluster pointing to the ingress controller endpoint. It will be used
-	// to construct ingress URLs for system applications running in Shoot clusters.
+	// to construct ingress URLs for system applications running in Shoot clusters. Once set this field is immutable.
 	// This will be removed in the next API version and replaced by spec.ingress.domain.
 	// +optional
 	IngressDomain *string `json:"ingressDomain,omitempty" protobuf:"bytes,1,opt,name=ingressDomain"`
@@ -154,7 +164,7 @@ type SeedDNSProvider struct {
 // Ingress configures the Ingress specific settings of the Seed cluster
 type Ingress struct {
 	// Domain specifies the IngressDomain of the Seed cluster pointing to the ingress controller endpoint. It will be used
-	// to construct ingress URLs for system applications running in Shoot clusters.
+	// to construct ingress URLs for system applications running in Shoot clusters. Once set this field is immutable.
 	Domain string `json:"domain" protobuf:"bytes,1,opt,name=domain"`
 	// Controller configures a Gardener managed Ingress Controller listening on the ingressDomain
 	Controller IngressController `json:"controller" protobuf:"bytes,2,opt,name=controller"`
@@ -304,6 +314,8 @@ type SeedVolumeProvider struct {
 }
 
 const (
+	// SeedBackupBucketsReady is a constant for a condition type indicating that associated BackupBuckets are ready.
+	SeedBackupBucketsReady ConditionType = "BackupBucketsReady"
 	// SeedBootstrapped is a constant for a condition type indicating that the seed cluster has been
 	// bootstrapped.
 	SeedBootstrapped ConditionType = "Bootstrapped"
