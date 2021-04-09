@@ -11,9 +11,12 @@ machineClasses:
   machineType: t1.small
   sshKeys:
   - 12345-abcd567-aaf2
-  secret:
-    cloudConfig: abc
-    apiToken: "abd5678"
   tags:
   - kubernetes.io/cluster/foo
   - kubernetes.io/role/node
+  secret:
+    cloudConfig: abc
+    apiToken: "abd5678"
+  credentialsSecretRef:
+    name: cloudprovider
+    namespace: shoot-namespace

@@ -22,6 +22,7 @@ import (
 	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
 	packetapi "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	"github.com/pkg/errors"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
@@ -32,19 +33,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// MachineClassKind yields the name of the Packet machine class.
+// MachineClassKind yields the name of the machine class.
 func (w *workerDelegate) MachineClassKind() string {
-	return "PacketMachineClass"
+	return "MachineClass"
 }
 
 // MachineClass yields a newly initialized machine class object.
 func (w *workerDelegate) MachineClass() client.Object {
-	return &machinev1alpha1.PacketMachineClass{}
+	return &machinev1alpha1.MachineClass{}
 }
 
-// MachineClassList yields a newly initialized PacketMachineClassList object.
+// MachineClassList yields a newly initialized MachineClassList object.
 func (w *workerDelegate) MachineClassList() client.ObjectList {
-	return &machinev1alpha1.PacketMachineClassList{}
+	return &machinev1alpha1.MachineClassList{}
 }
 
 // DeployMachineClasses generates and creates the Packet specific machine classes.
@@ -54,6 +55,12 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 			return err
 		}
 	}
+
+	// Delete any older version of PacketMachineClass CRs.
+	if err := w.Client().DeleteAllOf(ctx, &machinev1alpha1.PacketMachineClass{}, client.InNamespace(w.worker.Namespace)); err != nil {
+		return errors.Wrapf(err, "cleaning up older version of Packet machine class CRs failed")
+	}
+
 	return w.seedChartApplier.Apply(ctx, filepath.Join(packet.InternalChartsPath, "machineclass"), w.worker.Namespace, "machineclass", kubernetes.Values(map[string]interface{}{"machineClasses": w.machineClasses}))
 }
 
@@ -91,13 +98,13 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 		machineImages      []apispacket.MachineImage
 	)
 
-	machineClassSecretData, err := w.generateMachineClassSecretData(ctx)
-	if err != nil {
+	infrastructureStatus := &packetapi.InfrastructureStatus{}
+	if _, _, err := w.Decoder().Decode(w.worker.Spec.InfrastructureProviderStatus.Raw, nil, infrastructureStatus); err != nil {
 		return err
 	}
 
-	infrastructureStatus := &packetapi.InfrastructureStatus{}
-	if _, _, err := w.Decoder().Decode(w.worker.Spec.InfrastructureProviderStatus.Raw, nil, infrastructureStatus); err != nil {
+	machineClassSecretData, err := w.generateMachineClassSecretData(ctx)
+	if err != nil {
 		return err
 	}
 

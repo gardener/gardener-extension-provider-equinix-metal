@@ -79,13 +79,13 @@ var _ = Describe("Machines", func() {
 
 		Describe("#MachineClassKind", func() {
 			It("should return the correct kind of the machine class", func() {
-				Expect(workerDelegate.MachineClassKind()).To(Equal("PacketMachineClass"))
+				Expect(workerDelegate.MachineClassKind()).To(Equal("MachineClass"))
 			})
 		})
 
 		Describe("#MachineClassList", func() {
 			It("should return the correct type for the machine class list", func() {
-				Expect(workerDelegate.MachineClassList()).To(Equal(&machinev1alpha1.PacketMachineClassList{}))
+				Expect(workerDelegate.MachineClassList()).To(Equal(&machinev1alpha1.MachineClassList{}))
 			})
 		})
 
@@ -346,16 +346,19 @@ var _ = Describe("Machines", func() {
 
 					// Test workerDelegate.DeployMachineClasses()
 
-					chartApplier.
-						EXPECT().
-						Apply(
-							ctx,
-							filepath.Join(packet.InternalChartsPath, "machineclass"),
-							namespace,
-							"machineclass",
-							kubernetes.Values(machineClasses),
-						).
-						Return(nil)
+					gomock.InOrder(
+						c.EXPECT().
+							DeleteAllOf(context.TODO(), &machinev1alpha1.PacketMachineClass{}, client.InNamespace(namespace)),
+						chartApplier.
+							EXPECT().
+							Apply(
+								ctx,
+								filepath.Join(packet.InternalChartsPath, "machineclass"),
+								namespace,
+								"machineclass",
+								kubernetes.Values(machineClasses),
+							),
+					)
 
 					err := workerDelegate.DeployMachineClasses(ctx)
 					Expect(err).NotTo(HaveOccurred())
@@ -376,6 +379,55 @@ var _ = Describe("Machines", func() {
 					result, err := workerDelegate.GenerateMachineDeployments(ctx)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(result).To(Equal(machineDeployments))
+				})
+
+				It("should delete the all old PacketMachineClasses", func() {
+					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
+					gomock.InOrder(
+						c.EXPECT().
+							Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
+							DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret) error {
+								secret.Data = map[string][]byte{
+									packet.APIToken:  []byte(packetAPIToken),
+									packet.ProjectID: []byte(packetProjectID),
+								}
+								return nil
+							}),
+						c.EXPECT().
+							DeleteAllOf(context.TODO(), &machinev1alpha1.PacketMachineClass{}, client.InNamespace(namespace)),
+						chartApplier.
+							EXPECT().
+							Apply(
+								ctx,
+								filepath.Join(packet.InternalChartsPath, "machineclass"),
+								namespace,
+								"machineclass",
+								kubernetes.Values(machineClasses),
+							),
+					)
+
+					err := workerDelegate.DeployMachineClasses(context.TODO())
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should not delete the any of old PacketMachineClasses as DeleteAll call returns error", func() {
+					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
+
+					c.EXPECT().
+						Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
+						DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret) error {
+							secret.Data = map[string][]byte{
+								packet.APIToken:  []byte(packetAPIToken),
+								packet.ProjectID: []byte(packetProjectID),
+							}
+							return nil
+						})
+					c.EXPECT().
+						DeleteAllOf(context.TODO(), &machinev1alpha1.PacketMachineClass{}, client.InNamespace(namespace)).
+						Return(fmt.Errorf("fake error"))
+
+					err := workerDelegate.DeployMachineClasses(context.TODO())
+					Expect(err).To(HaveOccurred())
 				})
 			})
 
@@ -400,9 +452,7 @@ var _ = Describe("Machines", func() {
 				Expect(result).To(BeNil())
 			})
 
-			It("should fail because the infrastructure status cannot be decoded", func() {
-				expectGetSecretCallToWork(c, packetAPIToken, packetProjectID)
-
+			It("should return err when the infrastructure provider status cannot be decoded", func() {
 				w.Spec.InfrastructureProviderStatus = &runtime.RawExtension{Raw: []byte(`invalid`)}
 
 				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)

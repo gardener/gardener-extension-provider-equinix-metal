@@ -11,6 +11,10 @@ images:
   sourceRepository: github.com/gardener/machine-controller-manager
   repository: eu.gcr.io/gardener-project/gardener/machine-controller-manager
   tag: "v0.38.0"
+- name: machine-controller-manager-provider-equinix-metal
+  sourceRepository: github.com/gardener/machine-controller-manager-provider-equinix-metal
+  repository: eu.gcr.io/gardener-project/gardener/machine-controller-manager-provider-equinix-metal
+  tag: "v0.1.0"
 - name: metabot
   sourceRepository: github.com/packethost/metabot
   repository: packethost/metabot
