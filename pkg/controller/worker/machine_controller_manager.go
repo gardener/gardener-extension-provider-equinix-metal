@@ -33,7 +33,7 @@ var (
 	mcmChart = &chart.Chart{
 		Name:   packet.MachineControllerManagerName,
 		Path:   filepath.Join(packet.InternalChartsPath, packet.MachineControllerManagerName, "seed"),
-		Images: []string{packet.MachineControllerManagerImageName},
+		Images: []string{packet.MachineControllerManagerImageName, packet.MachineControllerManagerEquinixMetalImageName},
 		Objects: []*chart.Object{
 			{Type: &appsv1.Deployment{}, Name: packet.MachineControllerManagerName},
 			{Type: &corev1.Service{}, Name: packet.MachineControllerManagerName},
