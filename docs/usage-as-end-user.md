@@ -52,13 +52,24 @@ The Equinix Metal extension will only create a key pair.
 ## `ControlPlaneConfig`
 
 The control plane configuration mainly contains values for the Equinix Metal-specific control plane components.
-Today, the Equinix Metal extension deploys the `cloud-controller-manager` and the CSI controllers, however, it doesn't offer any configuration options at the moment.
+Today, the Equinix Metal extension deploys the `cloud-controller-manager` and, optionally, the CSI controllers.
+The only option is whether to enable or disable CSI via rook-ceph, i.e. to support persistence.
+You need persistence for any seed cluster, or shooted seed. The default is disabled.
 
 An example `ControlPlaneConfig` for the Equinix Metal extension looks as follows:
 
 ```yaml
 apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 kind: ControlPlaneConfig
+```
+
+An example `ControlPlaneConfig` with persistence enabled, using rook-ceph, looks as follows:
+
+```yaml
+apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
+kind: ControlPlaneConfig
+persistence:
+  enabled: true
 ```
 
 ## `WorkerConfig`

@@ -1,0 +1,5 @@
+rook-ceph:
+  enabled: true
+  image:
+    repository: rook/ceph
+    tag: v1.7.3

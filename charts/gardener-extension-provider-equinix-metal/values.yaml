@@ -52,7 +52,7 @@ config:
     burst: 130
   etcd:
     storage:
-      className: gardener.cloud-fast
+      className: rook-ceph-block
       capacity: 25Gi
 gardener:
   seed:

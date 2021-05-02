@@ -1,15 +1,9 @@
-# sample Shoot without persistence
+# sample Shoot with persistence
 apiVersion: core.gardener.cloud/v1beta1
 kind: Shoot
 metadata:
   name: em-test
   namespace: garden-em
-  # to delete this shoot:
-  # 1- uncomment the annotations below
-  # 2- apply to the cluster
-  # 3- delete
-  #annotations:
-  #  confirmation.gardener.cloud/deletion: "true"
 spec:
   secretBindingName: my-secret
   cloudProfileName: equinix-metal
@@ -23,6 +17,8 @@ spec:
     controlPlaneConfig:
       apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
       kind: ControlPlaneConfig
+      persistence:
+        enabled: true
     workers:
     - name: worker
       minimum: 1

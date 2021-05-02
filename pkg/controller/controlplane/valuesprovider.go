@@ -20,6 +20,7 @@ import (
 
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
@@ -93,6 +94,15 @@ var controlPlaneShootChart = &chart.Chart{
 			Name:    "metallb",
 			Images:  []string{equinixmetal.MetalLBControllerImageName, equinixmetal.MetalLBSpeakerImageName},
 			Objects: []*chart.Object{},
+		},
+		{
+			Name: "rook-ceph",
+			Images: []string{
+				equinixmetal.RookCephImageName,
+			},
+			Objects: []*chart.Object{
+				{Type: &corev1.Namespace{}, Name: "rook-ceph"},
+			},
 		},
 	},
 }
@@ -179,7 +189,8 @@ func getControlPlaneChartValues(
 			},
 			"metro": cluster.Shoot.Spec.Region,
 		},
-		"metallb": map[string]interface{}{},
+		"metallb":   map[string]interface{}{},
+		"rook-ceph": map[string]interface{}{},
 	}
 
 	return values, nil
@@ -192,7 +203,25 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	credentials *equinixmetal.Credentials,
 ) (map[string]interface{}, error) {
 
-	values := map[string]interface{}{}
+	cpConfig, err := vp.decodeControlPlaneConfig(cp)
+	if err != nil {
+		return nil, errors.Wrapf(err, "decoding control plane config")
+	}
+
+	var rookCephImage map[string]interface{}
+	rookImage, err := imagevector.ImageVector().FindImage(equinixmetal.RookCephImageName)
+	if err == nil {
+		rookCephImage = map[string]interface{}{
+			"repository": rookImage.Repository,
+			"tag":        rookImage.Tag,
+		}
+	}
+	values := map[string]interface{}{
+		"rook-ceph": map[string]interface{}{
+			"enabled": cpConfig.Persistence != nil && *cpConfig.Persistence.Enabled,
+			"image":   rookCephImage,
+		},
+	}
 
 	return values, nil
 }

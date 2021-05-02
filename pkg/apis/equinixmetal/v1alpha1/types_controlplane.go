@@ -24,4 +24,15 @@ import (
 // ControlPlaneConfig contains configuration settings for the control plane.
 type ControlPlaneConfig struct {
 	metav1.TypeMeta `json:",inline"`
+
+	// Persistence contains configuration for storage in the cluster.
+	// +optional
+	Persistence *Persistence `json:"persistence,omitempty"`
+}
+
+// PersistenceConfig contains configuration options for shoot persistent storage.
+type Persistence struct {
+	// Enabled whether or not persistence is enabled.
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
 }

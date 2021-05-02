@@ -56,6 +56,8 @@ spec:
   providerConfig:
     apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
     kind: ControlPlaneConfig
+    persistence:
+      enabled: true
   infrastructureProviderStatus:
     apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
     kind: InfrastructureStatus

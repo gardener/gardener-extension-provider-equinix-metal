@@ -53,6 +53,8 @@ const (
 	MachineControllerManagerMonitoringConfigName = "machine-controller-manager-monitoring-config"
 	// CloudControllerManagerName is a constant for the name of the CloudController deployed by the worker controller.
 	CloudControllerManagerName = "cloud-controller-manager"
+	// RookCephImageName is the name of the Rook/Ceph image.
+	RookCephImageName = "rook-ceph"
 )
 
 var (

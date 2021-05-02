@@ -27,3 +27,7 @@ images:
   sourceRepository: github.com/metallb/metallb
   repository: quay.io/metallb/speaker
   tag: v0.9.5
+- name: rook-ceph
+  sourceRepository: github.com/rook/rook
+  repository: rook/ceph
+  tag: v1.7.3
