@@ -1,7 +1,7 @@
 package packngo
 
 import (
-	"fmt"
+	"path"
 )
 
 const projectBasePath = "/projects"
@@ -15,6 +15,7 @@ type ProjectService interface {
 	Delete(string) (*Response, error)
 	ListBGPSessions(projectID string, listOpt *ListOptions) ([]BGPSession, *Response, error)
 	ListEvents(string, *ListOptions) ([]Event, *Response, error)
+	ListSSHKeys(projectID string, searchOpt *SearchOptions) ([]SSHKey, *Response, error)
 }
 
 type projectsRoot struct {
@@ -22,25 +23,26 @@ type projectsRoot struct {
 	Meta     meta      `json:"meta"`
 }
 
-// Project represents a Packet project
+// Project represents an Equinix Metal project
 type Project struct {
-	ID            string        `json:"id"`
-	Name          string        `json:"name,omitempty"`
-	Organization  Organization  `json:"organization,omitempty"`
-	Created       string        `json:"created_at,omitempty"`
-	Updated       string        `json:"updated_at,omitempty"`
-	Users         []User        `json:"members,omitempty"`
-	Devices       []Device      `json:"devices,omitempty"`
-	SSHKeys       []SSHKey      `json:"ssh_keys,omitempty"`
-	URL           string        `json:"href,omitempty"`
-	PaymentMethod PaymentMethod `json:"payment_method,omitempty"`
+	ID              string        `json:"id"`
+	Name            string        `json:"name,omitempty"`
+	Organization    Organization  `json:"organization,omitempty"`
+	Created         string        `json:"created_at,omitempty"`
+	Updated         string        `json:"updated_at,omitempty"`
+	Users           []User        `json:"members,omitempty"`
+	Devices         []Device      `json:"devices,omitempty"`
+	SSHKeys         []SSHKey      `json:"ssh_keys,omitempty"`
+	URL             string        `json:"href,omitempty"`
+	PaymentMethod   PaymentMethod `json:"payment_method,omitempty"`
+	BackendTransfer bool          `json:"backend_transfer_enabled"`
 }
 
 func (p Project) String() string {
 	return Stringify(p)
 }
 
-// ProjectCreateRequest type used to create a Packet project
+// ProjectCreateRequest type used to create an Equinix Metal project
 type ProjectCreateRequest struct {
 	Name            string `json:"name"`
 	PaymentMethodID string `json:"payment_method_id,omitempty"`
@@ -51,10 +53,11 @@ func (p ProjectCreateRequest) String() string {
 	return Stringify(p)
 }
 
-// ProjectUpdateRequest type used to update a Packet project
+// ProjectUpdateRequest type used to update an Equinix Metal project
 type ProjectUpdateRequest struct {
 	Name            *string `json:"name,omitempty"`
 	PaymentMethodID *string `json:"payment_method_id,omitempty"`
+	BackendTransfer *bool   `json:"backend_transfer_enabled,omitempty"`
 }
 
 func (p ProjectUpdateRequest) String() string {
@@ -63,29 +66,24 @@ func (p ProjectUpdateRequest) String() string {
 
 // ProjectServiceOp implements ProjectService
 type ProjectServiceOp struct {
-	client *Client
+	client requestDoer
 }
 
 // List returns the user's projects
-func (s *ProjectServiceOp) List(listOpt *ListOptions) (projects []Project, resp *Response, err error) {
-	params := createListOptionsURL(listOpt)
-	root := new(projectsRoot)
-
-	path := fmt.Sprintf("%s?%s", projectBasePath, params)
+func (s *ProjectServiceOp) List(opts *ListOptions) (projects []Project, resp *Response, err error) {
+	apiPathQuery := opts.WithQuery(projectBasePath)
 
 	for {
-		resp, err = s.client.DoRequest("GET", path, nil, root)
+		subset := new(projectsRoot)
+
+		resp, err = s.client.DoRequest("GET", apiPathQuery, nil, subset)
 		if err != nil {
 			return nil, resp, err
 		}
 
-		projects = append(projects, root.Projects...)
+		projects = append(projects, subset.Projects...)
 
-		if root.Meta.Next != nil && (listOpt == nil || listOpt.Page == 0) {
-			path = root.Meta.Next.Href
-			if params != "" {
-				path = fmt.Sprintf("%s&%s", path, params)
-			}
+		if apiPathQuery = nextPage(subset.Meta, opts); apiPathQuery != "" {
 			continue
 		}
 
@@ -94,11 +92,11 @@ func (s *ProjectServiceOp) List(listOpt *ListOptions) (projects []Project, resp 
 }
 
 // Get returns a project by id
-func (s *ProjectServiceOp) Get(projectID string, getOpt *GetOptions) (*Project, *Response, error) {
-	params := createGetOptionsURL(getOpt)
-	path := fmt.Sprintf("%s/%s?%s", projectBasePath, projectID, params)
+func (s *ProjectServiceOp) Get(projectID string, opts *GetOptions) (*Project, *Response, error) {
+	endpointPath := path.Join(projectBasePath, projectID)
+	apiPathQuery := opts.WithQuery(endpointPath)
 	project := new(Project)
-	resp, err := s.client.DoRequest("GET", path, nil, project)
+	resp, err := s.client.DoRequest("GET", apiPathQuery, nil, project)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -119,10 +117,10 @@ func (s *ProjectServiceOp) Create(createRequest *ProjectCreateRequest) (*Project
 
 // Update updates a project
 func (s *ProjectServiceOp) Update(id string, updateRequest *ProjectUpdateRequest) (*Project, *Response, error) {
-	path := fmt.Sprintf("%s/%s", projectBasePath, id)
+	apiPath := path.Join(projectBasePath, id)
 	project := new(Project)
 
-	resp, err := s.client.DoRequest("PATCH", path, updateRequest, project)
+	resp, err := s.client.DoRequest("PATCH", apiPath, updateRequest, project)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -132,41 +130,53 @@ func (s *ProjectServiceOp) Update(id string, updateRequest *ProjectUpdateRequest
 
 // Delete deletes a project
 func (s *ProjectServiceOp) Delete(projectID string) (*Response, error) {
-	path := fmt.Sprintf("%s/%s", projectBasePath, projectID)
+	apiPath := path.Join(projectBasePath, projectID)
 
-	return s.client.DoRequest("DELETE", path, nil, nil)
+	return s.client.DoRequest("DELETE", apiPath, nil, nil)
 }
 
 // ListBGPSessions returns all BGP Sessions associated with the project
-func (s *ProjectServiceOp) ListBGPSessions(projectID string, listOpt *ListOptions) (bgpSessions []BGPSession, resp *Response, err error) {
-	params := createListOptionsURL(listOpt)
-	path := fmt.Sprintf("%s/%s%s?%s", projectBasePath, projectID, bgpSessionBasePath, params)
+func (s *ProjectServiceOp) ListBGPSessions(projectID string, opts *ListOptions) (bgpSessions []BGPSession, resp *Response, err error) {
+	endpointPath := path.Join(projectBasePath, projectID, bgpSessionBasePath)
+	apiPathQuery := opts.WithQuery(endpointPath)
 
 	for {
 		subset := new(bgpSessionsRoot)
 
-		resp, err = s.client.DoRequest("GET", path, nil, subset)
+		resp, err = s.client.DoRequest("GET", apiPathQuery, nil, subset)
 		if err != nil {
 			return nil, resp, err
 		}
 
 		bgpSessions = append(bgpSessions, subset.Sessions...)
-
-		if subset.Meta.Next != nil && (listOpt == nil || listOpt.Page == 0) {
-			path = subset.Meta.Next.Href
-			if params != "" {
-				path = fmt.Sprintf("%s&%s", path, params)
-			}
+		if apiPathQuery = nextPage(subset.Meta, opts); apiPathQuery != "" {
 			continue
 		}
-
 		return
 	}
 }
 
+// ListSSHKeys returns all SSH Keys associated with the project
+func (s *ProjectServiceOp) ListSSHKeys(projectID string, opts *SearchOptions) (sshKeys []SSHKey, resp *Response, err error) {
+
+	endpointPath := path.Join(projectBasePath, projectID, sshKeyBasePath)
+	apiPathQuery := opts.WithQuery(endpointPath)
+
+	subset := new(sshKeyRoot)
+
+	resp, err = s.client.DoRequest("GET", apiPathQuery, nil, subset)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	sshKeys = append(sshKeys, subset.SSHKeys...)
+
+	return
+}
+
 // ListEvents returns list of project events
 func (s *ProjectServiceOp) ListEvents(projectID string, listOpt *ListOptions) ([]Event, *Response, error) {
-	path := fmt.Sprintf("%s/%s%s", projectBasePath, projectID, eventBasePath)
+	apiPath := path.Join(projectBasePath, projectID, eventBasePath)
 
-	return listEvents(s.client, path, listOpt)
+	return listEvents(s.client, apiPath, listOpt)
 }

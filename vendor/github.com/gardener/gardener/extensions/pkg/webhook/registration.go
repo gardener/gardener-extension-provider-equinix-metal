@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gardener/gardener/pkg/controllerutils"
 	"github.com/gardener/gardener/pkg/utils/kubernetes"
 
-	"github.com/pkg/errors"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,7 +29,6 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -62,7 +61,7 @@ func RegisterWebhooks(ctx context.Context, mgr manager.Manager, namespace, provi
 			Name:              fmt.Sprintf("%s.%s.extensions.gardener.cloud", webhook.Name, strings.TrimPrefix(providerName, "provider-")),
 			NamespaceSelector: webhook.Selector,
 			Rules:             rules,
-			TimeoutSeconds:    pointer.Int32Ptr(10),
+			TimeoutSeconds:    pointer.Int32(10),
 		}
 
 		switch webhook.Target {
@@ -92,10 +91,10 @@ func RegisterWebhooks(ctx context.Context, mgr manager.Manager, namespace, provi
 				return nil, nil, err
 			}
 			ownerReference = metav1.NewControllerRef(ns, corev1.SchemeGroupVersion.WithKind("Namespace"))
-			ownerReference.BlockOwnerDeletion = pointer.BoolPtr(false)
+			ownerReference.BlockOwnerDeletion = pointer.Bool(false)
 		}
 
-		if _, err := controllerutil.CreateOrUpdate(ctx, c, mutatingWebhookConfigurationSeed, func() error {
+		if _, err := controllerutils.GetAndCreateOrStrategicMergePatch(ctx, c, mutatingWebhookConfigurationSeed, func() error {
 			if ownerReference != nil {
 				mutatingWebhookConfigurationSeed.SetOwnerReferences(kubernetes.MergeOwnerReferences(mutatingWebhookConfigurationSeed.GetOwnerReferences(), *ownerReference))
 			}
@@ -114,13 +113,13 @@ func buildRule(mgr manager.Manager, t runtime.Object) (*admissionregistrationv1b
 	// Get GVK from the type
 	gvk, err := apiutil.GVKForObject(t, mgr.GetScheme())
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not get GroupVersionKind from object %v", t)
+		return nil, fmt.Errorf("could not get GroupVersionKind from object %v: %w", t, err)
 	}
 
 	// Get REST mapping from GVK
 	mapping, err := mgr.GetRESTMapper().RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not get REST mapping from GroupVersionKind '%s'", gvk.String())
+		return nil, fmt.Errorf("could not get REST mapping from GroupVersionKind '%s': %w", gvk.String(), err)
 	}
 
 	// Create and return RuleWithOperations

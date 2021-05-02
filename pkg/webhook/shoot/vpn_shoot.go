@@ -16,6 +16,7 @@ package shoot
 
 import (
 	"context"
+	"path"
 
 	"github.com/gardener/gardener-extension-provider-packet/pkg/imagevector"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
@@ -29,6 +30,7 @@ const (
 	metabotInitContainerName = "metabot"
 	metabotVolumeName        = "shared-init-config"
 	metabotVolumeMountPath   = "/init-config"
+	nodeNetworkFile          = "nodeNetwork"
 )
 
 func (m *mutator) mutateVPNShootDeployment(ctx context.Context, deployment *appsv1.Deployment) error {
@@ -60,6 +62,8 @@ func (m *mutator) mutateVPNShootDeployment(ctx context.Context, deployment *apps
 			"private",
 			"parent",
 			"network",
+			"--out",
+			path.Join(metabotVolumeMountPath, nodeNetworkFile),
 		},
 		VolumeMounts: []corev1.VolumeMount{volumeMount},
 	})

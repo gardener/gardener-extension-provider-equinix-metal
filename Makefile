@@ -23,10 +23,11 @@ LD_FLAGS                    := "-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(
 LEADER_ELECTION             := false
 IGNORE_OPERATION_ANNOTATION := true
 
-WEBHOOK_CONFIG_PORT	:= 8443
-WEBHOOK_CONFIG_MODE	:= url
-WEBHOOK_CONFIG_URL	:= host.docker.internal:$(WEBHOOK_CONFIG_PORT)
-EXTENSION_NAMESPACE	:=
+WEBHOOK_CONFIG_PORT         := 8443
+WEBHOOK_CONFIG_MODE         := url
+WEBHOOK_CONFIG_URL          := host.docker.internal:$(WEBHOOK_CONFIG_PORT)
+WEBHOOK_CONFIG_SERVICE_PORT := 443
+EXTENSION_NAMESPACE         :=
 
 WEBHOOK_PARAM := --webhook-config-url=$(WEBHOOK_CONFIG_URL)
 ifeq ($(WEBHOOK_CONFIG_MODE), service)
@@ -39,7 +40,7 @@ endif
 
 .PHONY: start
 start:
-	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \
+	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on GARDENER_SHOOT_CLIENT=external go run \
 		-mod=vendor \
 		-ldflags $(LD_FLAGS) \
 		./cmd/$(EXTENSION_PREFIX)-$(NAME) \
@@ -48,6 +49,21 @@ start:
 		--leader-election=$(LEADER_ELECTION) \
 		--webhook-config-server-host=0.0.0.0 \
 		--webhook-config-server-port=$(WEBHOOK_CONFIG_PORT) \
+		--webhook-config-service-port=$(WEBHOOK_CONFIG_SERVICE_PORT) \
+		--webhook-config-mode=$(WEBHOOK_CONFIG_MODE) \
+		$(WEBHOOK_PARAM)
+
+debug:
+	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on GARDENER_SHOOT_CLIENT=external dlv debug \
+		--build-flags="-mod=vendor" \
+		./cmd/$(EXTENSION_PREFIX)-$(NAME) \
+		-- \
+		--config-file=./example/00-componentconfig.yaml \
+		--ignore-operation-annotation=$(IGNORE_OPERATION_ANNOTATION) \
+		--leader-election=$(LEADER_ELECTION) \
+		--webhook-config-server-host=0.0.0.0 \
+		--webhook-config-server-port=$(WEBHOOK_CONFIG_PORT) \
+		--webhook-config-service-port=$(WEBHOOK_CONFIG_SERVICE_PORT) \
 		--webhook-config-mode=$(WEBHOOK_CONFIG_MODE) \
 		$(WEBHOOK_PARAM)
 

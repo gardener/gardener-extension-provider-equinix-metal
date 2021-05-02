@@ -18,6 +18,7 @@ import (
 	"context"
 	"path/filepath"
 
+	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
@@ -54,10 +55,7 @@ var controlPlaneSecrets = &secrets.Secrets{
 					SigningCA:    cas[v1beta1constants.SecretNameCACluster],
 				},
 				KubeConfigRequests: []secrets.KubeConfigRequest{
-					{
-						ClusterName:   clusterName,
-						APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
-					},
+					{ClusterName: clusterName, APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer},
 				},
 			},
 		}
@@ -147,7 +145,7 @@ func (vp *valuesProvider) GetControlPlaneShootChartValues(
 	}
 
 	// Get control plane shoot chart values
-	return getControlPlaneShootChartValues(cluster, credentials)
+	return vp.getControlPlaneShootChartValues(cp, cluster, credentials)
 }
 
 // getCredentials determines the credentials from the secret referenced in the ControlPlane resource.
@@ -166,7 +164,7 @@ func (vp *valuesProvider) getCredentials(
 	return credentials, nil
 }
 
-// getCCMChartValues collects and returns the CCM chart values.
+// getControlPlaneChartValues collects and returns the control plane chart values.
 func getControlPlaneChartValues(
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
@@ -192,10 +190,27 @@ func getControlPlaneChartValues(
 }
 
 // getControlPlaneShootChartValues collects and returns the control plane shoot chart values.
-func getControlPlaneShootChartValues(
+func (vp *valuesProvider) getControlPlaneShootChartValues(
+	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
 	credentials *packet.Credentials,
 ) (map[string]interface{}, error) {
 
-	return map[string]interface{}{}, nil
+	values := map[string]interface{}{}
+
+	return values, nil
+}
+
+func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.ControlPlane) (*apispacket.ControlPlaneConfig, error) {
+	cpConfig := &apispacket.ControlPlaneConfig{}
+
+	if cp.Spec.ProviderConfig == nil {
+		return cpConfig, nil
+	}
+
+	if _, _, err := vp.Decoder().Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig); err != nil {
+		return nil, errors.Wrapf(err, "decoding '%s'", kutil.ObjectName(cp))
+	}
+
+	return cpConfig, nil
 }

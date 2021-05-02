@@ -34,3 +34,13 @@ func NewClient(packetAPIKey string) ClientInterface {
 
 	return nil
 }
+
+func (p *packetClient) DeviceGet(id string) (device *packngo.Device, err error) {
+	device, _, err = p.packet.Devices.Get(id, &packngo.GetOptions{Includes: []string{"ip_addresses.parent_block,parent_block"}})
+	return device, err
+}
+
+func (p *packetClient) NetworkGet(id string) (addr *packngo.IPAddressReservation, err error) {
+	addr, _, err = p.packet.ProjectIPs.Get(id, &packngo.GetOptions{Includes: []string{"parent_block"}})
+	return addr, err
+}
