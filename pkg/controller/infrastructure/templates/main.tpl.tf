@@ -4,15 +4,15 @@ provider "packet" {
 
 // Deploy a new ssh key
 resource "packet_project_ssh_key" "publickey" {
-  name = "{{ .Values.clusterName }}-ssh-publickey"
-  public_key = "{{ .Values.sshPublicKey }}"
-  project_id = "{{ .Values.packet.projectID }}"
+  name = "{{ .clusterName }}-ssh-publickey"
+  public_key = "{{ .sshPublicKey }}"
+  project_id = "{{ .packet.projectID }}"
 }
 
 //=====================================================================
 //= Output variables
 //=====================================================================
 
-output "{{ .Values.outputKeys.sshKeyID }}" {
+output "{{ .outputKeys.sshKeyID }}" {
   value = "${packet_project_ssh_key.publickey.id}"
 }
