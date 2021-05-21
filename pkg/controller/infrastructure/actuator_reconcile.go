@@ -15,9 +15,9 @@
 package infrastructure
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"path/filepath"
 
 	packetv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
@@ -44,11 +44,13 @@ func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastruc
 		return err
 	}
 
-	terraformConfig := GenerateTerraformInfraConfig(infrastructure, string(credentials.ProjectID))
+	var (
+		terraformConfig = GenerateTerraformInfraConfig(infrastructure, string(credentials.ProjectID))
+		mainTF          bytes.Buffer
+	)
 
-	release, err := a.ChartRenderer().Render(filepath.Join(packet.InternalChartsPath, "packet-infra"), "packet-infra", infrastructure.Namespace, terraformConfig)
-	if err != nil {
-		return fmt.Errorf("could not render Terraform chart: %+v", err)
+	if err := tplMainTF.Execute(&mainTF, terraformConfig); err != nil {
+		return fmt.Errorf("could not render Terraform template: %+v", err)
 	}
 
 	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure)
@@ -61,9 +63,9 @@ func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastruc
 		InitializeWith(ctx,
 			terraformer.DefaultInitializer(
 				a.Client(),
-				release.FileContent("main.tf"),
-				release.FileContent("variables.tf"),
-				[]byte(release.FileContent("terraform.tfvars")),
+				mainTF.String(),
+				variablesTF,
+				[]byte(terraformTFVars),
 				stateInitializer,
 			)).
 		Apply(ctx); err != nil {
