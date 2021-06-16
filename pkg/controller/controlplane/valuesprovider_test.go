@@ -212,7 +212,7 @@ func clientGet(result runtime.Object) interface{} {
 }
 
 func clientDeleteSuccess() interface{} {
-	return func(ctx context.Context, cm runtime.Object) error {
+	return func(ctx context.Context, cm runtime.Object, opts ...client.DeleteOption) error {
 		return nil
 	}
 }
