@@ -16,7 +16,14 @@ data:
 
     [FILTER]
         Name                parser
-        Match               kubernetes.*machine-controller-manager*packet-machine-controller-manager*
+        Match               kubernetes.*machine-controller-manager*machine-controller-manager-provider-equinix-metal*
+        Key_Name            log
+        Parser              kubeapiserverParser
+        Reserve_Data        True
+
+    [FILTER]
+        Name                parser
+        Match               kubernetes.*machine-controller-manager*equinix-metal-machine-controller-manager*
         Key_Name            log
         Parser              kubeapiserverParser
         Reserve_Data        True
@@ -25,4 +32,10 @@ data:
         Name                rewrite_tag
         Match               kubernetes.*
         Rule                $tag ^kubernetes\.var\.log\.containers\.(cloud-controller-manager-.+?_.+?_cloud-provider-equinix-metal) user-exposed.$TAG true
-        Emitter_Name        re_emitted-provider-alicloud
+        Emitter_Name        re_emitted-provider-equinix-metal
+
+    [FILTER]
+        Name                rewrite_tag
+        Match               kubernetes.*
+        Rule                $tag ^kubernetes\.var\.log\.containers\.machine-controller-manager-.+?_.+?_(machine-controller-manager-provider-equinix-metal|equinix-metal-machine-controller-manager) user-exposed.$TAG true
+        Emitter_Name        re_emitted-provider-equinix-metal-mcm
