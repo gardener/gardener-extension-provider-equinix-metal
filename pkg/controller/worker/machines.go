@@ -139,8 +139,8 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 				"cloudConfig": string(pool.UserData),
 			},
 			"credentialsSecretRef": map[string]interface{}{
-				"name":      v1beta1constants.SecretNameCloudProvider,
-				"namespace": w.worker.Namespace,
+				"name":      w.worker.Spec.SecretRef.Name,
+				"namespace": w.worker.Spec.SecretRef.Namespace,
 			},
 		}
 
