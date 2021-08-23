@@ -50,13 +50,13 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 	c := w.Client()
 
 	// get the private IPs and providerIDs from the shoot nodes
-	_, shoot, err := util.NewClientForShoot(ctx, c, ns, client.Options{})
+	_, shootClient, err := util.NewClientForShoot(ctx, c, ns, client.Options{})
 	if err != nil {
 		return err
 	}
 
 	shootNodes := &corev1.NodeList{}
-	if err := shoot.List(ctx, shootNodes); err != nil {
+	if err := shootClient.List(ctx, shootNodes); err != nil {
 		return fmt.Errorf("failed to get shoot nodes: %v", err)
 	}
 	// go through each node, for each one without the right annotation, get the private network
@@ -87,7 +87,7 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 						"annotations": n.Annotations,
 					},
 				})
-				if err := shoot.Patch(ctx, &n, client.RawPatch(types.StrategicMergePatchType, patch)); err != nil {
+				if err := shootClient.Patch(ctx, &n, client.RawPatch(types.StrategicMergePatchType, patch)); err != nil {
 					return fmt.Errorf("unable to patch node %s with private network cidr: %v", n.Name, err)
 				}
 			}
