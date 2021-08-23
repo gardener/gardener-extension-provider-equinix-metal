@@ -68,7 +68,7 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 			if deviceID == "" || err != nil {
 				continue
 			}
-			nodePrivateNetwork, err := getNodePrivateNetwork(ctx, deviceID, c, ns)
+			nodePrivateNetwork, err := getNodePrivateNetwork(ctx, deviceID, c, w.worker.Spec.SecretRef)
 			if err != nil {
 				return fmt.Errorf("error getting private network from Equinix Metal API for %s: %v", n.Spec.ProviderID, err)
 			}
@@ -154,11 +154,7 @@ func unique(stringSlice []string) []string {
 }
 
 // getNodePrivateNetwork use the Equinix Metal API to get the CIDR of the private network given a providerID.
-func getNodePrivateNetwork(ctx context.Context, deviceID string, kClient client.Client, namespace string) (string, error) {
-	secretRef := corev1.SecretReference{
-		Name:      v1beta1constants.SecretNameCloudProvider,
-		Namespace: namespace,
-	}
+func getNodePrivateNetwork(ctx context.Context, deviceID string, kClient client.Client, secretRef corev1.SecretReference) (string, error) {
 	credentials, err := packet.GetCredentialsFromSecretRef(ctx, kClient, secretRef)
 	if err != nil {
 		return "", fmt.Errorf("could not get credentials from secret: %v", err)
