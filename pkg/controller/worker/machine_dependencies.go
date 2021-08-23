@@ -36,7 +36,7 @@ const (
 	vpnSeed                               = "vpn-seed"
 	apiServerDeploy                       = v1beta1constants.DeploymentNameKubeAPIServer
 	nodeNetworkEnvVar                     = "NODE_NETWORK"
-	equinixMetalPrivateNetworkAnnotations = "metal.equinix.com/network/4/private"
+	equinixMetalPrivateNetworkAnnotations = "metal.equinix.com/network-4-private"
 	providerName                          = "equinixmetal"
 	deprecatedProviderName                = "packet"
 )
