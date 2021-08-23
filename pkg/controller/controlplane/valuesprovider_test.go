@@ -15,12 +15,10 @@
 package controlplane
 
 import (
-	"bytes"
 	"context"
-	"io/ioutil"
+	"encoding/json"
 
 	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
-	apispacketv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
@@ -47,17 +45,6 @@ const (
 var _ = Describe("ValuesProvider", func() {
 	var (
 		ctrl *gomock.Controller
-
-		encoder runtime.Encoder
-		encode  = func(obj runtime.Object) []byte {
-			b := &bytes.Buffer{}
-			Expect(encoder.Encode(obj, b)).To(Succeed())
-
-			data, err := ioutil.ReadAll(b)
-			Expect(err).ToNot(HaveOccurred())
-
-			return data
-		}
 
 		// Build scheme
 		scheme = runtime.NewScheme()
@@ -132,10 +119,8 @@ var _ = Describe("ValuesProvider", func() {
 	BeforeEach(func() {
 		codec := serializer.NewCodecFactory(scheme, serializer.EnableStrict)
 
-		info, found := runtime.SerializerInfoForMediaType(codec.SupportedMediaTypes(), runtime.ContentTypeJSON)
+		_, found := runtime.SerializerInfoForMediaType(codec.SupportedMediaTypes(), runtime.ContentTypeJSON)
 		Expect(found).To(BeTrue(), "should be able to decode")
-
-		encoder = codec.EncoderForVersion(info.Serializer, apispacketv1alpha1.SchemeGroupVersion)
 
 		cp = &extensionsv1alpha1.ControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
@@ -301,4 +286,9 @@ func clientDeleteSuccess() interface{} {
 	return func(ctx context.Context, cm runtime.Object, opts ...client.DeleteOption) error {
 		return nil
 	}
+}
+
+func encode(obj runtime.Object) []byte {
+	data, _ := json.Marshal(obj)
+	return data
 }
