@@ -381,6 +381,50 @@ var _ = Describe("Machines", func() {
 					Expect(result).To(Equal(machineDeployments))
 				})
 
+				It("should deploy the correct machine class when using values for reserved devices", func() {
+					var (
+						reservationIDs = []string{"foo", "bar"}
+						onlyReserved   = true
+					)
+
+					w.Spec.Pools[1].ProviderConfig = &runtime.RawExtension{Raw: encode(&api.WorkerConfig{
+						ReservationIDs: reservationIDs,
+						OnlyReserved:   &onlyReserved,
+					})}
+
+					newHash, err := worker.WorkerPoolHash(w.Spec.Pools[1], cluster)
+					Expect(err).NotTo(HaveOccurred())
+
+					var (
+						machineClassNamePool2     = fmt.Sprintf("%s-%s", namespace, namePool2)
+						machineClassWithHashPool2 = fmt.Sprintf("%s-%s", machineClassNamePool2, newHash)
+					)
+
+					machineClasses["machineClasses"].([]map[string]interface{})[1]["name"] = machineClassWithHashPool2
+					machineClasses["machineClasses"].([]map[string]interface{})[1]["reservationIDs"] = reservationIDs
+					machineClasses["machineClasses"].([]map[string]interface{})[1]["onlyReserved"] = onlyReserved
+
+					expectGetSecretCallToWork(c, packetAPIToken, packetProjectID)
+
+					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
+
+					gomock.InOrder(
+						c.EXPECT().
+							DeleteAllOf(context.TODO(), &machinev1alpha1.PacketMachineClass{}, client.InNamespace(namespace)),
+						chartApplier.
+							EXPECT().
+							Apply(
+								ctx,
+								filepath.Join(packet.InternalChartsPath, "machineclass"),
+								namespace,
+								"machineclass",
+								kubernetes.Values(machineClasses),
+							),
+					)
+
+					Expect(workerDelegate.DeployMachineClasses(context.TODO())).NotTo(HaveOccurred())
+				})
+
 				It("should delete all the old PacketMachineClasses", func() {
 					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
 					gomock.InOrder(
