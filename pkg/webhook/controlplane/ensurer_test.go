@@ -260,6 +260,50 @@ var _ = Describe("Ensurer", func() {
 		})
 	})
 
+	Describe("#EnsureVPNSeedServerDeployment", func() {
+		It("should keep the NODE_NETWORK env variable in the vpn-seed-server deployment", func() {
+			var (
+				dep = &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer},
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "vpn-seed-server",
+									},
+								},
+							},
+						},
+					},
+				}
+				oldDep            = dep.DeepCopy()
+				nodeNetworkEnvVar = corev1.EnvVar{
+					Name:  "NODE_NETWORK",
+					Value: "foobar",
+				}
+			)
+
+			oldDep.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{nodeNetworkEnvVar}
+
+			// Create mock client
+			client := mockclient.NewMockClient(ctrl)
+
+			// Create ensurer
+			ensurer := NewEnsurer(logger)
+			err := ensurer.(inject.Client).InjectClient(client)
+			Expect(err).To(Not(HaveOccurred()))
+
+			// Call EnsureVPNSeedServerDeployment method and check the result
+			err = ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
+			Expect(err).To(Not(HaveOccurred()))
+
+			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed-server")
+			Expect(c).To(Not(BeNil()))
+			Expect(c.Env).To(ConsistOf(nodeNetworkEnvVar))
+		})
+	})
+
 	Describe("#EnsureKubeletServiceUnitOptions", func() {
 		It("should modify existing elements of kubelet.service unit options", func() {
 			var (
