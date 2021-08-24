@@ -42,8 +42,13 @@ func init() {
 const (
 	terraformTFVars = `# New line is needed! Do not remove this comment.
 `
-	variablesTF = `variable "PACKET_API_KEY" {
+	variablesTF = `variable "EQXM_API_KEY" {
   description = "API Key"
-  type        = "string"
+  type        = string
+}
+
+variable "EQXM_PROJECT_ID" {
+  description = "Project ID"
+  type        = string
 }`
 )
