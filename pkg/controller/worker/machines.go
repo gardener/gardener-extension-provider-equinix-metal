@@ -155,8 +155,8 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			machineClassSpec["reservationIDs"] = workerConfig.ReservationIDs
 		}
 
-		if workerConfig.OnlyReserved != nil {
-			machineClassSpec["onlyReserved"] = *workerConfig.OnlyReserved
+		if workerConfig.ReservedDevicesOnly != nil {
+			machineClassSpec["reservedDevicesOnly"] = *workerConfig.ReservedDevicesOnly
 		}
 
 		var (

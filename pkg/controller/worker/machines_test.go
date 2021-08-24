@@ -383,13 +383,13 @@ var _ = Describe("Machines", func() {
 
 				It("should deploy the correct machine class when using values for reserved devices", func() {
 					var (
-						reservationIDs = []string{"foo", "bar"}
-						onlyReserved   = true
+						reservationIDs      = []string{"foo", "bar"}
+						reservedDevicesOnly = true
 					)
 
 					w.Spec.Pools[1].ProviderConfig = &runtime.RawExtension{Raw: encode(&api.WorkerConfig{
-						ReservationIDs: reservationIDs,
-						OnlyReserved:   &onlyReserved,
+						ReservationIDs:      reservationIDs,
+						ReservedDevicesOnly: &reservedDevicesOnly,
 					})}
 
 					newHash, err := worker.WorkerPoolHash(w.Spec.Pools[1], cluster)
@@ -402,7 +402,7 @@ var _ = Describe("Machines", func() {
 
 					machineClasses["machineClasses"].([]map[string]interface{})[1]["name"] = machineClassWithHashPool2
 					machineClasses["machineClasses"].([]map[string]interface{})[1]["reservationIDs"] = reservationIDs
-					machineClasses["machineClasses"].([]map[string]interface{})[1]["onlyReserved"] = onlyReserved
+					machineClasses["machineClasses"].([]map[string]interface{})[1]["reservedDevicesOnly"] = reservedDevicesOnly
 
 					expectGetSecretCallToWork(c, packetAPIToken, packetProjectID)
 

@@ -73,11 +73,11 @@ kind: WorkerConfig
 reservationIDs:
 - my-reserved-device-1
 - my-reserved-device-2
-onlyReserved: false
+reservedDevicesOnly: false
 ```
 
 The `.reservationIDs[]` list contains the list of IDs of the reserved devices.
-The `.onlyReserved` field indicates whether only reserved devices should be used (based on the list of reservation IDs)
+The `.reservedDevicesOnly` field indicates whether only reserved devices should be used (based on the list of reservation IDs)
 when new machines are created.
 If it's set to `false` and the list of reservation IDs is exhausted then the next available device (unreserved) will be
 used.

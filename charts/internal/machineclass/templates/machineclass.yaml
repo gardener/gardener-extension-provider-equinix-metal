@@ -40,8 +40,8 @@ providerSpec:
   reservationIDs:
 {{ $machineClass.reservationIDs | toYaml | indent 2 }}
 {{- end }}
-{{- if $machineClass.onlyReserved }}
-  onlyReserved: {{ $machineClass.onlyReserved }}
+{{- if $machineClass.reservedDevicesOnly }}
+  reservedDevicesOnly: {{ $machineClass.reservedDevicesOnly }}
 {{- end }}
 secretRef:
   name: {{ $machineClass.name }}

@@ -274,7 +274,7 @@ func Convert_packet_MachineImages_To_v1alpha1_MachineImages(in *packet.MachineIm
 
 func autoConvert_v1alpha1_WorkerConfig_To_packet_WorkerConfig(in *WorkerConfig, out *packet.WorkerConfig, s conversion.Scope) error {
 	out.ReservationIDs = *(*[]string)(unsafe.Pointer(&in.ReservationIDs))
-	out.OnlyReserved = (*bool)(unsafe.Pointer(in.OnlyReserved))
+	out.ReservedDevicesOnly = (*bool)(unsafe.Pointer(in.ReservedDevicesOnly))
 	return nil
 }
 
@@ -285,7 +285,7 @@ func Convert_v1alpha1_WorkerConfig_To_packet_WorkerConfig(in *WorkerConfig, out 
 
 func autoConvert_packet_WorkerConfig_To_v1alpha1_WorkerConfig(in *packet.WorkerConfig, out *WorkerConfig, s conversion.Scope) error {
 	out.ReservationIDs = *(*[]string)(unsafe.Pointer(&in.ReservationIDs))
-	out.OnlyReserved = (*bool)(unsafe.Pointer(in.OnlyReserved))
+	out.ReservedDevicesOnly = (*bool)(unsafe.Pointer(in.ReservedDevicesOnly))
 	return nil
 }
 

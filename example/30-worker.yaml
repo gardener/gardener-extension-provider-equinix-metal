@@ -70,7 +70,7 @@ spec:
       apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
       kind: WorkerConfig
       reservationIDs: []
-      onlyReserved: false
+      reservedDevicesOnly: false
     maxSurge: 1
     maxUnavailable: 0
   # labels:

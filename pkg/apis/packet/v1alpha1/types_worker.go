@@ -28,11 +28,11 @@ type WorkerConfig struct {
 	// ReservationIDs is the list of IDs of reserved devices.
 	// +optional
 	ReservationIDs []string `json:"reservationIDs,omitempty"`
-	// OnlyReserved indicates whether only reserved devices should be used (based on the list of reservation IDs) when
+	// ReservedDevicesOnly indicates whether only reserved devices should be used (based on the list of reservation IDs) when
 	// new machines are created. If false and the list of reservation IDs is exhausted then the next available device
 	// (unreserved) will be used. Default: false
 	// +optional.
-	OnlyReserved *bool `json:"onlyReserved,omitempty"`
+	ReservedDevicesOnly *bool `json:"reservedDevicesOnly,omitempty"`
 }
 
 // +genclient

@@ -175,13 +175,13 @@ string
 </tr>
 <tr>
 <td>
-<code>onlyReserved</code></br>
+<code>reservedDevicesOnly</code></br>
 <em>
 bool
 </em>
 </td>
 <td>
-<p>OnlyReserved indicates whether only reserved devices should be used (based on the list of reservation IDs) when
+<p>ReservedDevicesOnly indicates whether only reserved devices should be used (based on the list of reservation IDs) when
 new machines are created. If false and the list of reservation IDs is exhausted then the next available device
 (unreserved) will be used. Default: false</p>
 </td>

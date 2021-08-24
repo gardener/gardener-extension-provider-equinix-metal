@@ -23,4 +23,4 @@ machineClasses:
 # reservationIDs:
 # - res1
 # - res2
-# onlyReserved: false
+# reservedDevicesOnly: false

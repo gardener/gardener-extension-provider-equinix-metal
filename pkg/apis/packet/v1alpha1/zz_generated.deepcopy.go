@@ -193,8 +193,8 @@ func (in *WorkerConfig) DeepCopyInto(out *WorkerConfig) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.OnlyReserved != nil {
-		in, out := &in.OnlyReserved, &out.OnlyReserved
+	if in.ReservedDevicesOnly != nil {
+		in, out := &in.ReservedDevicesOnly, &out.ReservedDevicesOnly
 		*out = new(bool)
 		**out = **in
 	}
