@@ -59,7 +59,40 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gconte
 		ensureKubeAPIServerCommandLineArgs(c)
 		ensureEnvVars(c)
 	}
-	return controlplane.EnsureSecretChecksumAnnotation(ctx, &new.Spec.Template, e.client, new.Namespace, v1beta1constants.SecretNameCloudProvider)
+
+	if err := controlplane.EnsureSecretChecksumAnnotation(ctx, &new.Spec.Template, e.client, new.Namespace, v1beta1constants.SecretNameCloudProvider); err != nil {
+		return err
+	}
+
+	// Preserve NODE_NETWORK env variable in vpn-seed container. The Worker controller sets this flag at the end of its
+	// reconciliation, however, the kube-apiserver deployment is created earlier, so let's keep the value until the
+	// Worker controller updates it. This is to not trigger avoidable rollouts/restarts.
+	var (
+		vpnSeedContainerName = "vpn-seed"
+		newVPNSeedContainer  = extensionswebhook.ContainerWithName(ps.Containers, vpnSeedContainerName)
+		oldVPNSeedContainer  = extensionswebhook.ContainerWithName(old.Spec.Template.Spec.Containers, vpnSeedContainerName)
+
+		nodeNetworkEnvVarName  = "NODE_NETWORK"
+		nodeNetworkEnvVarValue string
+	)
+
+	if oldVPNSeedContainer != nil {
+		for _, env := range oldVPNSeedContainer.Env {
+			if env.Name == nodeNetworkEnvVarName {
+				nodeNetworkEnvVarValue = env.Value
+				break
+			}
+		}
+	}
+
+	if newVPNSeedContainer != nil && nodeNetworkEnvVarValue != "" {
+		newVPNSeedContainer.Env = extensionswebhook.EnsureEnvVarWithName(newVPNSeedContainer.Env, corev1.EnvVar{
+			Name:  nodeNetworkEnvVarName,
+			Value: nodeNetworkEnvVarValue,
+		})
+	}
+
+	return nil
 }
 
 // EnsureKubeControllerManagerDeployment ensures that the kube-controller-manager deployment conforms to the provider requirements.

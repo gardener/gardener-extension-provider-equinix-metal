@@ -104,7 +104,7 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, nil)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, dep)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, annotations)
 		})
@@ -145,9 +145,56 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, nil)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, dep)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, annotations)
+		})
+
+		It("should keep the NODE_NETWORK env variable in the kube-apiserver deployment", func() {
+			var (
+				dep = &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "kube-apiserver",
+									},
+									{
+										Name: "vpn-seed",
+									},
+								},
+							},
+						},
+					},
+				}
+				oldDep            = dep.DeepCopy()
+				nodeNetworkEnvVar = corev1.EnvVar{
+					Name:  "NODE_NETWORK",
+					Value: "foobar",
+				}
+			)
+
+			oldDep.Spec.Template.Spec.Containers[1].Env = []corev1.EnvVar{nodeNetworkEnvVar}
+
+			// Create mock client
+			client := mockclient.NewMockClient(ctrl)
+			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+
+			// Create ensurer
+			ensurer := NewEnsurer(logger)
+			err := ensurer.(inject.Client).InjectClient(client)
+			Expect(err).To(Not(HaveOccurred()))
+
+			// Call EnsureKubeAPIServerDeployment method and check the result
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, oldDep)
+			Expect(err).To(Not(HaveOccurred()))
+			checkKubeAPIServerDeployment(dep, annotations)
+
+			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
+			Expect(c).To(Not(BeNil()))
+			Expect(c.Env).To(ConsistOf(nodeNetworkEnvVar))
 		})
 	})
 
