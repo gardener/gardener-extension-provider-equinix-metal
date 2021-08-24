@@ -36,6 +36,13 @@ providerSpec:
 {{- end }}
   facility:
 {{ toYaml $machineClass.facility | indent 2 }}
+{{- if $machineClass.reservationIDs }}
+  reservationIDs:
+{{ $machineClass.reservationIDs | toYaml | indent 2 }}
+{{- end }}
+{{- if $machineClass.onlyReserved }}
+  onlyReserved: {{ $machineClass.onlyReserved }}
+{{- end }}
 secretRef:
   name: {{ $machineClass.name }}
   namespace: {{ $.Release.Namespace }}
