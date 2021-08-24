@@ -16,6 +16,8 @@ Resource Types:
 </li><li>
 <a href="#packet.provider.extensions.gardener.cloud/v1alpha1.InfrastructureConfig">InfrastructureConfig</a>
 </li><li>
+<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.WorkerConfig">WorkerConfig</a>
+</li><li>
 <a href="#packet.provider.extensions.gardener.cloud/v1alpha1.WorkerStatus">WorkerStatus</a>
 </li></ul>
 <h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.CloudProfileConfig">CloudProfileConfig
@@ -126,6 +128,63 @@ packet.provider.extensions.gardener.cloud/v1alpha1
 string
 </td>
 <td><code>InfrastructureConfig</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.WorkerConfig">WorkerConfig
+</h3>
+<p>
+<p>WorkerConfig contains configuration settings for the worker nodes.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>apiVersion</code></br>
+string</td>
+<td>
+<code>
+packet.provider.extensions.gardener.cloud/v1alpha1
+</code>
+</td>
+</tr>
+<tr>
+<td>
+<code>kind</code></br>
+string
+</td>
+<td><code>WorkerConfig</code></td>
+</tr>
+<tr>
+<td>
+<code>reservationIDs</code></br>
+<em>
+[]string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ReservationIDs is the list of IDs of reserved devices.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>onlyReserved</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>OnlyReserved indicates whether only reserved devices should be used (based on the list of reservation IDs) when
+new machines are created. If false and the list of reservation IDs is exhausted then the next available device
+(unreserved) will be used. Default: false</p>
+</td>
 </tr>
 </tbody>
 </table>

@@ -61,6 +61,27 @@ apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
 kind: ControlPlaneConfig
 ```
 
+## `WorkerConfig`
+
+The Packet extension supports specifying IDs for reserved devices that should be used for the machines of a specific worker pool.
+
+An example `WorkerConfig` for the Packet extension looks as follows:
+
+```yaml
+apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+kind: WorkerConfig
+reservationIDs:
+- my-reserved-device-1
+- my-reserved-device-2
+onlyReserved: false
+```
+
+The `.reservationIDs[]` list contains the list of IDs of the reserved devices.
+The `.onlyReserved` field indicates whether only reserved devices should be used (based on the list of reservation IDs)
+when new machines are created.
+If it's set to `false` and the list of reservation IDs is exhausted then the next available device (unreserved) will be
+used.
+
 ## Example `Shoot` manifest
 
 Please find below an example `Shoot` manifest:

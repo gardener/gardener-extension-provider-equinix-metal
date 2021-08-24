@@ -20,6 +20,20 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// WorkerConfig contains configuration settings for the worker nodes.
+type WorkerConfig struct {
+	metav1.TypeMeta
+
+	// ReservationIDs is the list of IDs of reserved devices.
+	ReservationIDs []string
+	// OnlyReserved indicates whether only reserved devices should be used (based on the list of reservation IDs) when
+	// new machines are created. If false and the list of reservation IDs is exhausted then the next available device
+	// (unreserved) will be used. Default: false
+	OnlyReserved *bool
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 // WorkerStatus contains information about created worker resources.
 type WorkerStatus struct {
 	metav1.TypeMeta
