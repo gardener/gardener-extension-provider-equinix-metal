@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -88,9 +89,23 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 		targetCIDRs.Insert(n.Annotations[equinixMetalPrivateNetworkAnnotations])
 	}
 
-	deploy := &appsv1.Deployment{}
-	if err := w.Client().Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameKubeAPIServer), deploy); err != nil {
-		return fmt.Errorf("failed to get kube-apiserver deployment: %v", err)
+	// Check if the `vpn-seed-server` deployment exists. If yes then the ReversedVPN feature gate is enabled in
+	// gardenlet and we have to configure the `vpn-seed` container here. Otherwise, the ReversedVPN feature gate is
+	// disabled and the `vpn-seed` container resides in the `kube-apiserver` deployment.
+	var (
+		vpnSeedContainerName = "vpn-seed-server"
+		deploy               = &appsv1.Deployment{}
+	)
+
+	if err := w.Client().Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameVPNSeedServer), deploy); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameVPNSeedServer, err)
+		}
+
+		if err2 := w.Client().Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameKubeAPIServer), deploy); err2 != nil {
+			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameKubeAPIServer, err2)
+		}
+		vpnSeedContainerName = "vpn-seed"
 	}
 
 	var (
@@ -102,7 +117,7 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 	)
 
 	for i, ctr := range deploy.Spec.Template.Spec.Containers {
-		if ctr.Name != "vpn-seed" {
+		if ctr.Name != vpnSeedContainerName {
 			continue
 		}
 
