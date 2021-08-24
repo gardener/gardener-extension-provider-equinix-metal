@@ -307,8 +307,8 @@ var _ = Describe("Machines", func() {
 						machineClassWithHashPool2 = fmt.Sprintf("%s-%s", machineClassNamePool2, workerPoolHash2)
 					)
 
-					addNameAndSecretToMachineClass(machineClassPool1, packetAPIToken, machineClassWithHashPool1)
-					addNameAndSecretToMachineClass(machineClassPool2, packetAPIToken, machineClassWithHashPool2)
+					addNameAndSecretToMachineClass(machineClassPool1, packetAPIToken, machineClassWithHashPool1, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool2, packetAPIToken, machineClassWithHashPool2, w.Spec.SecretRef)
 
 					machineClasses = map[string]interface{}{"machineClasses": []map[string]interface{}{
 						machineClassPool1,
@@ -381,7 +381,7 @@ var _ = Describe("Machines", func() {
 					Expect(result).To(Equal(machineDeployments))
 				})
 
-				It("should delete the all old PacketMachineClasses", func() {
+				It("should delete all the old PacketMachineClasses", func() {
 					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
 					gomock.InOrder(
 						c.EXPECT().
@@ -550,10 +550,14 @@ func copyMachineClass(def map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-func addNameAndSecretToMachineClass(class map[string]interface{}, packetAPIToken, name string) {
+func addNameAndSecretToMachineClass(class map[string]interface{}, packetAPIToken, name string, credentialsSecretRef corev1.SecretReference) {
 	class["name"] = name
 	class["labels"] = map[string]string{
 		v1beta1constants.GardenerPurpose: genericworkeractuator.GardenPurposeMachineClass,
 	}
 	class["secret"].(map[string]interface{})[packet.APIToken] = packetAPIToken
+	class["credentialsSecretRef"] = map[string]interface{}{
+		"name":      credentialsSecretRef.Name,
+		"namespace": credentialsSecretRef.Namespace,
+	}
 }

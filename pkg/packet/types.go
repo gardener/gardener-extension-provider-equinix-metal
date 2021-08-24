@@ -27,7 +27,7 @@ const (
 	// MachineControllerManagerImageName is the name of the MachineControllerManager image.
 	MachineControllerManagerImageName = "machine-controller-manager"
 	// MachineControllerManagerEquinixMetalImageName is the name of the MachineControllerManager EquinixMetal providerimage.
-	MachineControllerManagerEquinixMetalImageName = "machine-controller-manager-equinix-metal"
+	MachineControllerManagerEquinixMetalImageName = "machine-controller-manager-provider-equinix-metal"
 
 	// BucketName is a constant for the key in a backup secret that holds the bucket name.
 	// The bucket name is written to the backup secret by Gardener as a temporary solution.

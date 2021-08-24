@@ -29,7 +29,7 @@ import (
 
 	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	dnsv1alpha1 "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
-	resourcesscheme "github.com/gardener/gardener-resource-manager/pkg/apis/resources/v1alpha1"
+	resourcesscheme "github.com/gardener/gardener-resource-manager/api/resources/v1alpha1"
 	hvpav1alpha1 "github.com/gardener/hvpa-controller/api/v1alpha1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -154,11 +154,12 @@ type Interface interface {
 	// a cache, which uses SharedIndexInformers to keep up-to-date.
 	Client() client.Client
 	// APIReader returns a client.Reader that directly reads from the API server.
+	// Wherever possible, try to avoid reading directly from the API server and instead rely on the cache. Some ideas:
+	// If you want to avoid conflicts, try using patch requests that don't require optimistic locking instead of reading
+	// from the APIReader. If you need to make sure, that you're not reading stale data (e.g. a previous update is
+	// observed), use some mechanism that can detect/tolerate stale reads (e.g. add a timestamp annotation during the
+	// write operation and wait until you see it in the cache).
 	APIReader() client.Reader
-	// DirectClient returns a controller-runtime client, which can be used to talk to the API server directly
-	// (without using a cache).
-	// Deprecated: used APIReader instead, if the controller can't tolerate stale reads.
-	DirectClient() client.Client
 	// Cache returns the ClientSet's controller-runtime cache. It can be used to get Informers for arbitrary objects.
 	Cache() cache.Cache
 

@@ -1,0 +1,45 @@
+apiVersion: core.gardener.cloud/v1beta1
+kind: CloudProfile
+metadata:
+  name: packet
+spec:
+  type: packet
+  kubernetes:
+    versions:
+    - version: 1.20.2
+    - version: 1.19.7
+    - version: 1.18.15
+      #expirationDate: "2020-04-05T01:02:03Z"
+  machineImages:
+  - name: flatcar
+    versions:
+    - version: 0.0.0-stable
+  machineTypes:
+  - name: t1.small
+    cpu: "4"
+    gpu: "0"
+    memory: 8Gi
+    usable: true
+  # volumeTypes is commented out because Packet retired its volumes storage as a service; it remains here
+  # commented because we may be able to pick which drives to use to install
+  #volumeTypes:
+  #- name: storage_1
+  #  class: standard
+  #  usable: true
+  #- name: storage_2
+  #  class: performance
+  #  usable: true
+  regions:
+  - name: ewr1
+  providerConfig:
+    apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+    kind: CloudProfileConfig
+    machineImages:
+    - name: flatcar
+      versions:
+      - version: 0.0.0-stable
+        id: flatcar_stable
+    - name: ubuntu
+      versions:
+      - version: "20.04"
+        id: ubuntu_20_04

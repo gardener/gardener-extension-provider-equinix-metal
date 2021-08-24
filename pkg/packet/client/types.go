@@ -14,6 +14,12 @@
 
 package client
 
+import (
+	"github.com/packethost/packngo"
+)
+
 // ClientInterface is an interface which must be implemented by Packet clients.
 type ClientInterface interface {
+	DeviceGet(id string) (device *packngo.Device, err error)
+	NetworkGet(id string) (addr *packngo.IPAddressReservation, err error)
 }
