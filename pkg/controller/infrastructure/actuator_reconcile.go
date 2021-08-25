@@ -39,13 +39,8 @@ func (a *actuator) Reconcile(ctx context.Context, infrastructure *extensionsv1al
 }
 
 func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster, stateInitializer terraformer.StateConfigMapInitializer) error {
-	credentials, err := packet.GetCredentialsFromSecretRef(ctx, a.Client(), infrastructure.Spec.SecretRef)
-	if err != nil {
-		return err
-	}
-
 	var (
-		terraformConfig = GenerateTerraformInfraConfig(infrastructure, string(credentials.ProjectID))
+		terraformConfig = GenerateTerraformInfraConfig(infrastructure)
 		mainTF          bytes.Buffer
 	)
 
@@ -77,11 +72,8 @@ func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastruc
 }
 
 // GenerateTerraformInfraConfig generates the Packet Terraform configuration based on the given infrastructure and project.
-func GenerateTerraformInfraConfig(infrastructure *extensionsv1alpha1.Infrastructure, projectID string) map[string]interface{} {
+func GenerateTerraformInfraConfig(infrastructure *extensionsv1alpha1.Infrastructure) map[string]interface{} {
 	return map[string]interface{}{
-		"packet": map[string]interface{}{
-			"projectID": projectID,
-		},
 		"sshPublicKey": string(infrastructure.Spec.SSHPublicKey),
 		"clusterName":  infrastructure.Namespace,
 		"outputKeys": map[string]interface{}{

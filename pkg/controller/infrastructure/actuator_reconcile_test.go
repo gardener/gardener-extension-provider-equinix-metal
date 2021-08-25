@@ -28,7 +28,6 @@ var _ = Describe("Actuator Reconcile", func() {
 	Describe("#GenerateTerraformInfraConfig", func() {
 		It("should compute the correct Terraform config", func() {
 			var (
-				projectID   = "project-1234"
 				sshKey      = "foo-bar"
 				clusterName = "shoot--foo-bar"
 
@@ -43,10 +42,7 @@ var _ = Describe("Actuator Reconcile", func() {
 				}
 			)
 
-			Expect(GenerateTerraformInfraConfig(infrastructure, projectID)).To(Equal(map[string]interface{}{
-				"packet": map[string]interface{}{
-					"projectID": projectID,
-				},
+			Expect(GenerateTerraformInfraConfig(infrastructure)).To(Equal(map[string]interface{}{
 				"sshPublicKey": sshKey,
 				"clusterName":  clusterName,
 				"outputKeys": map[string]interface{}{

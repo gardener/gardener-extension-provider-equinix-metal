@@ -63,13 +63,24 @@ func (a *actuator) newTerraformer(logger logr.Logger, purpose string, infra *ext
 func generateTerraformInfraVariablesEnvironment(secretRef corev1.SecretReference) []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{
-			Name: "TF_VAR_PACKET_API_KEY",
+			Name: "TF_VAR_EQXM_API_KEY",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: secretRef.Name,
 					},
 					Key: packet.APIToken,
+				},
+			},
+		},
+		{
+			Name: "TF_VAR_EQXM_PROJECT_ID",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: secretRef.Name,
+					},
+					Key: packet.ProjectID,
 				},
 			},
 		},

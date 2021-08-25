@@ -1,18 +1,21 @@
-provider "packet" {
-  auth_token = "${var.PACKET_API_KEY}"
+terraform {
+  required_providers {
+    metal = {
+      source  = "equinix/metal"
+    }
+  }
 }
 
-// Deploy a new ssh key
-resource "packet_project_ssh_key" "publickey" {
-  name = "{{ .clusterName }}-ssh-publickey"
+provider "metal" {
+  auth_token = var.EQXM_API_KEY
+}
+
+resource "metal_project_ssh_key" "publickey" {
+  name       = "{{ .clusterName }}-ssh-publickey"
   public_key = "{{ .sshPublicKey }}"
-  project_id = "{{ .packet.projectID }}"
+  project_id = var.EQXM_PROJECT_ID
 }
-
-//=====================================================================
-//= Output variables
-//=====================================================================
 
 output "{{ .outputKeys.sshKeyID }}" {
-  value = "${packet_project_ssh_key.publickey.id}"
+  value = metal_project_ssh_key.publickey.id
 }
