@@ -17,8 +17,8 @@ package imagevector
 import (
 	"strings"
 
-	"github.com/gardener/gardener-extension-provider-packet/charts"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -43,7 +43,7 @@ func ImageVector() imagevector.ImageVector {
 
 // TerraformerImage retrieves the Terraformer image.
 func TerraformerImage() string {
-	image, err := imageVector.FindImage(packet.TerraformerImageName)
+	image, err := imageVector.FindImage(equinixmetal.TerraformerImageName)
 	runtime.Must(err)
 	return image.String()
 }

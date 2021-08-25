@@ -17,8 +17,8 @@ package infrastructure
 import (
 	"time"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/imagevector"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
@@ -69,7 +69,7 @@ func generateTerraformInfraVariablesEnvironment(secretRef corev1.SecretReference
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: secretRef.Name,
 					},
-					Key: packet.APIToken,
+					Key: equinixmetal.APIToken,
 				},
 			},
 		},
@@ -80,7 +80,7 @@ func generateTerraformInfraVariablesEnvironment(secretRef corev1.SecretReference
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: secretRef.Name,
 					},
-					Key: packet.ProjectID,
+					Key: equinixmetal.ProjectID,
 				},
 			},
 		},

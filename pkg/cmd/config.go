@@ -17,8 +17,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
-	configloader "github.com/gardener/gardener-extension-provider-packet/pkg/apis/config/loader"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
+	configloader "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config/loader"
 
 	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config"
 	"github.com/spf13/pflag"

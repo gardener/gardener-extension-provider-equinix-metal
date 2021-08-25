@@ -14,7 +14,7 @@
 
 /**
 	Overview
-		- Tests the health checks of the extension: provider-packet.
+		- Tests the health checks of the extension: provider-equinix-metal.
 		- Manipulates health check relevant resources and expects the extension-provider to properly report the results as conditions in the respective CRD (ControlPlane(Type Normal) & Worker CRD).
 
 	Prerequisites
@@ -42,7 +42,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
 	genericcontrolplaneactuator "github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	genericworkeractuator "github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
@@ -68,8 +68,8 @@ var _ = ginkgo.Describe("integration test: health checks", func() {
 	ginkgo.Context("ControlPlane", func() {
 
 		ginkgo.Context("Condition type: ShootControlPlaneHealthy", func() {
-			f.Serial().Release().CIt(fmt.Sprintf("ControlPlane CRD should contain unhealthy condition because the deployment '%s' cannot be found in the shoot namespace in the seed", packet.CloudControllerManagerName), func(ctx context.Context) {
-				err := healthcheckoperation.ControlPlaneHealthCheckDeleteSeedDeployment(ctx, f, f.Shoot.GetName(), packet.CloudControllerManagerName, gardencorev1beta1.ShootControlPlaneHealthy)
+			f.Serial().Release().CIt(fmt.Sprintf("ControlPlane CRD should contain unhealthy condition because the deployment '%s' cannot be found in the shoot namespace in the seed", equinixmetal.CloudControllerManagerName), func(ctx context.Context) {
+				err := healthcheckoperation.ControlPlaneHealthCheckDeleteSeedDeployment(ctx, f, f.Shoot.GetName(), equinixmetal.CloudControllerManagerName, gardencorev1beta1.ShootControlPlaneHealthy)
 				framework.ExpectNoError(err)
 			}, timeout)
 		})
@@ -85,8 +85,8 @@ var _ = ginkgo.Describe("integration test: health checks", func() {
 	ginkgo.Context("Worker", func() {
 
 		ginkgo.Context("Condition type: ShootControlPlaneHealthy", func() {
-			f.Serial().Release().CIt(fmt.Sprintf("Worker CRD should contain unhealthy condition because the deployment '%s' cannot be found in the shoot namespace in the seed", packet.MachineControllerManagerName), func(ctx context.Context) {
-				err := healthcheckoperation.WorkerHealthCheckDeleteSeedDeployment(ctx, f, f.Shoot.GetName(), packet.MachineControllerManagerName, gardencorev1beta1.ShootControlPlaneHealthy)
+			f.Serial().Release().CIt(fmt.Sprintf("Worker CRD should contain unhealthy condition because the deployment '%s' cannot be found in the shoot namespace in the seed", equinixmetal.MachineControllerManagerName), func(ctx context.Context) {
+				err := healthcheckoperation.WorkerHealthCheckDeleteSeedDeployment(ctx, f, f.Shoot.GetName(), equinixmetal.MachineControllerManagerName, gardencorev1beta1.ShootControlPlaneHealthy)
 				framework.ExpectNoError(err)
 			}, timeout)
 		})

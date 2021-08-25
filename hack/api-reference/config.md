@@ -1,19 +1,19 @@
 <p>Packages:</p>
 <ul>
 <li>
-<a href="#packet.provider.extensions.config.gardener.cloud%2fv1alpha1">packet.provider.extensions.config.gardener.cloud/v1alpha1</a>
+<a href="#equinixmetal.provider.extensions.config.gardener.cloud%2fv1alpha1">equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1</a>
 </li>
 </ul>
-<h2 id="packet.provider.extensions.config.gardener.cloud/v1alpha1">packet.provider.extensions.config.gardener.cloud/v1alpha1</h2>
+<h2 id="equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1">equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1</h2>
 <p>
-<p>Package v1alpha1 contains the Packet provider configuration API resources.</p>
+<p>Package v1alpha1 contains the Equinix Metal provider configuration API resources.</p>
 </p>
 Resource Types:
 <ul></ul>
-<h3 id="packet.provider.extensions.config.gardener.cloud/v1alpha1.ControllerConfiguration">ControllerConfiguration
+<h3 id="equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1.ControllerConfiguration">ControllerConfiguration
 </h3>
 <p>
-<p>ControllerConfiguration defines the configuration for the Packet provider.</p>
+<p>ControllerConfiguration defines the configuration for the Equinix Metal provider.</p>
 </p>
 <table>
 <thead>
@@ -42,7 +42,7 @@ settings for the proxy server to use when communicating with the apiserver.</p>
 <td>
 <code>etcd</code></br>
 <em>
-<a href="#packet.provider.extensions.config.gardener.cloud/v1alpha1.ETCD">
+<a href="#equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1.ETCD">
 ETCD
 </a>
 </em>
@@ -67,11 +67,11 @@ github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config/v1alph
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.config.gardener.cloud/v1alpha1.ETCD">ETCD
+<h3 id="equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1.ETCD">ETCD
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#packet.provider.extensions.config.gardener.cloud/v1alpha1.ControllerConfiguration">ControllerConfiguration</a>)
+<a href="#equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1.ControllerConfiguration">ControllerConfiguration</a>)
 </p>
 <p>
 <p>ETCD is an etcd configuration.</p>
@@ -88,7 +88,7 @@ github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config/v1alph
 <td>
 <code>storage</code></br>
 <em>
-<a href="#packet.provider.extensions.config.gardener.cloud/v1alpha1.ETCDStorage">
+<a href="#equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1.ETCDStorage">
 ETCDStorage
 </a>
 </em>
@@ -99,11 +99,11 @@ ETCDStorage
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.config.gardener.cloud/v1alpha1.ETCDStorage">ETCDStorage
+<h3 id="equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1.ETCDStorage">ETCDStorage
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#packet.provider.extensions.config.gardener.cloud/v1alpha1.ETCD">ETCD</a>)
+<a href="#equinixmetal.provider.extensions.config.gardener.cloud/v1alpha1.ETCD">ETCD</a>)
 </p>
 <p>
 <p>ETCDStorage is an etcd storage configuration.</p>

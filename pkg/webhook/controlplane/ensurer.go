@@ -17,8 +17,6 @@ package controlplane
 import (
 	"context"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-
 	"github.com/coreos/go-systemd/v22/unit"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -36,7 +34,7 @@ import (
 // NewEnsurer creates a new controlplane ensurer.
 func NewEnsurer(logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
-		logger: logger.WithName("packet-controlplane-ensurer"),
+		logger: logger.WithName("equinix-metal-controlplane-ensurer"),
 	}
 }
 
@@ -57,7 +55,6 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gconte
 	ps := &new.Spec.Template.Spec
 	if c := extensionswebhook.ContainerWithName(ps.Containers, "kube-apiserver"); c != nil {
 		ensureKubeAPIServerCommandLineArgs(c)
-		ensureEnvVars(c)
 	}
 
 	keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old, "vpn-seed")
@@ -152,7 +149,7 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 		permissions       int32 = 0755
 		customFileContent       = `#!/bin/sh
 # get my private IP
-GATEWAY="$(curl https://metadata.packet.net/metadata | jq -r '.network.addresses[] | select( .address_family == 4 and .public == false ) | .gateway')"
+GATEWAY="$(curl https://metadata.platformequinix.com/metadata | jq -r '.network.addresses[] | select( .address_family == 4 and .public == false ) | .gateway')"
 ip route add 169.254.255.1 via ${GATEWAY} dev bond0
 ip route add 169.254.255.2 via ${GATEWAY} dev bond0
 `
@@ -210,24 +207,6 @@ func ensureKubeAPIServerCommandLineArgs(c *corev1.Container) {
 
 func ensureKubeControllerManagerCommandLineArgs(c *corev1.Container) {
 	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, "--cloud-provider=", "external")
-}
-
-var (
-	credentialsEnvVar = corev1.EnvVar{
-		Name: "PACKET_API_KEY",
-		ValueFrom: &corev1.EnvVarSource{
-			SecretKeyRef: &corev1.SecretKeySelector{
-				Key: packet.APIToken,
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: v1beta1constants.SecretNameCloudProvider,
-				},
-			},
-		},
-	}
-)
-
-func ensureEnvVars(c *corev1.Container) {
-	c.Env = extensionswebhook.EnsureEnvVarWithName(c.Env, credentialsEnvVar)
 }
 
 // EnsureKubeletServiceUnitOptions ensures that the kubelet.service unit options conform to the provider requirements.

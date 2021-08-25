@@ -15,8 +15,8 @@
 package infrastructure_test
 
 import (
-	. "github.com/gardener/gardener-extension-provider-packet/pkg/controller/infrastructure"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	. "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/infrastructure"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	. "github.com/onsi/ginkgo"
@@ -46,7 +46,7 @@ var _ = Describe("Actuator Reconcile", func() {
 				"sshPublicKey": sshKey,
 				"clusterName":  clusterName,
 				"outputKeys": map[string]interface{}{
-					"sshKeyID": packet.SSHKeyID,
+					"sshKeyID": equinixmetal.SSHKeyID,
 				},
 			}))
 		})

@@ -4,10 +4,10 @@ As a starting point, please refer to the [Gardener contributor guide](https://gi
 
 ## Equinix Metal Extension Provider
 
-The rest of this document describes how to contribute to, and test, this Equinix Metal (formerly Packet) extension provider for Gardener.
+The rest of this document describes how to contribute to, and test, this Equinix Metal (EQXM; formerly Packet) extension provider for Gardener.
 
 The guide demonstrates how to make changes, test them and publish them using the
-[Packet provider extension](https://github.com/gardener/gardener-extension-provider-packet).
+[Equinix Metal provider extension](https://github.com/gardener/gardener-extension-provider-equinix-metal).
 
 Gardener uses
 [an extensible architecture](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md)
@@ -18,8 +18,8 @@ Extensions are k8s controllers. They are *packaged* as Helm charts and are *regi
 Gardener API server by applying a `ControllerRegistration` custom k8s resource to the Gardener API
 server.
 In addition to being packaged as Helm charts, extensions often **deploy** Helm charts as well. For
-example, the Packet provider extension deploys components such as the Packet CCM and MetalLB in
-order to provide necessary services to Packet seed and shoot clusters.
+example, the EQXM provider extension deploys components such as the EQXM CCM and MetalLB in
+order to provide necessary services to EQXM seed and shoot clusters.
 
 ## Requirements
 
@@ -172,9 +172,9 @@ Steps:
 1. Get the namespace in which your extensions are running
 1. Determine the port on which the hook will be listening
 1. Determine the port on which inlets is listening
-1. Determine the port on which the extension service `gardener-extension-provider-packet` is listening
+1. Determine the port on which the extension service `gardener-extension-provider-equinix-metal` is listening
 1. Run the extension locally: `make start <options>`
-1. Run the webhook tunnel: `./hack/hook-me.sh <provider> <namespace> <webhook port> <inlets port>`, where `<namespace>`, `<port>` and `<inlets port>` are as determined above, and `<provider>` is `packet`
+1. Run the webhook tunnel: `./hack/hook-me.sh <provider> <namespace> <webhook port> <inlets port>`, where `<namespace>`, `<port>` and `<inlets port>` are as determined above, and `<provider>` is `equinix-metal`
 
 #### Namespace
 
@@ -186,22 +186,22 @@ For example:
 
 ```sh
 $ kubectl get ns
-NAME                                STATUS   AGE
-cert-manager                        Active   61d
-default                             Active   64d
-extension-dns-external-j4psd        Active   6d21h
-extension-networking-calico-xjshs   Active   6d21h
-extension-os-ubuntu-nrhxn           Active   6d21h
-extension-provider-gcp-bcdwd        Active   6d21h
-extension-provider-packet-9r7xh     Active   6d21h
-garden                              Active   61d
-kube-node-lease                     Active   64d
-kube-public                         Active   64d
-kube-system                         Active   64d
-shoot--em--em-test                  Active   6d21h
+NAME                                     STATUS   AGE
+cert-manager                             Active   61d
+default                                  Active   64d
+extension-dns-external-j4psd             Active   6d21h
+extension-networking-calico-xjshs        Active   6d21h
+extension-os-ubuntu-nrhxn                Active   6d21h
+extension-provider-gcp-bcdwd             Active   6d21h
+extension-provider-equinix-metal-9r7xh   Active   6d21h
+garden                                   Active   61d
+kube-node-lease                          Active   64d
+kube-public                              Active   64d
+kube-system                              Active   64d
+shoot--em--em-test                       Active   6d21h
 ```
 
-In this example, it is `extension-provider-packet-9r7xh`.
+In this example, it is `extension-provider-equinix-metal-9r7xh`.
 
 #### Webhook Port
 
@@ -213,38 +213,38 @@ it is set in the `Makefile` as `WEBHOOK_CONFIG_PORT`.
 
 #### Inlets Port
 
-`<inlets port>` is the port on which inlets is listening. The garden kube-apiserver uses the service `gardener-extension-provider-packet`
+`<inlets port>` is the port on which inlets is listening. The garden kube-apiserver uses the service `gardener-extension-provider-equinix-metal`
 to connect to the webhook. The `targetPort` of that service must point either to:
 
 * the in-cluster pod where the extension is running
 * the in-cluster pod where inlets is listening, normally `inlets-server`
 
-Because the `gardener-extension-provider-packet` service is deployed and syncs every 5 minutes, changing the `targetPort`
+Because the `gardener-extension-provider-equinix-metal` service is deployed and syncs every 5 minutes, changing the `targetPort`
 on this service to match the port on which `inlets-server` is listening will only last a few minutes.
 
-Thus, you want the `inlets-server` listening port to match up to the `targetPort` of `gardener-extension-provider-packet`
+Thus, you want the `inlets-server` listening port to match up to the `targetPort` of `gardener-extension-provider-equinix-metal`
 
-The `gardener-extension-provider-packet` port is set in [values.yaml](./charts/gardener-extension-provider-packet/values.yaml#L45),
+The `gardener-extension-provider-equinix-metal` port is set in [values.yaml](./charts/gardener-extension-provider-equinix-metal/values.yaml#L45),
 by default 10250, and the inlets port is set as the last argument to `hook-me.sh`.
 
 #### Extension Service Port
 
-The shoot kube-apiserver will be pointed to the `gardener-extension-provider-packet` Service, which, in turn, as described above, points
+The shoot kube-apiserver will be pointed to the `gardener-extension-provider-equinix-metal` Service, which, in turn, as described above, points
 to the inlets pod. Thus, the apiserver must be told which port it already is listening on. In general, that is `443`, but you
-can check it via `kubectl -n <namespace> describe svc gardener-extension-provider-packet` in the soil cluster, for example:
+can check it via `kubectl -n <namespace> describe svc gardener-extension-provider-equinix-metal` in the soil cluster, for example:
 
 ```
-$ kubectl -n extension-provider-packet-9r7xh describe svc gardener-extension-provider-packet
-Name:              gardener-extension-provider-packet
-Namespace:         extension-provider-packet-9r7xh
-Labels:            app=gardener-extension-provider-packet
-                   app.kubernetes.io/instance=provider-packet
-                   app.kubernetes.io/name=gardener-extension-provider-packet
+$ kubectl -n extension-provider-equinix-metal-9r7xh describe svc gardener-extension-provider-equinix-metal
+Name:              gardener-extension-provider-equinix-metal
+Namespace:         extension-provider-equinix-metal-9r7xh
+Labels:            app=gardener-extension-provider-equinix-metal
+                   app.kubernetes.io/instance=provider-equinix-metal
+                   app.kubernetes.io/name=gardener-extension-provider-equinix-metal
 Annotations:       cloud.google.com/neg: {"ingress":true}
                    resources.gardener.cloud/description:
                      DO NOT EDIT - This resource is managed by gardener-resource-manager.
                      Any modifications are discarded and the resource is returned to the original state.
-Selector:          app.kubernetes.io/instance=provider-packet,app.kubernetes.io/name=gardener-extension-provider-packet
+Selector:          app.kubernetes.io/instance=provider-equinix-metal,app.kubernetes.io/name=gardener-extension-provider-equinix-metal
 Type:              ClusterIP
 IP Families:       <none>
 IP:                10.80.2.212
@@ -269,7 +269,7 @@ make start IGNORE_OPERATION_ANNOTATION=false WEBHOOK_CONFIG_MODE=service EXTENSI
 For example:
 
 ```sh
-make start IGNORE_OPERATION_ANNOTATION=false WEBHOOK_CONFIG_MODE=service EXTENSION_NAMESPACE=extension-provider-packet-9r7xh WEBHOOK_CONFIG_PORT=8443 WEBHOOK_CONFIG_SERICE_PORT=443
+make start IGNORE_OPERATION_ANNOTATION=false WEBHOOK_CONFIG_MODE=service EXTENSION_NAMESPACE=extension-provider-equinix-metal-9r7xh WEBHOOK_CONFIG_PORT=8443 WEBHOOK_CONFIG_SERICE_PORT=443
 ```
 
 The option `IGNORE_OPERATION_ANNOTATION=false` is critically important. The annotation is how the gardenlet communicates with
@@ -278,7 +278,7 @@ the extension controller. If it is set to `true` (the default), then shoots will
 #### Webhook Tunnel
 
 ```sh
-./hack/hook-me.sh packet extension-provider-packet-9r7xh 8443 10250
+./hack/hook-me.sh equinixmetal extension-provider-equinix-metal-9r7xh 8443 10250
 ```
 
 ##### What the Webhook Does
@@ -321,7 +321,7 @@ Again, this is likely a transient error. Wait until it passes.
 `hook-me.sh` gives output as follows:
 
 ```
-++ kubectl -n extension-provider-packet-9r7xh get pods inlets-server --no-headers
+++ kubectl -n extension-provider-equinix-metal-9r7xh get pods inlets-server --no-headers
 ++ awk '{print $2}'
 + test 2/3 = 3/3
 + sleep 2s
@@ -338,7 +338,7 @@ kubectl -n <namespace> describe pod inlets-server
 For example:
 
 ```
-kubectl -n extension-provider-packet-9r7xh describe pod inlets-server
+kubectl -n extension-provider-equinix-metal-9r7xh describe pod inlets-server
 ```
 
 Here you could find one of several errors:
@@ -376,8 +376,8 @@ If you don't already have it, clone the extension's source repository:
 
 ```console
 mkdir -p $GOPATH/src/github.com/gardener && cd $_
-git clone git@github.com:gardener/gardener-extension-provider-packet.git
-cd gardener-extension-provider-packet
+git clone git@github.com:gardener/gardener-extension-provider-equinix-metal.git
+cd gardener-extension-provider-equinix-metal
 ```
 
 Set your `KUBECONFIG` env var to point at the kubeconfig file belonging to the **garden cluster**
@@ -402,7 +402,7 @@ aws    Ready    aws        eu-central-1   104m   v1.14.0   v1.18.12
 ```
 
 The extension is in [controller-registration.yaml](./example/controller-registration.yaml).
-It contains the Helm chart from [here](./charts/gardener-extension-provider-packet/values.yaml), tarred, gzipped, and then
+It contains the Helm chart from [here](./charts/gardener-extension-provider-equinix-metal/values.yaml), tarred, gzipped, and then
 base64-encoded. By default, it deploys one replica of the extension pod from a registry.
 
 >NOTE: The `controller-registration.yaml` file in the `master` branch contains a reference to an
@@ -453,8 +453,8 @@ make docker-images
 You can now tag and push the resulting image to a Docker registry:
 
 ```
-docker tag 9fa4c197cf04 quay.io/jlieb/gardener-extension-packet:testing
-docker push quay.io/jlieb/gardener-extension-packet:testing
+docker tag 9fa4c197cf04 <your-container-registry>:testing
+docker push <your-container-registry>:testing
 ```
 
 To use the new image, register or re-register the extension with the Gardener API server. Note that
@@ -468,7 +468,7 @@ To check the logs of the extension controller, run the following command against
 server:
 
 ```
-kubectl -n extension-provider-packet-xxxxx logs gardener-extension-provider-packet-xxxxx
+kubectl -n extension-provider-equinix-metal-xxxxx logs gardener-extension-provider-equinix-metal-xxxxx
 ```
 
 ### Miscellaneous and "gotchas"

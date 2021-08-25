@@ -15,9 +15,9 @@
 package worker
 
 import (
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	"github.com/gardener/gardener/extensions/pkg/controller/worker"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
+	"github.com/gardener/gardener/extensions/pkg/controller/worker"
 	machinescheme "github.com/gardener/machine-controller-manager/pkg/client/clientset/versioned/scheme"
 	apiextensionsscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -29,7 +29,7 @@ var (
 	DefaultAddOptions = AddOptions{}
 )
 
-// AddOptions are options to apply when adding the Packet worker controller to the manager.
+// AddOptions are options to apply when adding the Equinix Metal worker controller to the manager.
 type AddOptions struct {
 	// Controller are the controller.Options.
 	Controller controller.Options
@@ -53,7 +53,7 @@ func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) error {
 		Actuator:          NewActuator(),
 		ControllerOptions: opts.Controller,
 		Predicates:        worker.DefaultPredicates(opts.IgnoreOperationAnnotation),
-		Type:              packet.Type,
+		Type:              equinixmetal.Type,
 	})
 }
 

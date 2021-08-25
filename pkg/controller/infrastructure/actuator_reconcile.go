@@ -19,8 +19,8 @@ import (
 	"context"
 	"fmt"
 
-	packetv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	apiv1alpha1 "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/v1alpha1"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
@@ -48,7 +48,7 @@ func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastruc
 		return fmt.Errorf("could not render Terraform template: %+v", err)
 	}
 
-	tf, err := a.newTerraformer(logger, packet.TerraformerPurposeInfra, infrastructure)
+	tf, err := a.newTerraformer(logger, equinixmetal.TerraformerPurposeInfra, infrastructure)
 	if err != nil {
 		return fmt.Errorf("could not create terraformer object: %+v", err)
 	}
@@ -71,20 +71,20 @@ func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastruc
 	return a.updateProviderStatus(ctx, tf, infrastructure)
 }
 
-// GenerateTerraformInfraConfig generates the Packet Terraform configuration based on the given infrastructure and project.
+// GenerateTerraformInfraConfig generates the Equinix Metal Terraform configuration based on the given infrastructure and project.
 func GenerateTerraformInfraConfig(infrastructure *extensionsv1alpha1.Infrastructure) map[string]interface{} {
 	return map[string]interface{}{
 		"sshPublicKey": string(infrastructure.Spec.SSHPublicKey),
 		"clusterName":  infrastructure.Namespace,
 		"outputKeys": map[string]interface{}{
-			"sshKeyID": packet.SSHKeyID,
+			"sshKeyID": equinixmetal.SSHKeyID,
 		},
 	}
 }
 
 func (a *actuator) updateProviderStatus(ctx context.Context, tf terraformer.Terraformer, infrastructure *extensionsv1alpha1.Infrastructure) error {
 	outputVarKeys := []string{
-		packet.SSHKeyID,
+		equinixmetal.SSHKeyID,
 	}
 
 	output, err := tf.GetStateOutputVariables(ctx, outputVarKeys...)
@@ -103,12 +103,12 @@ func (a *actuator) updateProviderStatus(ctx context.Context, tf terraformer.Terr
 
 	return extensionscontroller.TryUpdateStatus(ctx, retry.DefaultBackoff, a.Client(), infrastructure, func() error {
 		infrastructure.Status.ProviderStatus = &runtime.RawExtension{
-			Object: &packetv1alpha1.InfrastructureStatus{
+			Object: &apiv1alpha1.InfrastructureStatus{
 				TypeMeta: metav1.TypeMeta{
-					APIVersion: packetv1alpha1.SchemeGroupVersion.String(),
+					APIVersion: apiv1alpha1.SchemeGroupVersion.String(),
 					Kind:       "InfrastructureStatus",
 				},
-				SSHKeyID: output[packet.SSHKeyID],
+				SSHKeyID: output[equinixmetal.SSHKeyID],
 			},
 		}
 		infrastructure.Status.State = &runtime.RawExtension{Raw: stateByte}

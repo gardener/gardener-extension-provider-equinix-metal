@@ -1,26 +1,26 @@
 <p>Packages:</p>
 <ul>
 <li>
-<a href="#packet.provider.extensions.gardener.cloud%2fv1alpha1">packet.provider.extensions.gardener.cloud/v1alpha1</a>
+<a href="#equinixmetal.provider.extensions.gardener.cloud%2fv1alpha1">equinixmetal.provider.extensions.gardener.cloud/v1alpha1</a>
 </li>
 </ul>
-<h2 id="packet.provider.extensions.gardener.cloud/v1alpha1">packet.provider.extensions.gardener.cloud/v1alpha1</h2>
+<h2 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1">equinixmetal.provider.extensions.gardener.cloud/v1alpha1</h2>
 <p>
-<p>Package v1alpha1 contains the Packet provider API resources.</p>
+<p>Package v1alpha1 contains the Equinix Metal provider API resources.</p>
 </p>
 Resource Types:
 <ul><li>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.CloudProfileConfig">CloudProfileConfig</a>
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.CloudProfileConfig">CloudProfileConfig</a>
 </li><li>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.ControlPlaneConfig">ControlPlaneConfig</a>
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.ControlPlaneConfig">ControlPlaneConfig</a>
 </li><li>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.InfrastructureConfig">InfrastructureConfig</a>
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.InfrastructureConfig">InfrastructureConfig</a>
 </li><li>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.WorkerConfig">WorkerConfig</a>
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.WorkerConfig">WorkerConfig</a>
 </li><li>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.WorkerStatus">WorkerStatus</a>
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.WorkerStatus">WorkerStatus</a>
 </li></ul>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.CloudProfileConfig">CloudProfileConfig
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.CloudProfileConfig">CloudProfileConfig
 </h3>
 <p>
 <p>CloudProfileConfig contains provider-specific configuration that is embedded into Gardener&rsquo;s <code>CloudProfile</code>
@@ -40,7 +40,7 @@ resource.</p>
 string</td>
 <td>
 <code>
-packet.provider.extensions.gardener.cloud/v1alpha1
+equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 </code>
 </td>
 </tr>
@@ -55,7 +55,7 @@ string
 <td>
 <code>machineImages</code></br>
 <em>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.MachineImages">
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.MachineImages">
 []MachineImages
 </a>
 </em>
@@ -67,7 +67,7 @@ logical names and versions to provider-specific identifiers.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.ControlPlaneConfig">ControlPlaneConfig
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.ControlPlaneConfig">ControlPlaneConfig
 </h3>
 <p>
 <p>ControlPlaneConfig contains configuration settings for the control plane.</p>
@@ -86,7 +86,7 @@ logical names and versions to provider-specific identifiers.</p>
 string</td>
 <td>
 <code>
-packet.provider.extensions.gardener.cloud/v1alpha1
+equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 </code>
 </td>
 </tr>
@@ -99,7 +99,7 @@ string
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.InfrastructureConfig">InfrastructureConfig
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.InfrastructureConfig">InfrastructureConfig
 </h3>
 <p>
 <p>InfrastructureConfig infrastructure configuration resource</p>
@@ -118,7 +118,7 @@ string
 string</td>
 <td>
 <code>
-packet.provider.extensions.gardener.cloud/v1alpha1
+equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 </code>
 </td>
 </tr>
@@ -131,7 +131,7 @@ string
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.WorkerConfig">WorkerConfig
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.WorkerConfig">WorkerConfig
 </h3>
 <p>
 <p>WorkerConfig contains configuration settings for the worker nodes.</p>
@@ -150,7 +150,7 @@ string
 string</td>
 <td>
 <code>
-packet.provider.extensions.gardener.cloud/v1alpha1
+equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 </code>
 </td>
 </tr>
@@ -188,7 +188,7 @@ new machines are created. If false and the list of reservation IDs is exhausted 
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.WorkerStatus">WorkerStatus
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.WorkerStatus">WorkerStatus
 </h3>
 <p>
 <p>WorkerStatus contains information about created worker resources.</p>
@@ -207,7 +207,7 @@ new machines are created. If false and the list of reservation IDs is exhausted 
 string</td>
 <td>
 <code>
-packet.provider.extensions.gardener.cloud/v1alpha1
+equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 </code>
 </td>
 </tr>
@@ -222,7 +222,7 @@ string
 <td>
 <code>machineImages</code></br>
 <em>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.MachineImage">
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.MachineImage">
 []MachineImage
 </a>
 </em>
@@ -238,7 +238,7 @@ reconciliation is possible.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.InfrastructureStatus">InfrastructureStatus
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.InfrastructureStatus">InfrastructureStatus
 </h3>
 <p>
 <p>InfrastructureStatus contains information about created infrastructure resources.</p>
@@ -263,11 +263,11 @@ string
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.MachineImage">MachineImage
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.MachineImage">MachineImage
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.WorkerStatus">WorkerStatus</a>)
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.WorkerStatus">WorkerStatus</a>)
 </p>
 <p>
 <p>MachineImage is a mapping from logical names and versions to provider-specific machine image data.</p>
@@ -315,11 +315,11 @@ string
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.MachineImageVersion">MachineImageVersion
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.MachineImageVersion">MachineImageVersion
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.MachineImages">MachineImages</a>)
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.MachineImages">MachineImages</a>)
 </p>
 <p>
 <p>MachineImageVersion contains a version and a provider-specific identifier.</p>
@@ -356,11 +356,11 @@ string
 </tr>
 </tbody>
 </table>
-<h3 id="packet.provider.extensions.gardener.cloud/v1alpha1.MachineImages">MachineImages
+<h3 id="equinixmetal.provider.extensions.gardener.cloud/v1alpha1.MachineImages">MachineImages
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.CloudProfileConfig">CloudProfileConfig</a>)
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.CloudProfileConfig">CloudProfileConfig</a>)
 </p>
 <p>
 <p>MachineImages is a mapping from logical names and versions to provider-specific identifiers.</p>
@@ -388,7 +388,7 @@ string
 <td>
 <code>versions</code></br>
 <em>
-<a href="#packet.provider.extensions.gardener.cloud/v1alpha1.MachineImageVersion">
+<a href="#equinixmetal.provider.extensions.gardener.cloud/v1alpha1.MachineImageVersion">
 []MachineImageVersion
 </a>
 </em>

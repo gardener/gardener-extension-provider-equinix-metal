@@ -22,10 +22,10 @@ import (
 	"strings"
 	"time"
 
-	api "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
-	apiv1alpha1 "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
-	. "github.com/gardener/gardener-extension-provider-packet/pkg/controller/worker"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	apiv1alpha1 "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/v1alpha1"
+	. "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/worker"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
@@ -94,11 +94,11 @@ var _ = Describe("Machines", func() {
 				namespace        string
 				cloudProfileName string
 
-				packetAPIToken  string
-				packetProjectID string
-				region          string
-				facility1       string
-				facility2       string
+				apiToken  string
+				projectID string
+				region    string
+				facility1 string
+				facility2 string
 
 				machineImageName    string
 				machineImageVersion string
@@ -135,14 +135,14 @@ var _ = Describe("Machines", func() {
 			)
 
 			BeforeEach(func() {
-				namespace = "shoot--foobar--packet"
-				cloudProfileName = "packet"
+				namespace = "shoot--foobar--eqxm"
+				cloudProfileName = "equinix-metal"
 
+				apiToken = "api-token"
+				projectID = "project-id"
 				region = "ny"
 				facility1 = "ewr1"
 				facility2 = "ny5"
-				packetAPIToken = "api-token"
-				packetProjectID = "project-id"
 
 				machineImageName = "my-os"
 				machineImageVersion = "123"
@@ -282,7 +282,7 @@ var _ = Describe("Machines", func() {
 				BeforeEach(func() {
 					defaultMachineClass = map[string]interface{}{
 						"OS":           machineImage,
-						"projectID":    packetProjectID,
+						"projectID":    projectID,
 						"billingCycle": "hourly",
 						"machineType":  machineType,
 						"metro":        region,
@@ -307,8 +307,8 @@ var _ = Describe("Machines", func() {
 						machineClassWithHashPool2 = fmt.Sprintf("%s-%s", machineClassNamePool2, workerPoolHash2)
 					)
 
-					addNameAndSecretToMachineClass(machineClassPool1, packetAPIToken, machineClassWithHashPool1, w.Spec.SecretRef)
-					addNameAndSecretToMachineClass(machineClassPool2, packetAPIToken, machineClassWithHashPool2, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool1, apiToken, machineClassWithHashPool1, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool2, apiToken, machineClassWithHashPool2, w.Spec.SecretRef)
 
 					machineClassPool1["facilities"] = []string{facility1, facility2}
 
@@ -344,23 +344,19 @@ var _ = Describe("Machines", func() {
 				It("should return the expected machine deployments for profile image types", func() {
 					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
 
-					expectGetSecretCallToWork(c, packetAPIToken, packetProjectID)
+					expectGetSecretCallToWork(c, apiToken, projectID)
 
 					// Test workerDelegate.DeployMachineClasses()
 
-					gomock.InOrder(
-						c.EXPECT().
-							DeleteAllOf(context.TODO(), &machinev1alpha1.PacketMachineClass{}, client.InNamespace(namespace)),
-						chartApplier.
-							EXPECT().
-							Apply(
-								ctx,
-								filepath.Join(packet.InternalChartsPath, "machineclass"),
-								namespace,
-								"machineclass",
-								kubernetes.Values(machineClasses),
-							),
-					)
+					chartApplier.
+						EXPECT().
+						Apply(
+							ctx,
+							filepath.Join(equinixmetal.InternalChartsPath, "machineclass"),
+							namespace,
+							"machineclass",
+							kubernetes.Values(machineClasses),
+						)
 
 					err := workerDelegate.DeployMachineClasses(ctx)
 					Expect(err).NotTo(HaveOccurred())
@@ -406,74 +402,21 @@ var _ = Describe("Machines", func() {
 					machineClasses["machineClasses"].([]map[string]interface{})[1]["reservationIDs"] = reservationIDs
 					machineClasses["machineClasses"].([]map[string]interface{})[1]["reservedDevicesOnly"] = reservedDevicesOnly
 
-					expectGetSecretCallToWork(c, packetAPIToken, packetProjectID)
+					expectGetSecretCallToWork(c, apiToken, projectID)
 
 					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
 
-					gomock.InOrder(
-						c.EXPECT().
-							DeleteAllOf(context.TODO(), &machinev1alpha1.PacketMachineClass{}, client.InNamespace(namespace)),
-						chartApplier.
-							EXPECT().
-							Apply(
-								ctx,
-								filepath.Join(packet.InternalChartsPath, "machineclass"),
-								namespace,
-								"machineclass",
-								kubernetes.Values(machineClasses),
-							),
-					)
+					chartApplier.
+						EXPECT().
+						Apply(
+							ctx,
+							filepath.Join(equinixmetal.InternalChartsPath, "machineclass"),
+							namespace,
+							"machineclass",
+							kubernetes.Values(machineClasses),
+						)
 
 					Expect(workerDelegate.DeployMachineClasses(context.TODO())).NotTo(HaveOccurred())
-				})
-
-				It("should delete all the old PacketMachineClasses", func() {
-					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
-					gomock.InOrder(
-						c.EXPECT().
-							Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
-							DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret) error {
-								secret.Data = map[string][]byte{
-									packet.APIToken:  []byte(packetAPIToken),
-									packet.ProjectID: []byte(packetProjectID),
-								}
-								return nil
-							}),
-						c.EXPECT().
-							DeleteAllOf(context.TODO(), &machinev1alpha1.PacketMachineClass{}, client.InNamespace(namespace)),
-						chartApplier.
-							EXPECT().
-							Apply(
-								ctx,
-								filepath.Join(packet.InternalChartsPath, "machineclass"),
-								namespace,
-								"machineclass",
-								kubernetes.Values(machineClasses),
-							),
-					)
-
-					err := workerDelegate.DeployMachineClasses(context.TODO())
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				It("should not delete the any of old PacketMachineClasses as DeleteAll call returns error", func() {
-					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
-
-					c.EXPECT().
-						Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
-						DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret) error {
-							secret.Data = map[string][]byte{
-								packet.APIToken:  []byte(packetAPIToken),
-								packet.ProjectID: []byte(packetProjectID),
-							}
-							return nil
-						})
-					c.EXPECT().
-						DeleteAllOf(context.TODO(), &machinev1alpha1.PacketMachineClass{}, client.InNamespace(namespace)).
-						Return(fmt.Errorf("fake error"))
-
-					err := workerDelegate.DeployMachineClasses(context.TODO())
-					Expect(err).To(HaveOccurred())
 				})
 			})
 
@@ -488,7 +431,7 @@ var _ = Describe("Machines", func() {
 			})
 
 			It("should fail because the version is invalid", func() {
-				expectGetSecretCallToWork(c, packetAPIToken, packetProjectID)
+				expectGetSecretCallToWork(c, apiToken, projectID)
 
 				clusterWithoutImages.Shoot.Spec.Kubernetes.Version = "invalid"
 				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
@@ -509,7 +452,7 @@ var _ = Describe("Machines", func() {
 			})
 
 			It("should fail because the machine image cannot be found", func() {
-				expectGetSecretCallToWork(c, packetAPIToken, packetProjectID)
+				expectGetSecretCallToWork(c, apiToken, projectID)
 
 				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, clusterWithoutImages)
 
@@ -519,7 +462,7 @@ var _ = Describe("Machines", func() {
 			})
 
 			It("should set expected machineControllerManager settings on machine deployment", func() {
-				expectGetSecretCallToWork(c, packetAPIToken, packetProjectID)
+				expectGetSecretCallToWork(c, apiToken, projectID)
 
 				testDrainTimeout := metav1.Duration{Duration: 10 * time.Minute}
 				testHealthTimeout := metav1.Duration{Duration: 20 * time.Minute}
@@ -556,13 +499,13 @@ func encode(obj runtime.Object) []byte {
 	return data
 }
 
-func expectGetSecretCallToWork(c *mockclient.MockClient, packetAPIToken, packetProjectID string) {
+func expectGetSecretCallToWork(c *mockclient.MockClient, apiToken, projectID string) {
 	c.EXPECT().
 		Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&corev1.Secret{})).
 		DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret) error {
 			secret.Data = map[string][]byte{
-				packet.APIToken:  []byte(packetAPIToken),
-				packet.ProjectID: []byte(packetProjectID),
+				equinixmetal.APIToken:  []byte(apiToken),
+				equinixmetal.ProjectID: []byte(projectID),
 			}
 			return nil
 		})
@@ -596,12 +539,11 @@ func copyMachineClass(def map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-func addNameAndSecretToMachineClass(class map[string]interface{}, packetAPIToken, name string, credentialsSecretRef corev1.SecretReference) {
+func addNameAndSecretToMachineClass(class map[string]interface{}, apiToken, name string, credentialsSecretRef corev1.SecretReference) {
 	class["name"] = name
 	class["labels"] = map[string]string{
 		v1beta1constants.GardenerPurpose: genericworkeractuator.GardenPurposeMachineClass,
 	}
-	class["secret"].(map[string]interface{})[packet.APIToken] = packetAPIToken
 	class["credentialsSecretRef"] = map[string]interface{}{
 		"name":      credentialsSecretRef.Name,
 		"namespace": credentialsSecretRef.Namespace,

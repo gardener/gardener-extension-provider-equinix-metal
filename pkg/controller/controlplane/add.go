@@ -15,15 +15,15 @@
 package controlplane
 
 import (
-	"github.com/gardener/gardener-extension-provider-packet/pkg/imagevector"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
+
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	secretutil "github.com/gardener/gardener/pkg/utils/secrets"
-
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -34,10 +34,10 @@ var (
 	// DefaultAddOptions are the default AddOptions for AddToManager.
 	DefaultAddOptions = AddOptions{}
 
-	logger = log.Log.WithName("packet-controlplane-controller")
+	logger = log.Log.WithName("equinix-metal-controlplane-controller")
 )
 
-// AddOptions are options to apply when adding the Packet controlplane controller to the manager.
+// AddOptions are options to apply when adding the Equinix Metal controlplane controller to the manager.
 type AddOptions struct {
 	// Controller are the controller.Options.
 	Controller controller.Options
@@ -58,13 +58,13 @@ func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) error {
 	)
 
 	return controlplane.Add(mgr, controlplane.AddArgs{
-		Actuator: genericactuator.NewActuator(packet.Name, controlPlaneSecrets, exposureSecrets, configChart,
+		Actuator: genericactuator.NewActuator(equinixmetal.Name, controlPlaneSecrets, exposureSecrets, configChart,
 			controlPlaneChart, controlPlaneShootChart, nil, storageClassChart, controlPlaneExposureChart,
 			NewValuesProvider(logger), extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
 			imagevector.ImageVector(), configName, opts.ShootWebhooks, mgr.GetWebhookServer().Port, logger),
 		ControllerOptions: opts.Controller,
 		Predicates:        controlplane.DefaultPredicates(opts.IgnoreOperationAnnotation),
-		Type:              packet.Type,
+		Type:              equinixmetal.Type,
 	})
 }
 

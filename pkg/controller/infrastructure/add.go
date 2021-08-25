@@ -15,9 +15,9 @@
 package infrastructure
 
 import (
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
+	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -27,7 +27,7 @@ var (
 	DefaultAddOptions = AddOptions{}
 )
 
-// AddOptions are options to apply when adding the Packet infrastructure controller to the manager.
+// AddOptions are options to apply when adding the Equinix Metal infrastructure controller to the manager.
 type AddOptions struct {
 	// Controller are the controller.Options.
 	Controller controller.Options
@@ -42,7 +42,7 @@ func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) error {
 		Actuator:          NewActuator(),
 		ControllerOptions: opts.Controller,
 		Predicates:        infrastructure.DefaultPredicates(opts.IgnoreOperationAnnotation),
-		Type:              packet.Type,
+		Type:              equinixmetal.Type,
 	})
 }
 

@@ -1,9 +1,9 @@
 apiVersion: core.gardener.cloud/v1beta1
 kind: CloudProfile
 metadata:
-  name: packet
+  name: equinix-metal
 spec:
-  type: packet
+  type: equinixmetal
   kubernetes:
     versions:
     - version: 1.20.2
@@ -20,7 +20,7 @@ spec:
     gpu: "0"
     memory: 8Gi
     usable: true
-  # volumeTypes is commented out because Packet retired its volumes storage as a service; it remains here
+  # volumeTypes is commented out because Equinix Metal retired its volumes storage as a service; it remains here
   # commented because we may be able to pick which drives to use to install
   #volumeTypes:
   #- name: storage_1
@@ -36,7 +36,7 @@ spec:
     - name: ny5
     - name: ny7
   providerConfig:
-    apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+    apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
     kind: CloudProfileConfig
     machineImages:
     - name: flatcar

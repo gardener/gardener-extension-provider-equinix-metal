@@ -15,13 +15,13 @@
 package cmd
 
 import (
-	controlplanecontroller "github.com/gardener/gardener-extension-provider-packet/pkg/controller/controlplane"
-	healthcheckcontroller "github.com/gardener/gardener-extension-provider-packet/pkg/controller/healthcheck"
-	infrastructurecontroller "github.com/gardener/gardener-extension-provider-packet/pkg/controller/infrastructure"
-	workercontroller "github.com/gardener/gardener-extension-provider-packet/pkg/controller/worker"
-	controlplanewebhook "github.com/gardener/gardener-extension-provider-packet/pkg/webhook/controlplane"
-	controlplaneexposurewebhook "github.com/gardener/gardener-extension-provider-packet/pkg/webhook/controlplaneexposure"
-	shootwebhook "github.com/gardener/gardener-extension-provider-packet/pkg/webhook/shoot"
+	controlplanecontroller "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/controlplane"
+	healthcheckcontroller "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/healthcheck"
+	infrastructurecontroller "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/infrastructure"
+	workercontroller "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/worker"
+	controlplanewebhook "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/webhook/controlplane"
+	controlplaneexposurewebhook "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/webhook/controlplaneexposure"
+	shootwebhook "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/webhook/shoot"
 
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	extensionscontrolplanecontroller "github.com/gardener/gardener/extensions/pkg/controller/controlplane"

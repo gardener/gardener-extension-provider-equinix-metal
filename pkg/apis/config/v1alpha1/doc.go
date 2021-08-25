@@ -13,12 +13,12 @@
 // limitations under the License.
 
 // +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=github.com/gardener/gardener-extension-provider-packet/pkg/apis/config
+// +k8s:conversion-gen=github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config
 // +k8s:openapi-gen=true
 // +k8s:defaulter-gen=TypeMeta
 
 //go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/config.json -template-dir ../../../../vendor/github.com/gardener/gardener/hack/api-reference/template -out-file ../../../../hack/api-reference/config.md
 
-// Package v1alpha1 contains the Packet provider configuration API resources.
-// +groupName=packet.provider.extensions.config.gardener.cloud
-package v1alpha1 // import "github.com/gardener/gardener-extension-provider-packet/pkg/apis/config/v1alpha1"
+// Package v1alpha1 contains the Equinix Metal provider configuration API resources.
+// +groupName=equinixmetal.provider.extensions.config.gardener.cloud
+package v1alpha1 // import "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config/v1alpha1"

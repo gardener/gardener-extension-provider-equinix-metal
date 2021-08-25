@@ -23,7 +23,7 @@ package v1alpha1
 import (
 	unsafe "unsafe"
 
-	config "github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
+	config "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
 	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config"
 	healthcheckconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config/v1alpha1"
 	resource "k8s.io/apimachinery/pkg/api/resource"

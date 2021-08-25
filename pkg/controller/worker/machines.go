@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
-	packetapi "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
@@ -29,7 +28,6 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
-	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -48,7 +46,7 @@ func (w *workerDelegate) MachineClassList() client.ObjectList {
 	return &machinev1alpha1.MachineClassList{}
 }
 
-// DeployMachineClasses generates and creates the Packet specific machine classes.
+// DeployMachineClasses generates and creates the Equinix Metal specific machine classes.
 func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 	if w.machineClasses == nil {
 		if err := w.generateMachineConfig(ctx); err != nil {
@@ -56,12 +54,7 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 		}
 	}
 
-	// Delete any older version of PacketMachineClass CRs.
-	if err := w.Client().DeleteAllOf(ctx, &machinev1alpha1.PacketMachineClass{}, client.InNamespace(w.worker.Namespace)); err != nil {
-		return errors.Wrapf(err, "cleaning up older version of Packet machine class CRs failed")
-	}
-
-	return w.seedChartApplier.Apply(ctx, filepath.Join(packet.InternalChartsPath, "machineclass"), w.worker.Namespace, "machineclass", kubernetes.Values(map[string]interface{}{"machineClasses": w.machineClasses}))
+	return w.seedChartApplier.Apply(ctx, filepath.Join(equinixmetal.InternalChartsPath, "machineclass"), w.worker.Namespace, "machineclass", kubernetes.Values(map[string]interface{}{"machineClasses": w.machineClasses}))
 }
 
 // GenerateMachineDeployments generates the configuration for the desired machine deployments.
@@ -74,42 +67,30 @@ func (w *workerDelegate) GenerateMachineDeployments(ctx context.Context) (worker
 	return w.machineDeployments, nil
 }
 
-func (w *workerDelegate) generateMachineClassSecretData(ctx context.Context) (map[string][]byte, error) {
-	secret, err := extensionscontroller.GetSecretByReference(ctx, w.Client(), &w.worker.Spec.SecretRef)
-	if err != nil {
-		return nil, err
-	}
-
-	credentials, err := packet.ReadCredentialsSecret(secret)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string][]byte{
-		machinev1alpha1.PacketAPIKey: credentials.APIToken,
-		packet.ProjectID:             credentials.ProjectID,
-	}, nil
-}
-
 func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 	var (
 		machineDeployments = worker.MachineDeployments{}
 		machineClasses     []map[string]interface{}
-		machineImages      []apispacket.MachineImage
+		machineImages      []api.MachineImage
 	)
 
-	infrastructureStatus := &packetapi.InfrastructureStatus{}
+	infrastructureStatus := &api.InfrastructureStatus{}
 	if _, _, err := w.Decoder().Decode(w.worker.Spec.InfrastructureProviderStatus.Raw, nil, infrastructureStatus); err != nil {
 		return err
 	}
 
-	machineClassSecretData, err := w.generateMachineClassSecretData(ctx)
+	secret, err := extensionscontroller.GetSecretByReference(ctx, w.Client(), &w.worker.Spec.SecretRef)
+	if err != nil {
+		return err
+	}
+
+	credentials, err := equinixmetal.ReadCredentialsSecret(secret)
 	if err != nil {
 		return err
 	}
 
 	for _, pool := range w.worker.Spec.Pools {
-		workerConfig := &packetapi.WorkerConfig{}
+		workerConfig := &api.WorkerConfig{}
 		if pool.ProviderConfig != nil && pool.ProviderConfig.Raw != nil {
 			if _, _, err := w.Decoder().Decode(pool.ProviderConfig.Raw, nil, workerConfig); err != nil {
 				return fmt.Errorf("could not decode provider config: %+v", err)
@@ -125,7 +106,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		machineImages = appendMachineImage(machineImages, apispacket.MachineImage{
+		machineImages = appendMachineImage(machineImages, api.MachineImage{
 			Name:    pool.MachineImage.Name,
 			Version: pool.MachineImage.Version,
 			ID:      machineImageID,
@@ -133,7 +114,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 
 		machineClassSpec := map[string]interface{}{
 			"OS":           machineImageID,
-			"projectID":    string(machineClassSecretData[packet.ProjectID]),
+			"projectID":    string(credentials.ProjectID),
 			"billingCycle": "hourly",
 			"machineType":  pool.MachineType,
 			"metro":        w.worker.Spec.Region,
@@ -186,7 +167,6 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 		machineClassSpec["labels"] = map[string]string{
 			v1beta1constants.GardenerPurpose: genericworkeractuator.GardenPurposeMachineClass,
 		}
-		machineClassSpec["secret"].(map[string]interface{})[packet.APIToken] = string(machineClassSecretData[machinev1alpha1.PacketAPIKey])
 
 		machineClasses = append(machineClasses, machineClassSpec)
 	}

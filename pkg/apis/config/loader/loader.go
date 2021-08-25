@@ -17,8 +17,8 @@ package loader
 import (
 	"io/ioutil"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/config/install"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config/install"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"

@@ -15,8 +15,8 @@
 package controlplaneexposure
 
 import (
-	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
 	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -39,14 +39,14 @@ type AddOptions struct {
 	ETCDStorage config.ETCDStorage
 }
 
-var logger = log.Log.WithName("packet-controlplaneexposure-webhook")
+var logger = log.Log.WithName("equinix-metal-controlplaneexposure-webhook")
 
 // AddToManagerWithOptions creates a webhook with the given options and adds it to the manager.
 func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) (*extensionswebhook.Webhook, error) {
 	logger.Info("Adding webhook to manager")
 	return controlplane.New(mgr, controlplane.Args{
 		Kind:     controlplane.KindSeed,
-		Provider: packet.Type,
+		Provider: equinixmetal.Type,
 		Types:    []client.Object{&appsv1.Deployment{}, &druidv1alpha1.Etcd{}},
 		Mutator:  genericmutator.NewMutator(NewEnsurer(&opts.ETCDStorage, logger), nil, nil, nil, logger),
 	})

@@ -17,16 +17,16 @@ package worker
 import (
 	"context"
 
-	api "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/helper"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/imagevector"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
+
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
 	"github.com/gardener/gardener/extensions/pkg/util"
-
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	gardener "github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/go-logr/logr"
@@ -47,9 +47,9 @@ func NewActuator() worker.Actuator {
 	}
 
 	return genericactuator.NewActuator(
-		log.Log.WithName("packet-worker-actuator"),
+		log.Log.WithName("equinix-metal-worker-actuator"),
 		delegateFactory,
-		packet.MachineControllerManagerName,
+		equinixmetal.MachineControllerManagerName,
 		mcmChart,
 		mcmShootChart,
 		imagevector.ImageVector(),

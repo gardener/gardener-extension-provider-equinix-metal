@@ -18,10 +18,10 @@ import (
 	"context"
 	"path"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/imagevector"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 
+	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -34,7 +34,7 @@ const (
 )
 
 func (m *mutator) mutateVPNShootDeployment(ctx context.Context, deployment *appsv1.Deployment) error {
-	metabotImage, err := imagevector.ImageVector().FindImage(packet.MetabotImageName)
+	metabotImage, err := imagevector.ImageVector().FindImage(equinixmetal.MetabotImageName)
 	if err != nil {
 		return err
 	}
