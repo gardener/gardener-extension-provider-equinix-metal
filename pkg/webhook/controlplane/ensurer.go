@@ -81,6 +81,10 @@ func (e *ensurer) EnsureVPNSeedServerDeployment(_ context.Context, _ gcontext.Ga
 }
 
 func keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old *appsv1.Deployment, containerName string) {
+	if old == nil {
+		return
+	}
+
 	// Preserve NODE_NETWORK env variable in vpn-seed container. The Worker controller sets this flag at the end of its
 	// reconciliation, however, the kube-apiserver deployment is created earlier, so let's keep the value until the
 	// Worker controller updates it. This is to not trigger avoidable rollouts/restarts.

@@ -104,7 +104,7 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, dep)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, annotations)
 		})
@@ -145,7 +145,7 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, dep)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, dummyContext, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, annotations)
 		})
