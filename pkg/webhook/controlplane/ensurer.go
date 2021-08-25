@@ -106,6 +106,12 @@ func keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old *appsv1.Deployment, 
 	}
 
 	if newContainer != nil && nodeNetworkEnvVarValue != "" {
+		for _, env := range newContainer.Env {
+			if env.Name == nodeNetworkEnvVarName && env.Value != nodeNetworkEnvVarValue {
+				return
+			}
+		}
+
 		newContainer.Env = extensionswebhook.EnsureEnvVarWithName(newContainer.Env, corev1.EnvVar{
 			Name:  nodeNetworkEnvVarName,
 			Value: nodeNetworkEnvVarValue,
