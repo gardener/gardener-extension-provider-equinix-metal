@@ -7,10 +7,9 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
 	github.com/coreos/go-systemd/v22 v22.1.0
-	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/frankban/quicktest v1.9.0 // indirect
 	github.com/gardener/etcd-druid v0.5.0
-	github.com/gardener/gardener v1.29.1-0.20210823093538-86813a035248
+	github.com/gardener/gardener v1.29.1-0.20210824141245-5c3c70cd40cb
 	github.com/gardener/machine-controller-manager v0.36.0
 	github.com/go-logr/logr v0.4.0
 	github.com/golang/mock v1.6.0
@@ -24,7 +23,6 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/ulikunitz/xz v0.5.7 // indirect
-	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	k8s.io/api v0.21.2
 	k8s.io/apiextensions-apiserver v0.21.2
 	k8s.io/apimachinery v0.21.2
@@ -38,7 +36,6 @@ require (
 )
 
 replace (
-	github.com/gardener/gardener => github.com/gardener/gardener v1.29.1-0.20210823093538-86813a035248
 	github.com/gardener/gardener-resource-manager/api => github.com/gardener/gardener-resource-manager/api v0.25.0
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.7.1 // keep this value in sync with sigs.k8s.io/controller-runtime
 	k8s.io/api => k8s.io/api v0.21.2

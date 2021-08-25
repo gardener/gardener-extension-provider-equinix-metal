@@ -59,6 +59,9 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gconte
 		ensureKubeAPIServerCommandLineArgs(c)
 		ensureEnvVars(c)
 	}
+
+	keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old, "vpn-seed")
+
 	return controlplane.EnsureSecretChecksumAnnotation(ctx, &new.Spec.Template, e.client, new.Namespace, v1beta1constants.SecretNameCloudProvider)
 }
 
@@ -69,6 +72,41 @@ func (e *ensurer) EnsureKubeControllerManagerDeployment(ctx context.Context, gct
 		ensureKubeControllerManagerCommandLineArgs(c)
 	}
 	return nil
+}
+
+// EnsureVPNSeedServerDeployment ensures that the vpn-seed-server deployment conforms to the provider requirements.
+func (e *ensurer) EnsureVPNSeedServerDeployment(_ context.Context, _ gcontext.GardenContext, new, old *appsv1.Deployment) error {
+	keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old, "vpn-seed-server")
+	return nil
+}
+
+func keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old *appsv1.Deployment, containerName string) {
+	// Preserve NODE_NETWORK env variable in vpn-seed container. The Worker controller sets this flag at the end of its
+	// reconciliation, however, the kube-apiserver deployment is created earlier, so let's keep the value until the
+	// Worker controller updates it. This is to not trigger avoidable rollouts/restarts.
+	var (
+		newContainer        = extensionswebhook.ContainerWithName(new.Spec.Template.Spec.Containers, containerName)
+		oldVPNSeedContainer = extensionswebhook.ContainerWithName(old.Spec.Template.Spec.Containers, containerName)
+
+		nodeNetworkEnvVarName  = "NODE_NETWORK"
+		nodeNetworkEnvVarValue string
+	)
+
+	if oldVPNSeedContainer != nil {
+		for _, env := range oldVPNSeedContainer.Env {
+			if env.Name == nodeNetworkEnvVarName {
+				nodeNetworkEnvVarValue = env.Value
+				break
+			}
+		}
+	}
+
+	if newContainer != nil && nodeNetworkEnvVarValue != "" {
+		newContainer.Env = extensionswebhook.EnsureEnvVarWithName(newContainer.Env, corev1.EnvVar{
+			Name:  nodeNetworkEnvVarName,
+			Value: nodeNetworkEnvVarValue,
+		})
+	}
 }
 
 // EnsureAdditionalUnits ensures that additional required system units are added.
