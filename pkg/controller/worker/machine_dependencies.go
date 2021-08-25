@@ -16,29 +16,22 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
 	packetclient "github.com/gardener/gardener-extension-provider-packet/pkg/packet/client"
-	util "github.com/gardener/gardener/extensions/pkg/util"
+
+	"github.com/gardener/gardener/extensions/pkg/util"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	vpnSeed                               = "vpn-seed"
-	apiServerDeploy                       = v1beta1constants.DeploymentNameKubeAPIServer
-	nodeNetworkEnvVar                     = "NODE_NETWORK"
-	equinixMetalPrivateNetworkAnnotations = "metal.equinix.com/network-4-private"
-	providerName                          = "equinixmetal"
-	deprecatedProviderName                = "packet"
 )
 
 func (w *workerDelegate) DeployMachineDependencies(_ context.Context) error {
@@ -46,11 +39,13 @@ func (w *workerDelegate) DeployMachineDependencies(_ context.Context) error {
 }
 
 func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
-	ns := w.worker.GetNamespace()
-	c := w.Client()
+	const (
+		nodeNetworkEnvVarKey                  = "NODE_NETWORK"
+		equinixMetalPrivateNetworkAnnotations = "metal.equinix.com/network-4-private"
+	)
 
 	// get the private IPs and providerIDs from the shoot nodes
-	_, shootClient, err := util.NewClientForShoot(ctx, c, ns, client.Options{})
+	_, shootClient, err := util.NewClientForShoot(ctx, w.Client(), w.worker.Namespace, client.Options{})
 	if err != nil {
 		return err
 	}
@@ -59,98 +54,97 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 	if err := shootClient.List(ctx, shootNodes); err != nil {
 		return fmt.Errorf("failed to get shoot nodes: %v", err)
 	}
+
 	// go through each node, for each one without the right annotation, get the private network
-	var targetCidrs []string
+	targetCIDRs := sets.NewString()
 	for _, n := range shootNodes.Items {
-		if n.Annotations == nil || n.Annotations[equinixMetalPrivateNetworkAnnotations] == "" {
+		if n.Annotations[equinixMetalPrivateNetworkAnnotations] == "" {
 			// we didn't have it, so get it from the Equinix Metal API, and save it
 			deviceID, err := deviceIDFromProviderID(n.Spec.ProviderID)
 			if deviceID == "" || err != nil {
 				continue
 			}
-			nodePrivateNetwork, err := getNodePrivateNetwork(ctx, deviceID, c, w.worker.Spec.SecretRef)
+
+			nodePrivateNetwork, err := getNodePrivateNetwork(ctx, deviceID, w.Client(), w.worker.Spec.SecretRef)
 			if err != nil {
 				return fmt.Errorf("error getting private network from Equinix Metal API for %s: %v", n.Spec.ProviderID, err)
 			}
+
 			if nodePrivateNetwork == "" {
 				continue
 			}
-			if n.Annotations == nil {
-				n.Annotations = map[string]string{}
-			}
-			// if it was not set already, set it and save it
-			if n.Annotations[equinixMetalPrivateNetworkAnnotations] != nodePrivateNetwork {
-				n.Annotations[equinixMetalPrivateNetworkAnnotations] = nodePrivateNetwork
-				// update the node in the k8s cluster ***
-				patch, _ := json.Marshal(map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"annotations": n.Annotations,
-					},
-				})
-				if err := shootClient.Patch(ctx, &n, client.RawPatch(types.StrategicMergePatchType, patch)); err != nil {
-					return fmt.Errorf("unable to patch node %s with private network cidr: %v", n.Name, err)
-				}
-			}
-		}
-		targetCidrs = append(targetCidrs, n.Annotations[equinixMetalPrivateNetworkAnnotations])
-	}
 
-	// sort them for consistency; the order really doesn't matter, as long as it is consistent
-	targetCidrs = unique(targetCidrs)
-	sort.Strings(targetCidrs)
-	cidrs := strings.Join(targetCidrs, ",")
-
-	deploy := &appsv1.Deployment{}
-	if err := c.Get(ctx, client.ObjectKey{
-		Namespace: ns,
-		Name:      apiServerDeploy,
-	}, deploy); err != nil {
-		return fmt.Errorf("failed to get kube-apiserver deployment: %v", err)
-	}
-
-	// find the vpn-seed container
-	ctrs := deploy.Spec.Template.Spec.Containers
-	var changed bool
-	for i, ctr := range ctrs {
-		// find the right container
-		if ctr.Name != vpnSeed {
-			continue
-		}
-		// find the right env var
-		var found bool
-		for _, env := range ctr.Env {
-			if env.Name != nodeNetworkEnvVar {
+			if n.Annotations[equinixMetalPrivateNetworkAnnotations] == nodePrivateNetwork {
 				continue
 			}
-			// track that it existed
-			found = true
-			if env.Value != cidrs {
-				env.Value = cidrs
+
+			// if it was not set already, set it and save it
+			patch := client.StrategicMergeFrom(n.DeepCopy())
+			metav1.SetMetaDataAnnotation(&n.ObjectMeta, equinixMetalPrivateNetworkAnnotations, nodePrivateNetwork)
+			if err := shootClient.Patch(ctx, &n, patch); err != nil {
+				return fmt.Errorf("unable to patch node %s with private network cidr: %v", n.Name, err)
 			}
 		}
-		// if we did not find it, so add it
-		if !found {
-			ctr.Env = append(ctr.Env, corev1.EnvVar{Name: nodeNetworkEnvVar, Value: cidrs})
-		}
-		ctrs[i] = ctr
-		changed = true
+
+		targetCIDRs.Insert(n.Annotations[equinixMetalPrivateNetworkAnnotations])
 	}
-	if !changed {
+
+	// Check if the `vpn-seed-server` deployment exists. If yes then the ReversedVPN feature gate is enabled in
+	// gardenlet and we have to configure the `vpn-seed` container here. Otherwise, the ReversedVPN feature gate is
+	// disabled and the `vpn-seed` container resides in the `kube-apiserver` deployment.
+	var (
+		vpnSeedContainerName = "vpn-seed-server"
+		deploy               = &appsv1.Deployment{}
+	)
+
+	if err := w.Client().Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameVPNSeedServer), deploy); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameVPNSeedServer, err)
+		}
+
+		if err2 := w.Client().Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameKubeAPIServer), deploy); err2 != nil {
+			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameKubeAPIServer, err2)
+		}
+		vpnSeedContainerName = "vpn-seed"
+	}
+
+	var (
+		envVarExists  bool
+		envVarChanged bool
+
+		patch                  = client.StrategicMergeFrom(deploy.DeepCopy())
+		nodeNetworkEnvVarValue = strings.Join(targetCIDRs.List(), ",")
+	)
+
+	for i, ctr := range deploy.Spec.Template.Spec.Containers {
+		if ctr.Name != vpnSeedContainerName {
+			continue
+		}
+
+		for j, env := range ctr.Env {
+			if env.Name != nodeNetworkEnvVarKey {
+				continue
+			}
+
+			envVarExists = true
+
+			if env.Value != nodeNetworkEnvVarValue {
+				deploy.Spec.Template.Spec.Containers[i].Env[j].Value = nodeNetworkEnvVarValue
+				envVarChanged = true
+			}
+		}
+
+		if !envVarExists {
+			deploy.Spec.Template.Spec.Containers[i].Env = append(ctr.Env, corev1.EnvVar{Name: nodeNetworkEnvVarKey, Value: nodeNetworkEnvVarValue})
+			envVarChanged = true
+		}
+	}
+
+	if !envVarChanged {
 		return nil
 	}
-	return c.Update(ctx, deploy)
-}
 
-func unique(stringSlice []string) []string {
-	keys := make(map[string]bool)
-	list := []string{}
-	for _, entry := range stringSlice {
-		if _, value := keys[entry]; !value {
-			keys[entry] = true
-			list = append(list, entry)
-		}
-	}
-	return list
+	return w.Client().Patch(ctx, deploy, patch)
 }
 
 // getNodePrivateNetwork use the Equinix Metal API to get the CIDR of the private network given a providerID.
@@ -159,23 +153,28 @@ func getNodePrivateNetwork(ctx context.Context, deviceID string, kClient client.
 	if err != nil {
 		return "", fmt.Errorf("could not get credentials from secret: %v", err)
 	}
+
 	pClient := packetclient.NewClient(string(credentials.APIToken))
 
 	device, err := pClient.DeviceGet(deviceID)
 	if err != nil {
 		return "", err
 	}
+
 	for _, net := range device.Network {
 		// we only want the private, management, ipv4 network
 		if net.Public || !net.Management || net.AddressFamily != 4 {
 			continue
 		}
+
 		parent := net.ParentBlock
 		if parent == nil || parent.Network == "" || parent.CIDR == 0 {
 			return "", fmt.Errorf("no network information provided for private address %s", net.String())
 		}
+
 		return fmt.Sprintf("%s/%d", parent.Network, parent.CIDR), nil
 	}
+
 	return "", nil
 }
 
@@ -184,20 +183,30 @@ func getNodePrivateNetwork(ctx context.Context, deviceID string, kClient client.
 // The providerID spec should be retrievable from the Kubernetes
 // node object. The expected format is: equinixmetal://device-id or just device-id
 func deviceIDFromProviderID(providerID string) (string, error) {
+	const (
+		providerName           = "equinixmetal"
+		deprecatedProviderName = "packet"
+	)
+
 	if providerID == "" {
 		return "", nil
 	}
 
-	split := strings.Split(providerID, "://")
-	var deviceID string
+	var (
+		deviceID string
+		split    = strings.Split(providerID, "://")
+	)
+
 	switch len(split) {
 	case 2:
 		deviceID = split[1]
 		if split[0] != providerName && split[0] != deprecatedProviderName {
 			return "", nil
 		}
+
 	case 1:
 		deviceID = providerID
+
 	default:
 		return "", errors.Errorf("unexpected providerID format: %s, format should be: 'device-id' or 'equinixmetal://device-id'", providerID)
 	}
