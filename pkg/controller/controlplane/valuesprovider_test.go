@@ -65,7 +65,7 @@ var _ = Describe("ValuesProvider", func() {
 							Enabled: true,
 						},
 					},
-					Region: "ewr1",
+					Region: "ny",
 				},
 			},
 		}
@@ -106,7 +106,7 @@ var _ = Describe("ValuesProvider", func() {
 					"checksum/secret-cloud-controller-manager": "3d791b164a808638da9a8df03924be2a41e34cd664e42231c00fe369e3588272",
 					"checksum/secret-cloudprovider":            "8bafb35ff1ac60275d62e1cbd495aceb511fb354f74a20f7d06ecb48b3a68432",
 				},
-				"facility": "ewr1",
+				"metro": "ny",
 			},
 			"metallb": map[string]interface{}{},
 		}
@@ -128,7 +128,7 @@ var _ = Describe("ValuesProvider", func() {
 				Namespace: namespace,
 			},
 			Spec: extensionsv1alpha1.ControlPlaneSpec{
-				Region: "EWR1",
+				Region: "ny",
 				SecretRef: corev1.SecretReference{
 					Name:      v1beta1constants.SecretNameCloudProvider,
 					Namespace: namespace,

@@ -11,3 +11,4 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+metro: ny

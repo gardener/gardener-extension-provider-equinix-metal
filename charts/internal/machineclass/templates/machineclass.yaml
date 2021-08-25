@@ -34,8 +34,11 @@ providerSpec:
   tags:
 {{ toYaml $machineClass.tags | indent 4 }}
 {{- end }}
-  facility:
-{{ toYaml $machineClass.facility | indent 2 }}
+  metro: {{ $machineClass.metro }}
+{{- if $machineClass.facilities }}
+  facilities:
+{{ toYaml $machineClass.facilities | indent 2 }}
+{{- end }}
 {{- if $machineClass.reservationIDs }}
   reservationIDs:
 {{ $machineClass.reservationIDs | toYaml | indent 2 }}

@@ -6,7 +6,7 @@ metadata:
 spec:
   secretBindingName: provider-secret
   cloudProfileName: packet
-  region: ewr1  # this must be one of the regions in the above-referenced profile
+  region: ny  # this must be one of the regions in the above-referenced profile
   purpose: evaluation # {testing,development,production,infrastructure}, "infrastructure" purpose only usable for shoots in garden namespace
   provider:
     type: packet   # this tells it which provider type to use
@@ -25,6 +25,9 @@ spec:
         image:
           name: ubuntu
           version: "20.04"
+      zones:
+      - ewr1
+      - ny5
   kubernetes:
     version: 1.19.7
     kubelet:

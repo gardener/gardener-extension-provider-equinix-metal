@@ -31,15 +31,12 @@ spec:
     gpu: "0"
     memory: 8Gi
     usable: true
-  volumeTypes:
-  - name: storage_1
-    class: standard
-    usable: true
-  - name: storage_2
-    class: performance
-    usable: true
-  regions:
-  - name: ewr1
+  regions: # List of offered metros
+  - name: ny
+    zones: # List of offered facilities within the respective metro
+    - name: ewr1
+    - name: ny5
+    - name: ny7
   providerConfig:
     apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
     kind: CloudProfileConfig

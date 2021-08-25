@@ -5,7 +5,8 @@ machineClasses:
   projectID: abcd-1234-fff
   OS: alpine_3
   billingCycle: hourly
-  facility:
+  metro: ny
+  facilities:
   - ewr1
   description: An optional description for machines created by that class.
   machineType: t1.small
