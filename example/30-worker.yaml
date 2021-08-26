@@ -66,6 +66,11 @@ spec:
       version: 2023.5.0
     minimum: 1
     maximum: 1
+    providerConfig:
+      apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+      kind: WorkerConfig
+      reservationIDs: []
+      reservedDevicesOnly: false
     maxSurge: 1
     maxUnavailable: 0
   # labels:

@@ -22,7 +22,6 @@ import (
 	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
 	packetapi "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
 	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	"github.com/pkg/errors"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
@@ -30,6 +29,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -109,6 +109,13 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 	}
 
 	for _, pool := range w.worker.Spec.Pools {
+		workerConfig := &packetapi.WorkerConfig{}
+		if pool.ProviderConfig != nil && pool.ProviderConfig.Raw != nil {
+			if _, _, err := w.Decoder().Decode(pool.ProviderConfig.Raw, nil, workerConfig); err != nil {
+				return fmt.Errorf("could not decode provider config: %+v", err)
+			}
+		}
+
 		workerPoolHash, err := worker.WorkerPoolHash(pool, w.cluster)
 		if err != nil {
 			return err
@@ -142,6 +149,14 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 				"name":      w.worker.Spec.SecretRef.Name,
 				"namespace": w.worker.Spec.SecretRef.Namespace,
 			},
+		}
+
+		if len(workerConfig.ReservationIDs) > 0 {
+			machineClassSpec["reservationIDs"] = workerConfig.ReservationIDs
+		}
+
+		if workerConfig.ReservedDevicesOnly != nil {
+			machineClassSpec["reservedDevicesOnly"] = *workerConfig.ReservedDevicesOnly
 		}
 
 		var (

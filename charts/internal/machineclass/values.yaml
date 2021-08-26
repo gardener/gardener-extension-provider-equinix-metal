@@ -20,3 +20,7 @@ machineClasses:
   credentialsSecretRef:
     name: cloudprovider
     namespace: shoot-namespace
+# reservationIDs:
+# - res1
+# - res2
+# reservedDevicesOnly: false
