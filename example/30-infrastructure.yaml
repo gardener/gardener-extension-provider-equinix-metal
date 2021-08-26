@@ -40,7 +40,7 @@ metadata:
   namespace: shoot--foobar--packet
 spec:
   type: packet
-  region: ewr1
+  region: ny
   secretRef:
     name: cloudprovider
     namespace: shoot--foobar--packet

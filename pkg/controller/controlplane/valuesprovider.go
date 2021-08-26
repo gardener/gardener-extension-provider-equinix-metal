@@ -181,7 +181,7 @@ func getControlPlaneChartValues(
 				"checksum/secret-cloud-controller-manager": checksums[packet.CloudControllerManagerImageName],
 				"checksum/secret-cloudprovider":            checksums[v1beta1constants.SecretNameCloudProvider],
 			},
-			"facility": cluster.Shoot.Spec.Region,
+			"metro": cluster.Shoot.Spec.Region,
 		},
 		"metallb": map[string]interface{}{},
 	}

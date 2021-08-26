@@ -97,6 +97,8 @@ var _ = Describe("Machines", func() {
 				packetAPIToken  string
 				packetProjectID string
 				region          string
+				facility1       string
+				facility2       string
 
 				machineImageName    string
 				machineImageVersion string
@@ -136,7 +138,9 @@ var _ = Describe("Machines", func() {
 				namespace = "shoot--foobar--packet"
 				cloudProfileName = "packet"
 
-				region = "ewr1"
+				region = "ny"
+				facility1 = "ewr1"
+				facility2 = "ny5"
 				packetAPIToken = "api-token"
 				packetProjectID = "project-id"
 
@@ -236,7 +240,8 @@ var _ = Describe("Machines", func() {
 								},
 								UserData: userData,
 								Zones: []string{
-									region,
+									facility1,
+									facility2,
 								},
 							},
 							{
@@ -251,9 +256,6 @@ var _ = Describe("Machines", func() {
 									Version: machineImageVersion,
 								},
 								UserData: userData,
-								Zones: []string{
-									region,
-								},
 							},
 						},
 					},
@@ -283,10 +285,8 @@ var _ = Describe("Machines", func() {
 						"projectID":    packetProjectID,
 						"billingCycle": "hourly",
 						"machineType":  machineType,
-						"facility": []string{
-							region,
-						},
-						"sshKeys": []string{sshKeyID},
+						"metro":        region,
+						"sshKeys":      []string{sshKeyID},
 						"tags": []string{
 							fmt.Sprintf("kubernetes.io/cluster/%s", namespace),
 							"kubernetes.io/role/node",
@@ -309,6 +309,8 @@ var _ = Describe("Machines", func() {
 
 					addNameAndSecretToMachineClass(machineClassPool1, packetAPIToken, machineClassWithHashPool1, w.Spec.SecretRef)
 					addNameAndSecretToMachineClass(machineClassPool2, packetAPIToken, machineClassWithHashPool2, w.Spec.SecretRef)
+
+					machineClassPool1["facilities"] = []string{facility1, facility2}
 
 					machineClasses = map[string]interface{}{"machineClasses": []map[string]interface{}{
 						machineClassPool1,

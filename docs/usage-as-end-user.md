@@ -98,7 +98,7 @@ metadata:
   namespace: garden-dev
 spec:
   cloudProfileName: packet
-  region: ewr1
+  region: ny # Corresponds to a metro
   secretBindingName: core-packet
   provider:
     type: packet
@@ -117,6 +117,9 @@ spec:
       volume:
         size: 50Gi
         type: storage_1
+      zones: # Optional list of facilities, all of which MUST be in the metro; if not provided, then random facilities within the metro will be chosen for each machine.
+      - ewr1
+      - ny5
     - name: reserved-pool
       machine:
         type: t1.small
@@ -150,3 +153,6 @@ spec:
     nginx-ingress:
       enabled: true
 ```
+
+⚠️ Note that if you specify multiple facilities in the `.spec.provider.workers[].zones[]` list then new machines are randomly created in one of the provided facilities.
+Particularly, it is not ensured that all facilities are used or that all machines are equally or unequally distributed.

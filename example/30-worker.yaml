@@ -51,7 +51,7 @@ metadata:
     gardener.cloud/operation: reconcile
 spec:
   type: packet
-  region: ewr1
+  region: ny
   secretRef:
     name: cloudprovider
     namespace: shoot--foobar--packet
@@ -84,3 +84,4 @@ spec:
     userData: IyEvYmluL2Jhc2gKCmVjaG8gImhlbGxvIHdvcmxkIgo=
     zones:
     - ewr1
+    - ny5
