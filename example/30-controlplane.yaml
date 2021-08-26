@@ -2,17 +2,16 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: shoot--foobar--packet
+  name: shoot--foobar--eqxm
   labels:
-#    backup.gardener.cloud/provider: packet
-#    seed.gardener.cloud/provider: packet
-    shoot.gardener.cloud/provider: packet
+#    seed.gardener.cloud/provider: equinixmetal
+    shoot.gardener.cloud/provider: equinixmetal
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: cloudprovider
-  namespace: shoot--foobar--packet
+  namespace: shoot--foobar--eqxm
 type: Opaque
 data:
   apiToken: YXBpVG9rZW4K # apiToken
@@ -21,7 +20,7 @@ data:
 apiVersion: extensions.gardener.cloud/v1alpha1
 kind: Cluster
 metadata:
-  name: shoot--foobar--packet
+  name: shoot--foobar--eqxm
 spec:
   cloudProfile:
     apiVersion: core.gardener.cloud/v1alpha1
@@ -47,16 +46,16 @@ apiVersion: extensions.gardener.cloud/v1alpha1
 kind: ControlPlane
 metadata:
   name: control-plane
-  namespace: shoot--foobar--packet
+  namespace: shoot--foobar--eqxm
 spec:
-  type: packet
+  type: equinixmetal
   region: ny
   secretRef:
     name: cloudprovider
-    namespace: shoot--foobar--packet
+    namespace: shoot--foobar--eqxm
   providerConfig:
-    apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+    apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
     kind: ControlPlaneConfig
   infrastructureProviderStatus:
-    apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+    apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
     kind: InfrastructureStatus

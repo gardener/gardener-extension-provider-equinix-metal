@@ -4,17 +4,17 @@ metadata:
   name: em-test
   namespace: garden-em
 spec:
-  secretBindingName: provider-secret
-  cloudProfileName: packet
+  secretBindingName: my-secret
+  cloudProfileName: equinix-metal
   region: ny  # this must be one of the regions in the above-referenced profile
   purpose: evaluation # {testing,development,production,infrastructure}, "infrastructure" purpose only usable for shoots in garden namespace
   provider:
-    type: packet   # this tells it which provider type to use
+    type: equinixmetal   # this tells it which provider type to use
     infrastructureConfig:
-      apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
       kind: InfrastructureConfig
     controlPlaneConfig:
-      apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
       kind: ControlPlaneConfig
     workers:
     - name: worker
@@ -34,7 +34,6 @@ spec:
       failSwapOn: false
   networking:
     type: calico
-    #nodes: 10.250.0.0/16
     pods: 100.96.0.0/11
     services: 100.64.0.0/13
   maintenance:

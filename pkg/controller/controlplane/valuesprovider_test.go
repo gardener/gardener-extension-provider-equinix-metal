@@ -18,14 +18,14 @@ import (
 	"context"
 	"encoding/json"
 
-	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
+	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -48,7 +48,7 @@ var _ = Describe("ValuesProvider", func() {
 
 		// Build scheme
 		scheme = runtime.NewScheme()
-		_      = apispacket.AddToScheme(scheme)
+		_      = api.AddToScheme(scheme)
 
 		cp *extensionsv1alpha1.ControlPlane
 
@@ -78,16 +78,8 @@ var _ = Describe("ValuesProvider", func() {
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
-				packet.APIToken:  []byte("foo"),
-				packet.ProjectID: []byte("bar"),
-			},
-		}
-
-		// TODO remove cpMap in next version
-		ccmMonitoringConfigmap = &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: namespace,
-				Name:      "cloud-controller-manager-monitoring-config",
+				equinixmetal.APIToken:  []byte("foo"),
+				equinixmetal.ProjectID: []byte("bar"),
 			},
 		}
 
@@ -135,11 +127,11 @@ var _ = Describe("ValuesProvider", func() {
 				},
 				DefaultSpec: extensionsv1alpha1.DefaultSpec{
 					ProviderConfig: &runtime.RawExtension{
-						Raw: encode(&apispacket.ControlPlaneConfig{}),
+						Raw: encode(&api.ControlPlaneConfig{}),
 					},
 				},
 				InfrastructureProviderStatus: &runtime.RawExtension{
-					Raw: encode(&apispacket.InfrastructureStatus{}),
+					Raw: encode(&api.InfrastructureStatus{}),
 				},
 			},
 		}
@@ -169,7 +161,6 @@ var _ = Describe("ValuesProvider", func() {
 		It("should return correct control plane chart values", func() {
 			// Create mock client
 			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Delete(context.TODO(), ccmMonitoringConfigmap).DoAndReturn(clientDeleteSuccess())
 
 			// Create valuesProvider
 			vp := NewValuesProvider(logger)
@@ -218,7 +209,7 @@ var _ = Describe("ValuesProvider", func() {
 			err = vp.(inject.Client).InjectClient(client)
 			Expect(err).NotTo(HaveOccurred())
 
-			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&apispacket.ControlPlaneConfig{})
+			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&api.ControlPlaneConfig{})
 
 			// Call GetControlPlaneChartValues method and check the result
 			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
@@ -240,7 +231,7 @@ var _ = Describe("ValuesProvider", func() {
 			err = vp.(inject.Client).InjectClient(client)
 			Expect(err).NotTo(HaveOccurred())
 
-			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&apispacket.ControlPlaneConfig{})
+			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&api.ControlPlaneConfig{})
 
 			// Call GetControlPlaneChartValues method and check the result
 			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
@@ -262,7 +253,7 @@ var _ = Describe("ValuesProvider", func() {
 			err = vp.(inject.Client).InjectClient(client)
 			Expect(err).NotTo(HaveOccurred())
 
-			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&apispacket.ControlPlaneConfig{})
+			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&api.ControlPlaneConfig{})
 
 			// Call GetControlPlaneChartValues method and check the result
 			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
@@ -278,12 +269,6 @@ func clientGet(result runtime.Object) interface{} {
 		case *corev1.Secret:
 			*obj.(*corev1.Secret) = *result.(*corev1.Secret)
 		}
-		return nil
-	}
-}
-
-func clientDeleteSuccess() interface{} {
-	return func(ctx context.Context, cm runtime.Object, opts ...client.DeleteOption) error {
 		return nil
 	}
 }

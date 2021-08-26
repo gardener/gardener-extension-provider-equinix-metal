@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: cloudprovider
-  namespace: shoot--foobar--packet
+  namespace: shoot--foobar--eqxm
 type: Opaque
 data:
   apiToken: ZGF0YQo=
@@ -12,20 +12,20 @@ data:
 apiVersion: extensions.gardener.cloud/v1alpha1
 kind: Cluster
 metadata:
-  name: shoot--foobar--packet
+  name: shoot--foobar--eqxm
 spec:
   cloudProfile:
     apiVersion: core.gardener.cloud/v1alpha1
     kind: CloudProfile
     spec:
       providerConfig:
-        apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+        apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
         kind: CloudProfileConfig
         machineImages:
         - name: coreos
           versions:
           - version: 2023.5.0
-            id: packetimageid
+            id: eqxm-image-id
   seed:
     apiVersion: core.gardener.cloud/v1alpha1
     kind: Seed
@@ -46,17 +46,17 @@ apiVersion: extensions.gardener.cloud/v1alpha1
 kind: Worker
 metadata:
   name: worker
-  namespace: shoot--foobar--packet
+  namespace: shoot--foobar--eqxm
   annotations:
     gardener.cloud/operation: reconcile
 spec:
-  type: packet
+  type: equinixmetal
   region: ny
   secretRef:
     name: cloudprovider
-    namespace: shoot--foobar--packet
+    namespace: shoot--foobar--eqxm
   infrastructureProviderStatus:
-    apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+    apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
     kind: InfrastructureStatus
   pools:
   - name: cpu-worker
@@ -67,7 +67,7 @@ spec:
     minimum: 1
     maximum: 1
     providerConfig:
-      apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
       kind: WorkerConfig
       reservationIDs: []
       reservedDevicesOnly: false

@@ -17,8 +17,8 @@ package worker
 import (
 	"context"
 
-	api "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet/v1alpha1"
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/v1alpha1"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"

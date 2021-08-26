@@ -24,7 +24,7 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ControllerConfiguration defines the configuration for the Packet provider.
+// ControllerConfiguration defines the configuration for the Equinix Metal provider.
 type ControllerConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
 

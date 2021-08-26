@@ -13,6 +13,6 @@
 // limitations under the License.
 
 // +k8s:deepcopy-gen=package
-// +groupName="packet.provider.extensions.config.gardener.cloud"
+// +groupName="equinixmetal.provider.extensions.config.gardener.cloud"
 
-package config // import "github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
+package config // import "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"

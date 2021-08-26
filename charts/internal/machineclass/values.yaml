@@ -17,7 +17,6 @@ machineClasses:
   - kubernetes.io/role/node
   secret:
     cloudConfig: abc
-    apiToken: "abd5678"
   credentialsSecretRef:
     name: cloudprovider
     namespace: shoot-namespace

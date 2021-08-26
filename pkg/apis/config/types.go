@@ -16,7 +16,6 @@ package config
 
 import (
 	healthcheck "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config"
-
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	componentbaseconfig "k8s.io/component-base/config"
@@ -24,7 +23,7 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ControllerConfiguration defines the configuration for the Packet provider.
+// ControllerConfiguration defines the configuration for the Equinix Metal provider.
 type ControllerConfiguration struct {
 	metav1.TypeMeta
 

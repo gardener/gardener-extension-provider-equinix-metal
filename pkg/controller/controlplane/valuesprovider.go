@@ -18,8 +18,9 @@ import (
 	"context"
 	"path/filepath"
 
-	apispacket "github.com/gardener/gardener-extension-provider-packet/pkg/apis/packet"
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -27,7 +28,6 @@ import (
 	"github.com/gardener/gardener/pkg/utils/chart"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/secrets"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -48,7 +48,7 @@ var controlPlaneSecrets = &secrets.Secrets{
 		return []secrets.ConfigInterface{
 			&secrets.ControlPlaneSecretConfig{
 				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:         packet.CloudControllerManagerImageName,
+					Name:         equinixmetal.CloudControllerManagerImageName,
 					CommonName:   "system:cloud-controller-manager",
 					Organization: []string{user.SystemPrivilegedGroup},
 					CertType:     secrets.ClientCert,
@@ -64,11 +64,11 @@ var controlPlaneSecrets = &secrets.Secrets{
 
 var controlPlaneChart = &chart.Chart{
 	Name: "seed-controlplane",
-	Path: filepath.Join(packet.InternalChartsPath, "seed-controlplane"),
+	Path: filepath.Join(equinixmetal.InternalChartsPath, "seed-controlplane"),
 	SubCharts: []*chart.Chart{
 		{
 			Name:   "cloud-provider-equinix-metal",
-			Images: []string{packet.CloudControllerManagerImageName},
+			Images: []string{equinixmetal.CloudControllerManagerImageName},
 			Objects: []*chart.Object{
 				{Type: &corev1.Service{}, Name: "cloud-controller-manager"},
 				{Type: &appsv1.Deployment{}, Name: "cloud-controller-manager"},
@@ -80,7 +80,7 @@ var controlPlaneChart = &chart.Chart{
 
 var controlPlaneShootChart = &chart.Chart{
 	Name: "shoot-system-components",
-	Path: filepath.Join(packet.InternalChartsPath, "shoot-system-components"),
+	Path: filepath.Join(equinixmetal.InternalChartsPath, "shoot-system-components"),
 	SubCharts: []*chart.Chart{
 		{
 			Name: "cloud-provider-equinix-metal",
@@ -91,7 +91,7 @@ var controlPlaneShootChart = &chart.Chart{
 		},
 		{
 			Name:    "metallb",
-			Images:  []string{packet.MetalLBControllerImageName, packet.MetalLBSpeakerImageName},
+			Images:  []string{equinixmetal.MetalLBControllerImageName, equinixmetal.MetalLBSpeakerImageName},
 			Objects: []*chart.Object{},
 		},
 	},
@@ -99,17 +99,17 @@ var controlPlaneShootChart = &chart.Chart{
 
 var storageClassChart = &chart.Chart{
 	Name: "shoot-storageclasses",
-	Path: filepath.Join(packet.InternalChartsPath, "shoot-storageclasses"),
+	Path: filepath.Join(equinixmetal.InternalChartsPath, "shoot-storageclasses"),
 }
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
 func NewValuesProvider(logger logr.Logger) genericactuator.ValuesProvider {
 	return &valuesProvider{
-		logger: logger.WithName("packet-values-provider"),
+		logger: logger.WithName("equinix-metal-values-provider"),
 	}
 }
 
-// valuesProvider is a ValuesProvider that provides Packet-specific values for the 2 charts applied by the generic actuator.
+// valuesProvider is a ValuesProvider that provides Equinix Metal-specific values for the 2 charts applied by the generic actuator.
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
 	logger logr.Logger
@@ -123,10 +123,6 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 	checksums map[string]string,
 	scaledDown bool,
 ) (map[string]interface{}, error) {
-	// TODO: Remove this code in next version. Delete old config
-	if err := vp.deleteCCMMonitoringConfig(ctx, cp.Namespace); err != nil {
-		return nil, err
-	}
 	// Get control plane chart values
 	return getControlPlaneChartValues(cp, cluster, checksums, scaledDown)
 }
@@ -152,12 +148,12 @@ func (vp *valuesProvider) GetControlPlaneShootChartValues(
 func (vp *valuesProvider) getCredentials(
 	ctx context.Context,
 	cp *extensionsv1alpha1.ControlPlane,
-) (*packet.Credentials, error) {
+) (*equinixmetal.Credentials, error) {
 	secret, err := extensionscontroller.GetSecretByReference(ctx, vp.Client(), &cp.Spec.SecretRef)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get secret by reference for controlplane '%s'", kutil.ObjectName(cp))
 	}
-	credentials, err := packet.ReadCredentialsSecret(secret)
+	credentials, err := equinixmetal.ReadCredentialsSecret(secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not read credentials from secret '%s'", kutil.ObjectName(secret))
 	}
@@ -178,7 +174,7 @@ func getControlPlaneChartValues(
 			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
 			"podNetwork":        extensionscontroller.GetPodNetwork(cluster),
 			"podAnnotations": map[string]interface{}{
-				"checksum/secret-cloud-controller-manager": checksums[packet.CloudControllerManagerImageName],
+				"checksum/secret-cloud-controller-manager": checksums[equinixmetal.CloudControllerManagerImageName],
 				"checksum/secret-cloudprovider":            checksums[v1beta1constants.SecretNameCloudProvider],
 			},
 			"metro": cluster.Shoot.Spec.Region,
@@ -193,7 +189,7 @@ func getControlPlaneChartValues(
 func (vp *valuesProvider) getControlPlaneShootChartValues(
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
-	credentials *packet.Credentials,
+	credentials *equinixmetal.Credentials,
 ) (map[string]interface{}, error) {
 
 	values := map[string]interface{}{}
@@ -201,8 +197,8 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	return values, nil
 }
 
-func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.ControlPlane) (*apispacket.ControlPlaneConfig, error) {
-	cpConfig := &apispacket.ControlPlaneConfig{}
+func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.ControlPlane) (*api.ControlPlaneConfig, error) {
+	cpConfig := &api.ControlPlaneConfig{}
 
 	if cp.Spec.ProviderConfig == nil {
 		return cpConfig, nil

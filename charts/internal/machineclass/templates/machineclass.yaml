@@ -12,7 +12,6 @@ metadata:
 type: Opaque
 data:
   userData: {{ $machineClass.secret.cloudConfig | b64enc }}
-  apiToken: {{ $machineClass.secret.apiToken | b64enc }}
 ---
 apiVersion: machine.sapcloud.io/v1alpha1
 kind: MachineClass

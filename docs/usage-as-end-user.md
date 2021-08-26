@@ -1,19 +1,19 @@
-# Using the Packet provider extension with Gardener as end-user
+# Using the Equinix Metal provider extension with Gardener as end-user
 
 The [`core.gardener.cloud/v1beta1.Shoot` resource](https://github.com/gardener/gardener/blob/master/example/90-shoot.yaml) declares a few fields that are meant to contain provider-specific configuration.
 
-In this document we are describing how this configuration looks like for Packet and provide an example `Shoot` manifest with minimal configuration that you can use to create an Packet cluster (modulo the landscape-specific information like cloud profile names, secret binding names, etc.).
+In this document we are describing how this configuration looks like for Equinix Metal and provide an example `Shoot` manifest with minimal configuration that you can use to create an Equinix Metal cluster (modulo the landscape-specific information like cloud profile names, secret binding names, etc.).
 
 ## Provider secret data
 
-Every shoot cluster references a `SecretBinding` which itself references a `Secret`, and this `Secret` contains the provider credentials of your Packet project.
+Every shoot cluster references a `SecretBinding` which itself references a `Secret`, and this `Secret` contains the provider credentials of your Equinix Metal project.
 This `Secret` must look as follows:
 
 ```yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: core-packet
+  name: my-secret
   namespace: garden-dev
 type: Opaque
 data:
@@ -21,7 +21,7 @@ data:
   projectID: base64(project-id)
 ```
 
-Please look up https://www.packet.com/developers/api/ as well.
+Please look up https://metal.equinix.com/developers/api/ as well.
 
 With `Secret` created, create a `SecretBinding` resource referencing it. It may look like this:
 
@@ -29,46 +29,46 @@ With `Secret` created, create a `SecretBinding` resource referencing it. It may 
 apiVersion: core.gardener.cloud/v1beta1
 kind: SecretBinding
 metadata:
-  name: core-packet
+  name: my-secret
   namespace: garden-dev
 secretRef:
-  name: core-packet
+  name: my-secret
 quotas: []
 ```
 
 ## `InfrastructureConfig`
 
-Currently, there is no infrastructure configuration possible for the Packet environment.
+Currently, there is no infrastructure configuration possible for the Equinix Metal environment.
 
-An example `InfrastructureConfig` for the Packet extension looks as follows:
+An example `InfrastructureConfig` for the Equinix Metal extension looks as follows:
 
 ```yaml
-apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 kind: InfrastructureConfig
 ```
 
-The Packet extension will only create a key pair.
+The Equinix Metal extension will only create a key pair.
 
 ## `ControlPlaneConfig`
 
-The control plane configuration mainly contains values for the Packet-specific control plane components.
-Today, the Packet extension deploys the `cloud-controller-manager` and the CSI controllers, however, it doesn't offer any configuration options at the moment.
+The control plane configuration mainly contains values for the Equinix Metal-specific control plane components.
+Today, the Equinix Metal extension deploys the `cloud-controller-manager` and the CSI controllers, however, it doesn't offer any configuration options at the moment.
 
-An example `ControlPlaneConfig` for the Packet extension looks as follows:
+An example `ControlPlaneConfig` for the Equinix Metal extension looks as follows:
 
 ```yaml
-apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 kind: ControlPlaneConfig
 ```
 
 ## `WorkerConfig`
 
-The Packet extension supports specifying IDs for reserved devices that should be used for the machines of a specific worker pool.
+The Equinix Metal extension supports specifying IDs for reserved devices that should be used for the machines of a specific worker pool.
 
-An example `WorkerConfig` for the Packet extension looks as follows:
+An example `WorkerConfig` for the Equinix Metal extension looks as follows:
 
 ```yaml
-apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 kind: WorkerConfig
 reservationIDs:
 - my-reserved-device-1
@@ -94,24 +94,22 @@ Please find below an example `Shoot` manifest:
 apiVersion: core.gardener.cloud/v1alpha1
 kind: Shoot
 metadata:
-  name: johndoe-packet
+  name: my-shoot
   namespace: garden-dev
 spec:
-  cloudProfileName: packet
+  cloudProfileName: equinix-metal
   region: ny # Corresponds to a metro
-  secretBindingName: core-packet
+  secretBindingName: my-secret
   provider:
-    type: packet
+    type: equinixmetal
     infrastructureConfig:
-      apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
       kind: InfrastructureConfig
     controlPlaneConfig:
-      apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
       kind: ControlPlaneConfig
     workers:
-    - name: worker-xoluy
-      machine:
-        type: t1.small
+    - name: worker-pool1
       minimum: 2
       maximum: 2
       volume:
@@ -126,7 +124,7 @@ spec:
       minimum: 1
       maximum: 2
       providerConfig:
-        apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+        apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
         kind: WorkerConfig
         reservationIDs:
         - reserved-device1
@@ -136,10 +134,6 @@ spec:
         size: 50Gi
         type: storage_1
   networking:
-    # This field must be set to Management CIDR allocated by Packet when you create first machine
-    # in a selected region.
-    # See also https://github.com/gardener/gardener-extension-provider-packet/issues/107.
-    nodes: 10.250.0.0/25
     type: calico
   kubernetes:
     version: 1.20.2

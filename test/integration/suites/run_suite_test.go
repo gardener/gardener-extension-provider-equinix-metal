@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/gardener/gardener-extension-provider-packet/test/integration/healthcheck"
+	_ "github.com/gardener/gardener-extension-provider-equinix-metal/test/integration/healthcheck"
 
 	"github.com/gardener/gardener/test/framework"
 	"github.com/gardener/gardener/test/framework/config"

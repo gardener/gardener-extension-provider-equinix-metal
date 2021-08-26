@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
+	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	appsv1 "k8s.io/api/apps/v1"
@@ -31,25 +31,25 @@ import (
 
 var (
 	mcmChart = &chart.Chart{
-		Name:   packet.MachineControllerManagerName,
-		Path:   filepath.Join(packet.InternalChartsPath, packet.MachineControllerManagerName, "seed"),
-		Images: []string{packet.MachineControllerManagerImageName, packet.MachineControllerManagerEquinixMetalImageName},
+		Name:   equinixmetal.MachineControllerManagerName,
+		Path:   filepath.Join(equinixmetal.InternalChartsPath, equinixmetal.MachineControllerManagerName, "seed"),
+		Images: []string{equinixmetal.MachineControllerManagerImageName, equinixmetal.MachineControllerManagerEquinixMetalImageName},
 		Objects: []*chart.Object{
-			{Type: &appsv1.Deployment{}, Name: packet.MachineControllerManagerName},
-			{Type: &corev1.Service{}, Name: packet.MachineControllerManagerName},
-			{Type: &corev1.ServiceAccount{}, Name: packet.MachineControllerManagerName},
-			{Type: &corev1.Secret{}, Name: packet.MachineControllerManagerName},
-			{Type: extensionscontroller.GetVerticalPodAutoscalerObject(), Name: packet.MachineControllerManagerVpaName},
-			{Type: &corev1.ConfigMap{}, Name: packet.MachineControllerManagerMonitoringConfigName},
+			{Type: &appsv1.Deployment{}, Name: equinixmetal.MachineControllerManagerName},
+			{Type: &corev1.Service{}, Name: equinixmetal.MachineControllerManagerName},
+			{Type: &corev1.ServiceAccount{}, Name: equinixmetal.MachineControllerManagerName},
+			{Type: &corev1.Secret{}, Name: equinixmetal.MachineControllerManagerName},
+			{Type: extensionscontroller.GetVerticalPodAutoscalerObject(), Name: equinixmetal.MachineControllerManagerVpaName},
+			{Type: &corev1.ConfigMap{}, Name: equinixmetal.MachineControllerManagerMonitoringConfigName},
 		},
 	}
 
 	mcmShootChart = &chart.Chart{
-		Name: packet.MachineControllerManagerName,
-		Path: filepath.Join(packet.InternalChartsPath, packet.MachineControllerManagerName, "shoot"),
+		Name: equinixmetal.MachineControllerManagerName,
+		Path: filepath.Join(equinixmetal.InternalChartsPath, equinixmetal.MachineControllerManagerName, "shoot"),
 		Objects: []*chart.Object{
-			{Type: &rbacv1.ClusterRole{}, Name: fmt.Sprintf("extensions.gardener.cloud:%s:%s", packet.Name, packet.MachineControllerManagerName)},
-			{Type: &rbacv1.ClusterRoleBinding{}, Name: fmt.Sprintf("extensions.gardener.cloud:%s:%s", packet.Name, packet.MachineControllerManagerName)},
+			{Type: &rbacv1.ClusterRole{}, Name: fmt.Sprintf("extensions.gardener.cloud:%s:%s", equinixmetal.Name, equinixmetal.MachineControllerManagerName)},
+			{Type: &rbacv1.ClusterRoleBinding{}, Name: fmt.Sprintf("extensions.gardener.cloud:%s:%s", equinixmetal.Name, equinixmetal.MachineControllerManagerName)},
 		},
 	}
 )
@@ -61,7 +61,7 @@ func (w *workerDelegate) GetMachineControllerManagerChartValues(ctx context.Cont
 	}
 
 	return map[string]interface{}{
-		"providerName": packet.Name,
+		"providerName": equinixmetal.Name,
 		"namespace": map[string]interface{}{
 			"uid": namespace.UID,
 		},
@@ -70,12 +70,6 @@ func (w *workerDelegate) GetMachineControllerManagerChartValues(ctx context.Cont
 
 func (w *workerDelegate) GetMachineControllerManagerShootChartValues(ctx context.Context) (map[string]interface{}, error) {
 	return map[string]interface{}{
-		"providerName": packet.Name,
+		"providerName": equinixmetal.Name,
 	}, nil
-}
-
-// GetMachineControllerManagerCloudCredentials should return the IaaS credentials
-// with the secret keys used by the machine-controller-manager.
-func (w *workerDelegate) GetMachineControllerManagerCloudCredentials(ctx context.Context) (map[string][]byte, error) {
-	return w.generateMachineClassSecretData(ctx)
 }

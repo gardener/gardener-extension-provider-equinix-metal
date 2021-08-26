@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/packet"
-	packetclient "github.com/gardener/gardener-extension-provider-packet/pkg/packet/client"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	eqxcmclient "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal/client"
 
 	"github.com/gardener/gardener/extensions/pkg/util"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -149,12 +149,12 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 
 // getNodePrivateNetwork use the Equinix Metal API to get the CIDR of the private network given a providerID.
 func getNodePrivateNetwork(ctx context.Context, deviceID string, kClient client.Client, secretRef corev1.SecretReference) (string, error) {
-	credentials, err := packet.GetCredentialsFromSecretRef(ctx, kClient, secretRef)
+	credentials, err := equinixmetal.GetCredentialsFromSecretRef(ctx, kClient, secretRef)
 	if err != nil {
 		return "", fmt.Errorf("could not get credentials from secret: %v", err)
 	}
 
-	pClient := packetclient.NewClient(string(credentials.APIToken))
+	pClient := eqxcmclient.NewClient(string(credentials.APIToken))
 
 	device, err := pClient.DeviceGet(deviceID)
 	if err != nil {

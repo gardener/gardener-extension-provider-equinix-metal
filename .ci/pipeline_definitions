@@ -1,4 +1,4 @@
-gardener-extension-provider-packet:
+gardener-extension-provider-equinix-metal:
   template: 'default'
   base_definition:
     repo: ~
@@ -7,11 +7,11 @@ gardener-extension-provider-packet:
         preprocess: 'inject-commit-hash'
       publish:
         dockerimages:
-          gardener-extension-provider-packet:
+          gardener-extension-provider-equinix-metal:
             registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/extensions/provider-packet'
+            image: 'eu.gcr.io/gardener-project/gardener/extensions/provider-equinix-metal'
             dockerfile: 'Dockerfile'
-            target: gardener-extension-provider-packet
+            target: gardener-extension-provider-equinix-metal
   jobs:
     head-update:
       traits:
@@ -42,5 +42,5 @@ gardener-extension-provider-packet:
         component_descriptor: ~
         publish:
           dockerimages:
-            gardener-extension-provider-packet:
+            gardener-extension-provider-equinix-metal:
               tag_as_latest: true

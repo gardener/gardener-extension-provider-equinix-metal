@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/gardener-extension-provider-packet/pkg/apis/config"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
 
 	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -37,7 +37,7 @@ import (
 func NewEnsurer(etcdStorage *config.ETCDStorage, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
 		etcdStorage: etcdStorage,
-		logger:      logger.WithName("packet-controlplaneexposure-ensurer"),
+		logger:      logger.WithName("equinix-metal-controlplaneexposure-ensurer"),
 	}
 }
 

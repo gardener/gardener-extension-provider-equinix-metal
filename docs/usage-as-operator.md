@@ -1,8 +1,8 @@
-# Using the Packet provider extension with Gardener as operator
+# Using the Equinix Metal provider extension with Gardener as operator
 
 The [`core.gardener.cloud/v1alpha1.CloudProfile` resource](https://github.com/gardener/gardener/blob/master/example/30-cloudprofile.yaml) declares a `providerConfig` field that is meant to contain provider-specific configuration.
 
-In this document we are describing how this configuration looks like for Packet and provide an example `CloudProfile` manifest with minimal configuration that you can use to allow creating Packet shoot clusters.
+In this document we are describing how this configuration looks like for Equinix Metal and provide an example `CloudProfile` manifest with minimal configuration that you can use to allow creating Equinix Metal shoot clusters.
 
 ## Example `CloudProfile` manifest
 
@@ -12,9 +12,9 @@ Please find below an example `CloudProfile` manifest:
 apiVersion: core.gardener.cloud/v1beta1
 kind: CloudProfile
 metadata:
-  name: packet
+  name: equinix-metal
 spec:
-  type: packet
+  type: equinixmetal
   kubernetes:
     versions:
     - version: 1.20.2
@@ -38,7 +38,7 @@ spec:
     - name: ny5
     - name: ny7
   providerConfig:
-    apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+    apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
     kind: CloudProfileConfig
     machineImages:
     - name: flatcar
@@ -49,13 +49,13 @@ spec:
 
 ## `CloudProfileConfig`
 
-The cloud profile configuration contains information about the real machine image IDs in the Packet environment (IDs).
-You have to map every version that you specify in `.spec.machineImages[].versions` here such that the Packet extension knows the ID for every version you want to offer.
+The cloud profile configuration contains information about the real machine image IDs in the Equinix Metal environment (IDs).
+You have to map every version that you specify in `.spec.machineImages[].versions` here such that the Equinix Metal extension knows the ID for every version you want to offer.
 
-An example `CloudProfileConfig` for the Packet extension looks as follows:
+An example `CloudProfileConfig` for the Equinix Metal extension looks as follows:
 
 ```yaml
-apiVersion: packet.provider.extensions.gardener.cloud/v1alpha1
+apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
 kind: CloudProfileConfig
 machineImages:
 - name: flatcar

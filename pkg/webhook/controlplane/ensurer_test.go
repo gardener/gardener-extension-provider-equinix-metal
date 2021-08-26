@@ -124,9 +124,6 @@ var _ = Describe("Ensurer", func() {
 											"--disable-admission-plugins=",
 											"--feature-gates=Foo=true",
 										},
-										Env: []corev1.EnvVar{
-											{Name: "PACKET_API_KEY", Value: "?"},
-										},
 									},
 								},
 							},
@@ -289,9 +286,6 @@ var _ = Describe("Ensurer", func() {
 										Name: "kube-controller-manager",
 										Command: []string{
 											"--cloud-provider=?",
-										},
-										Env: []corev1.EnvVar{
-											{Name: "PACKET_API_KEY", Value: "?"},
 										},
 									},
 								},
