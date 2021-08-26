@@ -411,7 +411,7 @@ metadata:
   namespace: metallb-system
   name: config
   annotations:
-    # The MetalLB config is managed by the EQXM CCM, however an empty ConfigMap must be
+    # The MetalLB config is managed by the Equinix Metal CCM, however an empty ConfigMap must be
     # pre-created. The following annotation tells Gardener to ignore changes to the ConfigMap after
     # the initial creation so that Gardener doesn't override the config set by the CCM.
     resources.gardener.cloud/ignore: "true"

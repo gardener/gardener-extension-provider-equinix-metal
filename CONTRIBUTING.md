@@ -4,7 +4,7 @@ As a starting point, please refer to the [Gardener contributor guide](https://gi
 
 ## Equinix Metal Extension Provider
 
-The rest of this document describes how to contribute to, and test, this Equinix Metal (EQXM; formerly Packet) extension provider for Gardener.
+The rest of this document describes how to contribute to, and test, this Equinix Metal (formerly Packet) extension provider for Gardener.
 
 The guide demonstrates how to make changes, test them and publish them using the
 [Equinix Metal provider extension](https://github.com/gardener/gardener-extension-provider-equinix-metal).
@@ -18,8 +18,8 @@ Extensions are k8s controllers. They are *packaged* as Helm charts and are *regi
 Gardener API server by applying a `ControllerRegistration` custom k8s resource to the Gardener API
 server.
 In addition to being packaged as Helm charts, extensions often **deploy** Helm charts as well. For
-example, the EQXM provider extension deploys components such as the EQXM CCM and MetalLB in
-order to provide necessary services to EQXM seed and shoot clusters.
+example, the Equinix Metal provider extension deploys components such as the Equinix Metal CCM and MetalLB in
+order to provide necessary services to Equinix Metal seed and shoot clusters.
 
 ## Requirements
 
