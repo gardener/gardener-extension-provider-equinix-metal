@@ -50,6 +50,9 @@ func (m *mutator) Mutate(ctx context.Context, new, old client.Object) error {
 	switch x := new.(type) {
 	case *appsv1.Deployment:
 		switch x.Name {
+		case "metrics-server":
+			extensionswebhook.LogMutation(logger, x.Kind, x.Namespace, x.Name)
+			return m.mutateMetricsServerDeployment(ctx, x)
 		case "vpn-shoot":
 			extensionswebhook.LogMutation(logger, x.Kind, x.Namespace, x.Name)
 			return m.mutateVPNShootDeployment(ctx, x)
