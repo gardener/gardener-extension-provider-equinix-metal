@@ -25,6 +25,7 @@ import (
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -56,6 +57,10 @@ func (e *ensurer) InjectClient(client client.Client) error {
 
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the provider requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gcontext.GardenContext, new, old *appsv1.Deployment) error {
+	if v1beta1helper.IsAPIServerExposureManaged(new) {
+		return nil
+	}
+
 	c := extensionswebhook.ContainerWithName(new.Spec.Template.Spec.Containers, "kube-apiserver")
 	if c == nil {
 		return nil
