@@ -286,6 +286,7 @@ func Convert_equinixmetal_MachineImages_To_v1alpha1_MachineImages(in *equinixmet
 
 func autoConvert_v1alpha1_Persistence_To_equinixmetal_Persistence(in *Persistence, out *equinixmetal.Persistence, s conversion.Scope) error {
 	out.Enabled = (*bool)(unsafe.Pointer(in.Enabled))
+	out.Namespace = (*string)(unsafe.Pointer(in.Namespace))
 	return nil
 }
 
@@ -296,6 +297,7 @@ func Convert_v1alpha1_Persistence_To_equinixmetal_Persistence(in *Persistence, o
 
 func autoConvert_equinixmetal_Persistence_To_v1alpha1_Persistence(in *equinixmetal.Persistence, out *Persistence, s conversion.Scope) error {
 	out.Enabled = (*bool)(unsafe.Pointer(in.Enabled))
+	out.Namespace = (*string)(unsafe.Pointer(in.Namespace))
 	return nil
 }
 

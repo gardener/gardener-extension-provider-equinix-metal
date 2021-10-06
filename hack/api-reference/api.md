@@ -442,6 +442,18 @@ bool
 <p>Enabled whether or not persistence is enabled.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>namespace</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Namespace is the namespace to which to deploy storage management components. Defaults to &ldquo;rook-ceph&rdquo;.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <hr/>

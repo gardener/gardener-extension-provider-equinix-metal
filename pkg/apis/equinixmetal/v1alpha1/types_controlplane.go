@@ -35,4 +35,7 @@ type Persistence struct {
 	// Enabled whether or not persistence is enabled.
 	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
+	// Namespace is the namespace to which to deploy storage management components. Defaults to "rook-ceph".
+	// +optional
+	Namespace *string `json:"namespace,omitempty"`
 }

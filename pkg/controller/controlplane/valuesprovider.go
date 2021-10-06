@@ -18,7 +18,7 @@ import (
 	"context"
 	"path/filepath"
 
-	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 
@@ -95,15 +95,17 @@ var controlPlaneShootChart = &chart.Chart{
 			Images:  []string{equinixmetal.MetalLBControllerImageName, equinixmetal.MetalLBSpeakerImageName},
 			Objects: []*chart.Object{},
 		},
-		{
-			Name: "rook-ceph",
-			Images: []string{
-				equinixmetal.RookCephImageName,
-			},
-			Objects: []*chart.Object{
-				{Type: &corev1.Namespace{}, Name: "rook-ceph"},
-			},
-		},
+	},
+}
+
+var shootAdditionalCharts = []*chart.Chart{
+	&chart.Chart{
+		Name: "shoot-rook-ceph-namespace",
+		Path: filepath.Join(equinixmetal.InternalChartsPath, "shoot-rook-ceph-namespace"),
+	},
+	&chart.Chart{
+		Name: "shoot-rook-ceph",
+		Path: filepath.Join(equinixmetal.InternalChartsPath, "shoot-rook-ceph"),
 	},
 }
 
@@ -189,8 +191,7 @@ func getControlPlaneChartValues(
 			},
 			"metro": cluster.Shoot.Spec.Region,
 		},
-		"metallb":   map[string]interface{}{},
-		"rook-ceph": map[string]interface{}{},
+		"metallb": map[string]interface{}{},
 	}
 
 	return values, nil
@@ -202,40 +203,56 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	cluster *extensionscontroller.Cluster,
 	credentials *equinixmetal.Credentials,
 ) (map[string]interface{}, error) {
+	return map[string]interface{}{}, nil
+}
 
-	cpConfig, err := vp.decodeControlPlaneConfig(cp)
+// GetShootAdditionalChartValues collects and returns the chart values for all additional charts.
+// It returns them in a map by chart name.
+// Each additional chart must be enabled explicitly with a value of "enabled":true
+func (vp *valuesProvider) GetShootAdditionalChartValues(
+	cp *extensionsv1alpha1.ControlPlane,
+	cluster *extensionscontroller.Cluster,
+) (map[string]map[string]interface{}, error) {
+
+	cpConfig, err := helper.ControlPlaneConfigFromControlPlane(cp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "decoding control plane config")
 	}
 
-	var rookCephImage map[string]interface{}
-	rookImage, err := imagevector.ImageVector().FindImage(equinixmetal.RookCephImageName)
-	if err == nil {
-		rookCephImage = map[string]interface{}{
-			"repository": rookImage.Repository,
-			"tag":        rookImage.Tag,
+	values := map[string]map[string]interface{}{}
+
+	// shoot-rook-ceph && shoot-rook-ceph-namespace
+	if cpConfig.Persistence != nil && *cpConfig.Persistence.Enabled {
+		var (
+			rookCephImage map[string]interface{}
+		)
+		rookImage, err := imagevector.ImageVector().FindImage(equinixmetal.RookCephImageName)
+		if err == nil {
+			rookCephImage = map[string]interface{}{
+				"repository": rookImage.Repository,
+				"tag":        *rookImage.Tag,
+			}
+		}
+		rookCephNamespace := DefaultRookCephNamespace
+		if cpConfig.Persistence.Namespace != nil && *cpConfig.Persistence.Namespace != "" {
+			rookCephNamespace = *cpConfig.Persistence.Namespace
+		}
+		values["shoot-rook-ceph"] = map[string]interface{}{
+			"enabled":   true,
+			"image":     rookCephImage,
+			"namespace": rookCephNamespace,
+		}
+		values["shoot-rook-ceph-namespace"] = map[string]interface{}{
+			"enabled":   true,
+			"namespace": rookCephNamespace,
+		}
+	} else {
+		values["shoot-rook-ceph"] = map[string]interface{}{
+			"enabled": false,
+		}
+		values["shoot-rook-ceph-namespace"] = map[string]interface{}{
+			"enabled": false,
 		}
 	}
-	values := map[string]interface{}{
-		"rook-ceph": map[string]interface{}{
-			"enabled": cpConfig.Persistence != nil && *cpConfig.Persistence.Enabled,
-			"image":   rookCephImage,
-		},
-	}
-
 	return values, nil
-}
-
-func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.ControlPlane) (*api.ControlPlaneConfig, error) {
-	cpConfig := &api.ControlPlaneConfig{}
-
-	if cp.Spec.ProviderConfig == nil {
-		return cpConfig, nil
-	}
-
-	if _, _, err := vp.Decoder().Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig); err != nil {
-		return nil, errors.Wrapf(err, "decoding '%s'", kutil.ObjectName(cp))
-	}
-
-	return cpConfig, nil
 }

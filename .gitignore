@@ -12,6 +12,9 @@
 .DS_Store
 *~
 
+# dlv go debugging
+__debug_bin
+
 TODO
 
 # Virtual go & fuse

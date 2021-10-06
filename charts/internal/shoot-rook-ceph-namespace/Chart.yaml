@@ -1,0 +1,4 @@
+apiVersion: v2
+description: Rook-ceph Namespace creation
+name: rook-ceph-namespace
+version: v1.0

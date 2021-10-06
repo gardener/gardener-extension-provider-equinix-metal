@@ -70,3 +70,15 @@ func CloudProfileConfigFromCluster(cluster *controller.Cluster) (*api.CloudProfi
 	}
 	return cloudProfileConfig, nil
 }
+
+// ControlPlaneConfigFromControlPlane decodes the provider specific control plane configuration from control plane spec
+func ControlPlaneConfigFromControlPlane(cp *extensionsv1alpha1.ControlPlane) (*api.ControlPlaneConfig, error) {
+	var controlPlaneConfig *api.ControlPlaneConfig
+	if cp != nil && cp.Spec.ProviderConfig != nil && cp.Spec.ProviderConfig.Raw != nil {
+		controlPlaneConfig = &api.ControlPlaneConfig{}
+		if _, _, err := decoder.Decode(cp.Spec.ProviderConfig.Raw, nil, controlPlaneConfig); err != nil {
+			return nil, errors.Wrapf(err, "could not decode providerConfig of controlplane for '%s'", kutil.ObjectName(cp))
+		}
+	}
+	return controlPlaneConfig, nil
+}

@@ -32,4 +32,6 @@ type ControlPlaneConfig struct {
 type Persistence struct {
 	// Enabled whether or not persistence is enabled.
 	Enabled *bool
+	// Namespace is the namespace to which to deploy storage management components. Defaults to "rook-ceph".
+	Namespace *string
 }

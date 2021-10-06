@@ -1,0 +1,7 @@
+# Namespace you want created.
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: rook-ceph
+  labels:
+    name: rook-ceph
