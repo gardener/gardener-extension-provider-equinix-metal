@@ -333,6 +333,8 @@ type ClusterAutoscaler struct {
 	Expander *ExpanderMode
 	// MaxNodeProvisionTime defines how long CA waits for node to be provisioned (default: 20 mins).
 	MaxNodeProvisionTime *metav1.Duration
+	// MaxGracefulTerminationSeconds is the number of seconds CA waits for pod termination when trying to scale down a node (default: 600).
+	MaxGracefulTerminationSeconds *int32
 }
 
 // ExpanderMode is type used for Expander values
@@ -421,6 +423,8 @@ type KubeAPIServerConfig struct {
 	// of the API server should be allowed (flag `--anonymous-auth`).
 	// See: https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/
 	EnableAnonymousAuthentication *bool
+	// EventTTL controls the amount of time to retain events.
+	EventTTL *metav1.Duration
 }
 
 // KubeAPIServerRequests contains configuration for request-specific settings for the kube-apiserver.
@@ -443,6 +447,15 @@ type ServiceAccountConfig struct {
 	// service account token issuer. The issuer will sign issued ID tokens with this private key.
 	// Only useful if service account tokens are also issued by another external system.
 	SigningKeySecret *corev1.LocalObjectReference
+	// ExtendTokenExpiration turns on projected service account expiration extension during token generation, which
+	// helps safe transition from legacy token to bound service account token feature. If this flag is enabled,
+	// admission injected tokens would be extended up to 1 year to prevent unexpected failure during transition,
+	// ignoring value of service-account-max-token-expiration.
+	ExtendTokenExpiration *bool
+	// MaxTokenExpiration is the maximum validity duration of a token created by the service account token issuer. If an
+	// otherwise valid TokenRequest with a validity duration larger than this value is requested, a token will be issued
+	// with a validity duration of this value.
+	MaxTokenExpiration *metav1.Duration
 }
 
 // AuditConfig contains settings for audit of the api server
@@ -650,6 +663,8 @@ type KubeletConfig struct {
 	ImageGCHighThresholdPercent *int32
 	// ImageGCLowThresholdPercent describes the percent of the disk to which garbage collection attempts to free.
 	ImageGCLowThresholdPercent *int32
+	// SerializeImagePulls describes whether the images are pulled one at a time.
+	SerializeImagePulls *bool
 }
 
 // KubeletConfigEviction contains kubelet eviction thresholds supporting either a resource.Quantity or a percentage based value.
@@ -877,6 +892,11 @@ type WorkerKubernetes struct {
 	// Kubelet contains configuration settings for all kubelets of this worker pool.
 	// If set, all `spec.kubernetes.kubelet` settings will be overwritten for this worker pool (no merge of settings).
 	Kubelet *KubeletConfig
+	// Version is the semantic Kubernetes version to use for the Kubelet in this Worker Group.
+	// If not specified the kubelet version is derived from the global shoot cluster kubernetes version.
+	// version must be equal or lower than the version of the shoot kubernetes version.
+	// Only one minor version difference to other worker groups and global kubernetes version is allowed.
+	Version *string
 }
 
 // Machine contains information about the machine type and image.

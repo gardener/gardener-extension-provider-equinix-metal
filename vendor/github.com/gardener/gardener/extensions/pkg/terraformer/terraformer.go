@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import (
 	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/controllerutils"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 )
 
 const (
@@ -238,12 +237,6 @@ func (t *terraformer) execute(ctx context.Context, command string) error {
 	if pod != nil {
 		podLogger := logger.WithValues("pod", client.ObjectKey{Namespace: t.namespace, Name: pod.Name})
 
-		// TODO: remove after several releases
-		// ensure ownerRef for already existing state configmaps
-		if err := t.ensureStateHasOwnerRef(ctx); err != nil {
-			return fmt.Errorf("failed to ensure owner reference for the state configmap: %w", err)
-		}
-
 		// Wait for the Terraform apply/destroy Pod to be completed
 		status, terminationMessage := t.waitForPod(ctx, logger, pod)
 		if status == podStatusSucceeded {
@@ -254,20 +247,31 @@ func (t *terraformer) execute(ctx context.Context, command string) error {
 			podLogger.Info("Terraformer pod finished with error")
 
 			if terminationMessage != "" {
-				podLogger.V(1).Info("Termination message of Terraformer pod: " + terminationMessage)
+				podLogger.Info("Termination message of Terraformer pod: " + terminationMessage)
+			} else if ctx.Err() != nil {
+				podLogger.Info("Context error: " + ctx.Err().Error())
 			} else {
 				// fall back to pod logs as termination message
-				podLogger.V(1).Info("Fetching logs of Terraformer pod as termination message is empty")
+				podLogger.Info("Fetching logs of Terraformer pod as termination message is empty")
 				terminationMessage, err = t.retrievePodLogs(ctx, podLogger, pod)
 				if err != nil {
 					podLogger.Error(err, "Could not retrieve logs of Terraformer pod")
 					return err
 				}
-				podLogger.V(1).Info("Logs of Terraformer pod: " + terminationMessage)
+				podLogger.Info("Logs of Terraformer pod: " + terminationMessage)
 			}
 		}
 
 		podLogger.Info("Cleaning up Terraformer pod")
+		// If the context error is non-nil (cancelled or deadline exceeded),
+		// create a new context for deleting the pod since attempting to use the original context will fail.
+		// The context might get cancelled for example by the owner check watchdog and the pod should be
+		// deleted to prevent the terraform script from running after the context was cancelled.
+		if ctx.Err() != nil {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(context.Background(), 1*time.Minute)
+			defer cancel()
+		}
 		if err := t.client.Delete(ctx, pod); client.IgnoreNotFound(err) != nil {
 			return err
 		}
@@ -343,25 +347,6 @@ func (t *terraformer) ensureTerraformerAuth(ctx context.Context) error {
 	return t.ensureRoleBinding(ctx)
 }
 
-func (t *terraformer) ensureStateHasOwnerRef(ctx context.Context) error {
-	if t.ownerRef == nil {
-		return nil
-	}
-
-	configMap := &corev1.ConfigMap{}
-	if err := t.client.Get(ctx, kutil.Key(t.namespace, t.stateName), configMap); err != nil {
-		return err
-	}
-
-	oldConfigMap := configMap.DeepCopy()
-	configMap.SetOwnerReferences(kutil.MergeOwnerReferences(configMap.OwnerReferences, *t.ownerRef))
-
-	return t.client.Patch(ctx, configMap, client.MergeFromWithOptions(
-		oldConfigMap,
-		client.MergeFromWithOptimisticLock{},
-	))
-}
-
 func (t *terraformer) deployTerraformerPod(ctx context.Context, generateName, command string) (*corev1.Pod, error) {
 	if err := t.ensureTerraformerAuth(ctx); err != nil {
 		return nil, err
@@ -412,20 +397,19 @@ func (t *terraformer) deployTerraformerPod(ctx context.Context, generateName, co
 }
 
 func (t *terraformer) computeTerraformerCommand(command string) []string {
-	if t.useV2 {
+	if t.useV1 {
 		return []string{
-			"/terraformer",
+			"/terraformer.sh",
 			command,
-			"--zap-log-level=" + t.logLevel,
-			"--configuration-configmap-name=" + t.configName,
-			"--state-configmap-name=" + t.stateName,
-			"--variables-secret-name=" + t.variablesName,
 		}
 	}
-
 	return []string{
-		"/terraformer.sh",
+		"/terraformer",
 		command,
+		"--zap-log-level=" + t.logLevel,
+		"--configuration-configmap-name=" + t.configName,
+		"--state-configmap-name=" + t.stateName,
+		"--variables-secret-name=" + t.variablesName,
 	}
 }
 
@@ -445,7 +429,7 @@ func getTerraformerCommand(pod *corev1.Pod) string {
 func (t *terraformer) env() []corev1.EnvVar {
 	var envVars []corev1.EnvVar
 
-	if !t.useV2 {
+	if t.useV1 {
 		envVars = append(envVars, []corev1.EnvVar{
 			{Name: "MAX_BACKOFF_SEC", Value: "60"},
 			{Name: "MAX_TIME_SEC", Value: "1800"},

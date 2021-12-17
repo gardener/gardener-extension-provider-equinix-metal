@@ -89,7 +89,7 @@ func SetDefaults_GardenletConfiguration(obj *GardenletConfiguration) {
 	}
 
 	if obj.LeaderElection == nil {
-		obj.LeaderElection = &LeaderElectionConfiguration{}
+		obj.LeaderElection = &componentbaseconfigv1alpha1.LeaderElectionConfiguration{}
 	}
 
 	if obj.LogLevel == nil {
@@ -158,20 +158,18 @@ func SetDefaults_ClientConnectionConfiguration(obj *componentbaseconfigv1alpha1.
 }
 
 // SetDefaults_LeaderElectionConfiguration sets defaults for the leader election of the gardenlet.
-func SetDefaults_LeaderElectionConfiguration(obj *LeaderElectionConfiguration) {
+func SetDefaults_LeaderElectionConfiguration(obj *componentbaseconfigv1alpha1.LeaderElectionConfiguration) {
 	if obj.ResourceLock == "" {
 		obj.ResourceLock = resourcelock.LeasesResourceLock
 	}
 
-	componentbaseconfigv1alpha1.RecommendedDefaultLeaderElectionConfiguration(&obj.LeaderElectionConfiguration)
+	componentbaseconfigv1alpha1.RecommendedDefaultLeaderElectionConfiguration(obj)
 
-	if obj.LockObjectNamespace == nil {
-		v := GardenletDefaultLockObjectNamespace
-		obj.LockObjectNamespace = &v
+	if obj.ResourceNamespace == "" {
+		obj.ResourceNamespace = GardenletDefaultLockObjectNamespace
 	}
-	if obj.LockObjectName == nil {
-		v := GardenletDefaultLockObjectName
-		obj.LockObjectName = &v
+	if obj.ResourceName == "" {
+		obj.ResourceName = GardenletDefaultLockObjectName
 	}
 }
 
@@ -245,6 +243,14 @@ func SetDefaults_SeedControllerConfiguration(obj *SeedControllerConfiguration) {
 	if obj.SyncPeriod == nil {
 		v := DefaultControllerSyncPeriod
 		obj.SyncPeriod = &v
+	}
+
+	if obj.LeaseResyncSeconds == nil {
+		obj.LeaseResyncSeconds = pointer.Int32(2)
+	}
+
+	if obj.LeaseResyncMissThreshold == nil {
+		obj.LeaseResyncMissThreshold = pointer.Int32(10)
 	}
 }
 

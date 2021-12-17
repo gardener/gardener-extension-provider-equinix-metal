@@ -53,7 +53,6 @@ func (a *actuator) newTerraformer(logger logr.Logger, purpose string, infra *ext
 
 	owner := metav1.NewControllerRef(infra, extensionsv1alpha1.SchemeGroupVersion.WithKind(extensionsv1alpha1.InfrastructureResource))
 	return tf.
-		UseV2(true).
 		SetTerminationGracePeriodSeconds(630).
 		SetDeadlineCleaning(5 * time.Minute).
 		SetDeadlinePod(15 * time.Minute).
