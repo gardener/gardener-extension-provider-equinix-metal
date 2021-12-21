@@ -524,9 +524,8 @@ func expectStatusContainsMachineImages(ctx context.Context, c *mockclient.MockCl
 		Object: expectedProviderStatus,
 	}
 
-	c.EXPECT().Get(ctx, gomock.Any(), gomock.AssignableToTypeOf(&extensionsv1alpha1.Worker{}))
 	c.EXPECT().Status().Return(statusWriter)
-	statusWriter.EXPECT().Update(ctx, workerWithExpectedStatus).Return(nil)
+	statusWriter.EXPECT().Patch(ctx, workerWithExpectedStatus, gomock.Any()).Return(nil)
 }
 
 func copyMachineClass(def map[string]interface{}) map[string]interface{} {

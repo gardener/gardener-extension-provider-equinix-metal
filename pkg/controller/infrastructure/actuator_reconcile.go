@@ -21,16 +21,14 @@ import (
 
 	apiv1alpha1 "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/v1alpha1"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/controllerutils"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -102,17 +100,16 @@ func (a *actuator) updateProviderStatus(ctx context.Context, tf terraformer.Terr
 		return err
 	}
 
-	return controllerutils.TryUpdateStatus(ctx, retry.DefaultBackoff, a.Client(), infrastructure, func() error {
-		infrastructure.Status.ProviderStatus = &runtime.RawExtension{
-			Object: &apiv1alpha1.InfrastructureStatus{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: apiv1alpha1.SchemeGroupVersion.String(),
-					Kind:       "InfrastructureStatus",
-				},
-				SSHKeyID: output[equinixmetal.SSHKeyID],
+	patch := client.MergeFrom(infrastructure.DeepCopy())
+	infrastructure.Status.ProviderStatus = &runtime.RawExtension{
+		Object: &apiv1alpha1.InfrastructureStatus{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: apiv1alpha1.SchemeGroupVersion.String(),
+				Kind:       "InfrastructureStatus",
 			},
-		}
-		infrastructure.Status.State = &runtime.RawExtension{Raw: stateByte}
-		return nil
-	})
+			SSHKeyID: output[equinixmetal.SSHKeyID],
+		},
+	}
+	infrastructure.Status.State = &runtime.RawExtension{Raw: stateByte}
+	return a.Client().Status().Patch(ctx, infrastructure, patch)
 }
