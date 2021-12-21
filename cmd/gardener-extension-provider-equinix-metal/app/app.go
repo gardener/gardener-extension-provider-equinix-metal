@@ -43,8 +43,9 @@ import (
 // NewControllerManagerCommand creates a new command for running an Equinix Metal provider controller.
 func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 	var (
-		restOpts = &controllercmd.RESTOptions{}
-		mgrOpts  = &controllercmd.ManagerOptions{
+		generalOpts = &controllercmd.GeneralOptions{}
+		restOpts    = &controllercmd.RESTOptions{}
+		mgrOpts     = &controllercmd.ManagerOptions{
 			LeaderElection:          true,
 			LeaderElectionID:        controllercmd.LeaderElectionNameID(equinixmetal.Name),
 			LeaderElectionNamespace: os.Getenv("LEADER_ELECTION_NAMESPACE"),
@@ -88,6 +89,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 		webhookOptions     = webhookcmd.NewAddToManagerOptions(equinixmetal.Name, webhookServerOptions, webhookSwitches)
 
 		aggOption = controllercmd.NewOptionAggregator(
+			generalOpts,
 			restOpts,
 			mgrOpts,
 			controllercmd.PrefixOption("controlplane-", controlPlaneCtrlOpts),
