@@ -26,6 +26,7 @@ spec:
 {{ toYaml .Values.podAnnotations | indent 8 }}
 {{- end }}
     spec:
+      automountServiceAccountToken: false
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
@@ -39,7 +40,11 @@ spec:
           - --leader-elect=false
           - --allow-untagged-cloud=true
           - --authentication-skip-lookup=true
+         {{- if .Values.global.useTokenRequestor }}
+          - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+          {{- else }}
           - --kubeconfig=/var/lib/cloud-controller-manager/kubeconfig
+          {{- end }}
         env:
         - name: METAL_API_KEY
           valueFrom:
@@ -68,9 +73,34 @@ spec:
 {{ toYaml .Values.resources | indent 10 }}
         {{- end }}
         volumeMounts:
+        {{- if .Values.global.useTokenRequestor }}
+        - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          name: kubeconfig
+          readOnly: true
+        {{- else }}
         - name: cloud-controller-manager
           mountPath: /var/lib/cloud-controller-manager
+        {{- end }}
       volumes:
+      {{- if .Values.global.useTokenRequestor }}
+      - name: kubeconfig
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+                - key: kubeconfig
+                  path: kubeconfig
+              name: generic-token-kubeconfig
+              optional: false
+          - secret:
+              items:
+                - key: token
+                  path: token
+              name: shoot-access-cloud-controller-manager
+              optional: false
+      {{- else }}
       - name: cloud-controller-manager
         secret:
           secretName: cloud-controller-manager
+      {{- end }}

@@ -89,6 +89,9 @@ var _ = Describe("ValuesProvider", func() {
 		}
 
 		controlPlaneChartValues = map[string]interface{}{
+			"global": map[string]interface{}{
+				"useTokenRequestor": true,
+			},
 			"cloud-provider-equinix-metal": map[string]interface{}{
 				"replicas":          1,
 				"clusterName":       namespace,
@@ -103,7 +106,12 @@ var _ = Describe("ValuesProvider", func() {
 			"metallb": map[string]interface{}{},
 		}
 
-		controlPlaneShootChartValues = map[string]interface{}{}
+		controlPlaneShootChartValues = map[string]interface{}{
+			"global": map[string]interface{}{
+				"useTokenRequestor":      true,
+				"useProjectedTokenMount": true,
+			},
+		}
 
 		logger = log.Log.WithName("test")
 	)
@@ -146,7 +154,7 @@ var _ = Describe("ValuesProvider", func() {
 	Describe("#GetConfigChartValues", func() {
 		It("should return correct config chart values", func() {
 			// Create valuesProvider
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider(logger, true, true)
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -163,7 +171,7 @@ var _ = Describe("ValuesProvider", func() {
 			client := mockclient.NewMockClient(ctrl)
 
 			// Create valuesProvider
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider(logger, true, true)
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			err = vp.(inject.Client).InjectClient(client)
@@ -183,7 +191,7 @@ var _ = Describe("ValuesProvider", func() {
 			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
 
 			// Create valuesProvider
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider(logger, true, true)
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			err = vp.(inject.Client).InjectClient(client)
@@ -203,7 +211,7 @@ var _ = Describe("ValuesProvider", func() {
 			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
 
 			// Create valuesProvider
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider(logger, true, true)
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			err = vp.(inject.Client).InjectClient(client)
@@ -225,7 +233,7 @@ var _ = Describe("ValuesProvider", func() {
 			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
 
 			// Create valuesProvider
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider(logger, true, true)
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			err = vp.(inject.Client).InjectClient(client)
@@ -247,7 +255,7 @@ var _ = Describe("ValuesProvider", func() {
 			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
 
 			// Create valuesProvider
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider(logger, true, true)
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			err = vp.(inject.Client).InjectClient(client)
