@@ -6,7 +6,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: cloud-controller-manager
-    garden.sapcloud.io/role: controlplane
 spec:
   revisionHistoryLimit: 0
   replicas: {{ .Values.replicas }}
@@ -17,7 +16,7 @@ spec:
     metadata:
       labels:
         app: cloud-controller-manager
-        garden.sapcloud.io/role: controlplane
+        gardener.cloud/role: controlplane
         networking.gardener.cloud/to-dns: allowed
         networking.gardener.cloud/to-public-networks: allowed
         networking.gardener.cloud/to-shoot-apiserver: allowed
