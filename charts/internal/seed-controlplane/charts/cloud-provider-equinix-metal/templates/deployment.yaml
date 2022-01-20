@@ -53,7 +53,7 @@ spec:
               name: cloudprovider
               key: projectID
         {{- if .Values.metro }}
-        - name: METAL_FACILITY_NAME
+        - name: METAL_METRO_NAME
           value: {{ .Values.metro }}
         {{- end }}
         # Required to make CCM manage MetalLB ConfigMap.
