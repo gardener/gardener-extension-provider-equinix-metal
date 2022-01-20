@@ -6,7 +6,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: cloud-controller-manager
-    garden.sapcloud.io/role: controlplane
 spec:
   type: ClusterIP
   clusterIP: None
