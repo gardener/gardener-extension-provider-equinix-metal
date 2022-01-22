@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Masterminds/semver"
 	"github.com/coreos/go-systemd/v22/unit"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -26,12 +27,14 @@ import (
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
@@ -396,65 +399,84 @@ var _ = Describe("Ensurer", func() {
 	})
 
 	Describe("#EnsureKubeletServiceUnitOptions", func() {
-		It("should modify existing elements of kubelet.service unit options", func() {
-			var (
-				oldUnitOptions = []*unit.UnitOption{
-					{
-						Section: "Service",
-						Name:    "ExecStart",
-						Value: `/opt/bin/hyperkube kubelet \
+		DescribeTable("should modify existing elements of kubelet.service unit options",
+			func(kubeletVersion *semver.Version, cloudProvider string, withControllerAttachDetachFlag bool) {
+				var (
+					oldUnitOptions = []*unit.UnitOption{
+						{
+							Section: "Service",
+							Name:    "ExecStart",
+							Value: `/opt/bin/hyperkube kubelet \
     --config=/var/lib/kubelet/config/kubelet`,
-					},
-				}
-				newUnitOptions = []*unit.UnitOption{
-					{
-						Section: "Service",
-						Name:    "ExecStart",
-						Value: `/opt/bin/hyperkube kubelet \
-    --config=/var/lib/kubelet/config/kubelet \
-    --cloud-provider=external \
-    --enable-controller-attach-detach=true`,
-					},
-				}
-			)
+						},
+					}
+					newUnitOptions = []*unit.UnitOption{
+						{
+							Section: "Service",
+							Name:    "ExecStart",
+							Value: `/opt/bin/hyperkube kubelet \
+    --config=/var/lib/kubelet/config/kubelet`,
+						},
+					}
+				)
 
-			// Create ensurer
-			ensurer := NewEnsurer(logger)
+				if cloudProvider != "" {
+					newUnitOptions[0].Value += ` \
+    --cloud-provider=` + cloudProvider
+				}
 
-			// Call EnsureKubeletServiceUnitOptions method and check the result
-			opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, nil, oldUnitOptions, nil)
-			Expect(err).To(Not(HaveOccurred()))
-			Expect(opts).To(Equal(newUnitOptions))
-		})
+				if withControllerAttachDetachFlag {
+					newUnitOptions[0].Value += ` \
+    --enable-controller-attach-detach=true`
+				}
+
+				// Create ensurer
+				ensurer := NewEnsurer(logger)
+
+				// Call EnsureKubeletServiceUnitOptions method and check the result
+				opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, kubeletVersion, oldUnitOptions, nil)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(opts).To(Equal(newUnitOptions))
+			},
+
+			Entry("kubelet version < 1.23", semver.MustParse("1.22.0"), "external", true),
+			Entry("kubelet version >= 1.23", semver.MustParse("1.23.0"), "", false),
+		)
 	})
 
 	Describe("#EnsureKubeletConfiguration", func() {
-		It("should modify existing elements of kubelet configuration", func() {
-			var (
-				oldKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
-					FeatureGates: map[string]bool{
-						"Foo": true,
-					},
-				}
-				newKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
-					FeatureGates: map[string]bool{
-						"Foo":                      true,
-						"VolumeSnapshotDataSource": true,
-						"CSINodeInfo":              true,
-						"CSIDriverRegistry":        true,
-					},
-				}
-			)
+		DescribeTable("should modify existing elements of kubelet configuration",
+			func(kubeletVersion *semver.Version, enableControllerAttachDetach *bool) {
+				var (
+					oldKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
+						FeatureGates: map[string]bool{
+							"Foo": true,
+						},
+					}
+					newKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
+						FeatureGates: map[string]bool{
+							"Foo":                      true,
+							"VolumeSnapshotDataSource": true,
+							"CSINodeInfo":              true,
+							"CSIDriverRegistry":        true,
+						},
+						EnableControllerAttachDetach: enableControllerAttachDetach,
+					}
+				)
 
-			// Create ensurer
-			ensurer := NewEnsurer(logger)
+				// Create ensurer
+				ensurer := NewEnsurer(logger)
 
-			// Call EnsureKubeletConfiguration method and check the result
-			kubeletConfig := *oldKubeletConfig
-			err := ensurer.EnsureKubeletConfiguration(ctx, dummyContext, nil, &kubeletConfig, nil)
-			Expect(err).To(Not(HaveOccurred()))
-			Expect(&kubeletConfig).To(Equal(newKubeletConfig))
-		})
+				// Call EnsureKubeletConfiguration method and check the result
+				kubeletConfig := *oldKubeletConfig
+				err := ensurer.EnsureKubeletConfiguration(ctx, dummyContext, kubeletVersion, &kubeletConfig, nil)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(&kubeletConfig).To(Equal(newKubeletConfig))
+			},
+
+			Entry("kubelet version < 1.23", semver.MustParse("1.22.0"), nil),
+			Entry("kubelet version >= 1.23", semver.MustParse("1.23.0"), pointer.Bool(true)),
+		)
 	})
 })
 

@@ -25,10 +25,12 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -214,15 +216,17 @@ func ensureKubeControllerManagerCommandLineArgs(c *corev1.Container) {
 func (e *ensurer) EnsureKubeletServiceUnitOptions(ctx context.Context, gctx gcontext.GardenContext, kubeletVersion *semver.Version, new, old []*unit.UnitOption) ([]*unit.UnitOption, error) {
 	if opt := extensionswebhook.UnitOptionWithSectionAndName(new, "Service", "ExecStart"); opt != nil {
 		command := extensionswebhook.DeserializeCommandLine(opt.Value)
-		command = ensureKubeletCommandLineArgs(command)
+		command = ensureKubeletCommandLineArgs(command, kubeletVersion)
 		opt.Value = extensionswebhook.SerializeCommandLine(command, 1, " \\\n    ")
 	}
 	return new, nil
 }
 
-func ensureKubeletCommandLineArgs(command []string) []string {
-	command = extensionswebhook.EnsureStringWithPrefix(command, "--cloud-provider=", "external")
-	command = extensionswebhook.EnsureStringWithPrefix(command, "--enable-controller-attach-detach=", "true")
+func ensureKubeletCommandLineArgs(command []string, kubeletVersion *semver.Version) []string {
+	if !version.ConstraintK8sGreaterEqual123.Check(kubeletVersion) {
+		command = extensionswebhook.EnsureStringWithPrefix(command, "--cloud-provider=", "external")
+		command = extensionswebhook.EnsureStringWithPrefix(command, "--enable-controller-attach-detach=", "true")
+	}
 	return command
 }
 
@@ -235,5 +239,10 @@ func (e *ensurer) EnsureKubeletConfiguration(ctx context.Context, gctx gcontext.
 	new.FeatureGates["VolumeSnapshotDataSource"] = true
 	new.FeatureGates["CSINodeInfo"] = true
 	new.FeatureGates["CSIDriverRegistry"] = true
+
+	if version.ConstraintK8sGreaterEqual123.Check(kubeletVersion) {
+		new.EnableControllerAttachDetach = pointer.Bool(true)
+	}
+
 	return nil
 }
