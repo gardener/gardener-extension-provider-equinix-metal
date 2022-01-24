@@ -422,7 +422,7 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(logger)
 
 			// Call EnsureKubeletServiceUnitOptions method and check the result
-			opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, oldUnitOptions, nil)
+			opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, nil, oldUnitOptions, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(opts).To(Equal(newUnitOptions))
 		})
@@ -451,7 +451,7 @@ var _ = Describe("Ensurer", func() {
 
 			// Call EnsureKubeletConfiguration method and check the result
 			kubeletConfig := *oldKubeletConfig
-			err := ensurer.EnsureKubeletConfiguration(ctx, dummyContext, &kubeletConfig, nil)
+			err := ensurer.EnsureKubeletConfiguration(ctx, dummyContext, nil, &kubeletConfig, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(&kubeletConfig).To(Equal(newKubeletConfig))
 		})

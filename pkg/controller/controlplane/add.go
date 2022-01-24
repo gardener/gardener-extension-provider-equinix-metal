@@ -58,8 +58,8 @@ func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) error {
 	)
 
 	return controlplane.Add(mgr, controlplane.AddArgs{
-		Actuator: genericactuator.NewActuator(equinixmetal.Name, controlPlaneSecrets, exposureSecrets, configChart,
-			controlPlaneChart, controlPlaneShootChart, nil, storageClassChart, controlPlaneExposureChart,
+		Actuator: genericactuator.NewActuator(equinixmetal.Name, controlPlaneSecrets, nil, nil, exposureSecrets, nil, nil,
+			configChart, controlPlaneChart, controlPlaneShootChart, nil, storageClassChart, controlPlaneExposureChart,
 			NewValuesProvider(logger), extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
 			imagevector.ImageVector(), configName, opts.ShootWebhooks, mgr.GetWebhookServer().Port, logger),
 		ControllerOptions: opts.Controller,

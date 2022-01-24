@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate ../../vendor/github.com/gardener/gardener/hack/generate-controller-registration.sh provider-equinix-metal . ../../VERSION ../../example/controller-registration.yaml ControlPlane:equinixmetal Infrastructure:equinixmetal Worker:equinixmetal
+//go:generate sh -c "../../vendor/github.com/gardener/gardener/hack/generate-controller-registration.sh provider-equinix-metal . $(cat ../../VERSION) ../../example/controller-registration.yaml ControlPlane:equinixmetal Infrastructure:equinixmetal Worker:equinixmetal"
 
 // Package chart enables go:generate support for generating the correct controller registration.
 package chart
