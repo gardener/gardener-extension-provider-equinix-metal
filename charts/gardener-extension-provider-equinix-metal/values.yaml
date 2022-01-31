@@ -54,6 +54,8 @@ config:
     storage:
       className: gardener.cloud-fast
       capacity: 25Gi
+
 gardener:
+  version: ""
   seed:
     provider: equinixmetal
