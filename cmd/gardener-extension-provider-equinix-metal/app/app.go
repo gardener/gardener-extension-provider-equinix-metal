@@ -153,6 +153,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 				controllercmd.LogErrAndExit(err, "Could not determine whether service account token volume projection should be used")
 			}
 			eqxmcontrolplane.DefaultAddOptions.UseProjectedTokenMount = useProjectedTokenMount
+			eqxminfrastructure.DefaultAddOptions.UseProjectedTokenMount = useProjectedTokenMount
 			eqxmworker.DefaultAddOptions.UseProjectedTokenMount = useProjectedTokenMount
 
 			configFileOpts.Completed().ApplyETCDStorage(&eqxmcontrolplaneexposure.DefaultAddOptions.ETCDStorage)
