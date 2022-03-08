@@ -71,7 +71,7 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 
 func shootAccessSecretsFunc(namespace string) []*gutil.ShootAccessSecret {
 	return []*gutil.ShootAccessSecret{
-		gutil.NewShootAccessSecret(equinixmetal.CloudControllerManagerImageName, ""),
+		gutil.NewShootAccessSecret(equinixmetal.CloudControllerManagerImageName, namespace),
 	}
 }
 
