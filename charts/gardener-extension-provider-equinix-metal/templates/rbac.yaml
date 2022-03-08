@@ -16,6 +16,8 @@ rules:
   - controlplanes/status
   - workers
   - workers/status
+  - dnsrecords
+  - dnsrecords/status
   verbs:
   - get
   - list
