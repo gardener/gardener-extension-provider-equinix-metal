@@ -17,8 +17,6 @@ package controlplane
 import (
 	"context"
 
-	"github.com/Masterminds/semver"
-	"github.com/coreos/go-systemd/v22/unit"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane"
@@ -26,6 +24,9 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/version"
+
+	"github.com/Masterminds/semver"
+	"github.com/coreos/go-systemd/v22/unit"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -238,8 +239,9 @@ func (e *ensurer) EnsureKubeletServiceUnitOptions(_ context.Context, _ gcontext.
 }
 
 func ensureKubeletCommandLineArgs(command []string, kubeletVersion *semver.Version) []string {
+	command = extensionswebhook.EnsureStringWithPrefix(command, "--cloud-provider=", "external")
+
 	if !version.ConstraintK8sGreaterEqual123.Check(kubeletVersion) {
-		command = extensionswebhook.EnsureStringWithPrefix(command, "--cloud-provider=", "external")
 		command = extensionswebhook.EnsureStringWithPrefix(command, "--enable-controller-attach-detach=", "true")
 	}
 	return command
