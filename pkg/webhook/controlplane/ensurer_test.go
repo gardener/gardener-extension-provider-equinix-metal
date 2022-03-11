@@ -549,7 +549,7 @@ var _ = Describe("Ensurer", func() {
 
 	Describe("#EnsureKubeletConfiguration", func() {
 		DescribeTable("should modify existing elements of kubelet configuration",
-			func(kubeletVersion *semver.Version, enableControllerAttachDetach *bool) {
+			func(kubeletVersion *semver.Version, enableControllerAttachDetach *bool, featureGates map[string]bool) {
 				var (
 					oldKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
 						FeatureGates: map[string]bool{
@@ -557,15 +557,11 @@ var _ = Describe("Ensurer", func() {
 						},
 					}
 					newKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
-						FeatureGates: map[string]bool{
-							"Foo":                      true,
-							"VolumeSnapshotDataSource": true,
-							"CSINodeInfo":              true,
-							"CSIDriverRegistry":        true,
-						},
+						FeatureGates:                 featureGates,
 						EnableControllerAttachDetach: enableControllerAttachDetach,
 					}
 				)
+				newKubeletConfig.FeatureGates["Foo"] = true
 
 				// Create ensurer
 				ensurer := NewEnsurer(logger)
@@ -577,8 +573,16 @@ var _ = Describe("Ensurer", func() {
 				Expect(&kubeletConfig).To(Equal(newKubeletConfig))
 			},
 
-			Entry("kubelet version < 1.23", semver.MustParse("1.22.0"), nil),
-			Entry("kubelet version >= 1.23", semver.MustParse("1.23.0"), pointer.Bool(true)),
+			Entry("kubelet version < 1.23", semver.MustParse("1.22.0"), nil, map[string]bool{}),
+			Entry("kubelet version >= 1.23", semver.MustParse("1.23.0"), pointer.Bool(true), map[string]bool{}),
+			Entry("kubelet version = 1.21", semver.MustParse("1.21.0"), nil, map[string]bool{
+				"VolumeSnapshotDataSource": true,
+			}),
+			Entry("kubelet version < 1.21", semver.MustParse("1.20.0"), nil, map[string]bool{
+				"VolumeSnapshotDataSource": true,
+				"CSINodeInfo":              true,
+				"CSIDriverRegistry":        true,
+			}),
 		)
 	})
 })

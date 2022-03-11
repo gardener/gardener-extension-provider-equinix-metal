@@ -23,6 +23,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/version"
 
 	"github.com/Masterminds/semver"
@@ -253,13 +254,32 @@ func (e *ensurer) EnsureKubeletConfiguration(_ context.Context, _ gcontext.Garde
 	if new.FeatureGates == nil {
 		new.FeatureGates = make(map[string]bool)
 	}
-	new.FeatureGates["VolumeSnapshotDataSource"] = true
-	new.FeatureGates["CSINodeInfo"] = true
-	new.FeatureGates["CSIDriverRegistry"] = true
+	if err := setFeatureGateIfSupported(new.FeatureGates, "VolumeSnapshotDataSource", kubeletVersion.String()); err != nil {
+		return err
+	}
+	if err := setFeatureGateIfSupported(new.FeatureGates, "CSINodeInfo", kubeletVersion.String()); err != nil {
+		return err
+	}
+	if err := setFeatureGateIfSupported(new.FeatureGates, "CSIDriverRegistry", kubeletVersion.String()); err != nil {
+		return err
+	}
 
 	if version.ConstraintK8sGreaterEqual123.Check(kubeletVersion) {
 		new.EnableControllerAttachDetach = pointer.Bool(true)
 	}
 
+	return nil
+}
+
+func setFeatureGateIfSupported(featureGates map[string]bool, featureGate, version string) error {
+	isSupported, err := kutil.IsFeatureGateSupported(featureGate, version)
+	if err != nil {
+		return err
+	}
+	if isSupported {
+		featureGates[featureGate] = true
+	} else {
+		delete(featureGates, featureGate)
+	}
 	return nil
 }
