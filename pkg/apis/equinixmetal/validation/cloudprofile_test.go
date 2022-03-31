@@ -18,7 +18,7 @@ import (
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	. "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/validation"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/util/validation/field"
