@@ -17,17 +17,16 @@ package controlplane
 import (
 	"context"
 
+	"github.com/Masterminds/semver"
+	"github.com/coreos/go-systemd/v22/unit"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	featuregatesvalidation "github.com/gardener/gardener/pkg/utils/validation/features"
 	"github.com/gardener/gardener/pkg/utils/version"
-
-	"github.com/Masterminds/semver"
-	"github.com/coreos/go-systemd/v22/unit"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -272,7 +271,7 @@ func (e *ensurer) EnsureKubeletConfiguration(_ context.Context, _ gcontext.Garde
 }
 
 func setFeatureGateIfSupported(featureGates map[string]bool, featureGate, version string) error {
-	isSupported, err := kutil.IsFeatureGateSupported(featureGate, version)
+	isSupported, err := featuregatesvalidation.IsFeatureGateSupported(featureGate, version)
 	if err != nil {
 		return err
 	}

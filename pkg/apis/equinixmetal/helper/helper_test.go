@@ -18,8 +18,7 @@ import (
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	. "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
