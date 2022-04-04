@@ -53,8 +53,8 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 
 			return []secrets.ConfigInterface{
 				&secrets.ControlPlaneSecretConfig{
+					Name: equinixmetal.CloudControllerManagerImageName,
 					CertificateSecretConfig: &secrets.CertificateSecretConfig{
-						Name:         equinixmetal.CloudControllerManagerImageName,
 						CommonName:   "system:cloud-controller-manager",
 						Organization: []string{user.SystemPrivilegedGroup},
 						CertType:     secrets.ClientCert,
