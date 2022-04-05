@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,5 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package config contains libraries for initializing REST configs for talking to the Kubernetes API
-package config
+// +k8s:deepcopy-gen=package,register
+
+// Package v1 contains definitions of Vertical Pod Autoscaler related objects.
+// +groupName=autoscaling.k8s.io
+package v1
