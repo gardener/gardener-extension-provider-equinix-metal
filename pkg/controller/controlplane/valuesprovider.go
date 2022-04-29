@@ -34,10 +34,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apiserver/pkg/authentication/user"
 )
 
-func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
+func getSecretConfigsFuncs() secrets.Interface {
 	return &secrets.Secrets{
 		CertificateSecretConfigs: map[string]*secrets.CertificateSecretConfig{
 			v1beta1constants.SecretNameCACluster: {
@@ -47,24 +46,7 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 			},
 		},
 		SecretConfigsFunc: func(cas map[string]*secrets.Certificate, clusterName string) []secrets.ConfigInterface {
-			if useTokenRequestor {
-				return nil
-			}
-
-			return []secrets.ConfigInterface{
-				&secrets.ControlPlaneSecretConfig{
-					Name: equinixmetal.CloudControllerManagerImageName,
-					CertificateSecretConfig: &secrets.CertificateSecretConfig{
-						CommonName:   "system:cloud-controller-manager",
-						Organization: []string{user.SystemPrivilegedGroup},
-						CertType:     secrets.ClientCert,
-						SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-					},
-					KubeConfigRequests: []secrets.KubeConfigRequest{
-						{ClusterName: clusterName, APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer},
-					},
-				},
-			}
+			return nil
 		},
 	}
 }
@@ -120,20 +102,16 @@ var storageClassChart = &chart.Chart{
 }
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
-func NewValuesProvider(logger logr.Logger, useTokenRequestor, useProjectedTokenMount bool) genericactuator.ValuesProvider {
+func NewValuesProvider(logger logr.Logger) genericactuator.ValuesProvider {
 	return &valuesProvider{
-		logger:                 logger.WithName("equinix-metal-values-provider"),
-		useTokenRequestor:      useTokenRequestor,
-		useProjectedTokenMount: useProjectedTokenMount,
+		logger: logger.WithName("equinix-metal-values-provider"),
 	}
 }
 
 // valuesProvider is a ValuesProvider that provides Equinix Metal-specific values for the 2 charts applied by the generic actuator.
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
-	logger                 logr.Logger
-	useTokenRequestor      bool
-	useProjectedTokenMount bool
+	logger logr.Logger
 }
 
 // GetControlPlaneChartValues returns the values for the control plane chart applied by the generic actuator.
@@ -148,7 +126,7 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 	error,
 ) {
 	// Get control plane chart values
-	return getControlPlaneChartValues(cp, cluster, checksums, scaledDown, vp.useTokenRequestor)
+	return getControlPlaneChartValues(cp, cluster, checksums, scaledDown)
 }
 
 // GetControlPlaneShootChartValues returns the values for the control plane shoot chart applied by the generic actuator.
@@ -165,7 +143,7 @@ func (vp *valuesProvider) GetControlPlaneShootChartValues(
 	}
 
 	// Get control plane shoot chart values
-	return vp.getControlPlaneShootChartValues(cp, cluster, credentials, vp.useTokenRequestor, vp.useProjectedTokenMount)
+	return vp.getControlPlaneShootChartValues(cp, cluster, credentials)
 }
 
 // getCredentials determines the credentials from the secret referenced in the ControlPlane resource.
@@ -190,15 +168,11 @@ func getControlPlaneChartValues(
 	cluster *extensionscontroller.Cluster,
 	checksums map[string]string,
 	scaledDown bool,
-	useTokenRequestor bool,
 ) (
 	map[string]interface{},
 	error,
 ) {
 	values := map[string]interface{}{
-		"global": map[string]interface{}{
-			"useTokenRequestor": useTokenRequestor,
-		},
 		"cloud-provider-equinix-metal": map[string]interface{}{
 			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 			"clusterName":       cp.Namespace,
@@ -221,18 +195,11 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
 	credentials *equinixmetal.Credentials,
-	useTokenRequestor bool,
-	useProjectedTokenMount bool,
 ) (
 	map[string]interface{},
 	error,
 ) {
-	return map[string]interface{}{
-		"global": map[string]interface{}{
-			"useTokenRequestor":      useTokenRequestor,
-			"useProjectedTokenMount": useProjectedTokenMount,
-		},
-	}, nil
+	return nil, nil
 }
 
 func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.ControlPlane) (*api.ControlPlaneConfig, error) {
