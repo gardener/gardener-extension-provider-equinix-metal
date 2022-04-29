@@ -175,8 +175,7 @@ func getControlPlaneChartValues(
 			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
 			"podNetwork":        extensionscontroller.GetPodNetwork(cluster),
 			"podAnnotations": map[string]interface{}{
-				"checksum/secret-cloud-controller-manager": checksums[equinixmetal.CloudControllerManagerImageName],
-				"checksum/secret-cloudprovider":            checksums[v1beta1constants.SecretNameCloudProvider],
+				"checksum/secret-cloudprovider": checksums[v1beta1constants.SecretNameCloudProvider],
 			},
 			"metro": cluster.Shoot.Spec.Region,
 		},
