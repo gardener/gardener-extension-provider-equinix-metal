@@ -50,7 +50,7 @@ type AddOptions struct {
 func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) error {
 	return controlplane.Add(mgr, controlplane.AddArgs{
 		Actuator: genericactuator.NewActuator(equinixmetal.Name,
-			getSecretConfigsFuncs(), shootAccessSecretsFunc, nil, nil,
+			nil, shootAccessSecretsFunc, nil, nil,
 			nil, controlPlaneChart, controlPlaneShootChart, nil, storageClassChart, nil,
 			NewValuesProvider(logger), extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
 			imagevector.ImageVector(), "", opts.ShootWebhooks, mgr.GetWebhookServer().Port, logger),

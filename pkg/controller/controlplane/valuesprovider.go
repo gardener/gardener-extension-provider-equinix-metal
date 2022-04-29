@@ -22,34 +22,20 @@ import (
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
-	"github.com/gardener/gardener/pkg/utils/secrets"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
-
-func getSecretConfigsFuncs() secrets.Interface {
-	return &secrets.Secrets{
-		CertificateSecretConfigs: map[string]*secrets.CertificateSecretConfig{
-			v1beta1constants.SecretNameCACluster: {
-				Name:       v1beta1constants.SecretNameCACluster,
-				CommonName: "kubernetes",
-				CertType:   secrets.CACert,
-			},
-		},
-		SecretConfigsFunc: func(cas map[string]*secrets.Certificate, clusterName string) []secrets.ConfigInterface {
-			return nil
-		},
-	}
-}
 
 func shootAccessSecretsFunc(namespace string) []*gutil.ShootAccessSecret {
 	return []*gutil.ShootAccessSecret{
@@ -107,14 +93,16 @@ func NewValuesProvider(logger logr.Logger) genericactuator.ValuesProvider {
 // valuesProvider is a ValuesProvider that provides Equinix Metal-specific values for the 2 charts applied by the generic actuator.
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
+	common.ClientContext
 	logger logr.Logger
 }
 
 // GetControlPlaneChartValues returns the values for the control plane chart applied by the generic actuator.
 func (vp *valuesProvider) GetControlPlaneChartValues(
-	ctx context.Context,
+	_ context.Context,
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
+	_ secretsmanager.Reader,
 	checksums map[string]string,
 	scaledDown bool,
 ) (
@@ -127,19 +115,13 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 
 // GetControlPlaneShootChartValues returns the values for the control plane shoot chart applied by the generic actuator.
 func (vp *valuesProvider) GetControlPlaneShootChartValues(
-	ctx context.Context,
-	cp *extensionsv1alpha1.ControlPlane,
-	cluster *extensionscontroller.Cluster,
-	checksum map[string]string,
+	_ context.Context,
+	_ *extensionsv1alpha1.ControlPlane,
+	_ *extensionscontroller.Cluster,
+	_ secretsmanager.Reader,
+	_ map[string]string,
 ) (map[string]interface{}, error) {
-	// Get credentials from the referenced secret
-	credentials, err := vp.getCredentials(ctx, cp)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get control plane shoot chart values
-	return vp.getControlPlaneShootChartValues(cp, cluster, credentials)
+	return nil, nil
 }
 
 // getCredentials determines the credentials from the secret referenced in the ControlPlane resource.
@@ -183,18 +165,6 @@ func getControlPlaneChartValues(
 	}
 
 	return values, nil
-}
-
-// getControlPlaneShootChartValues collects and returns the control plane shoot chart values.
-func (vp *valuesProvider) getControlPlaneShootChartValues(
-	cp *extensionsv1alpha1.ControlPlane,
-	cluster *extensionscontroller.Cluster,
-	credentials *equinixmetal.Credentials,
-) (
-	map[string]interface{},
-	error,
-) {
-	return nil, nil
 }
 
 func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.ControlPlane) (*api.ControlPlaneConfig, error) {
