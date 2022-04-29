@@ -57,10 +57,6 @@ func shootAccessSecretsFunc(namespace string) []*gutil.ShootAccessSecret {
 	}
 }
 
-var legacySecretNamesToCleanup = []string{
-	equinixmetal.CloudControllerManagerImageName,
-}
-
 var controlPlaneChart = &chart.Chart{
 	Name: "seed-controlplane",
 	Path: filepath.Join(equinixmetal.InternalChartsPath, "seed-controlplane"),
