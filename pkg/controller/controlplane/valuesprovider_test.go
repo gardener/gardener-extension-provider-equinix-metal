@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -33,13 +31,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
 const (
-	namespace = "test"
+	namespace                        = "test"
+	genericTokenKubeconfigSecretName = "generic-token-kubeconfig-92e9ae14"
 )
 
 var _ = Describe("ValuesProvider", func() {
@@ -54,6 +52,11 @@ var _ = Describe("ValuesProvider", func() {
 
 		cidr    = "10.250.0.0/19"
 		cluster = &extensionscontroller.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"generic-token-kubeconfig.secret.gardener.cloud/name": genericTokenKubeconfigSecretName,
+				},
+			},
 			Shoot: &gardencorev1beta1.Shoot{
 				Spec: gardencorev1beta1.ShootSpec{
 					Networking: gardencorev1beta1.Networking{
@@ -70,47 +73,22 @@ var _ = Describe("ValuesProvider", func() {
 			},
 		}
 
-		cpSecretKey = client.ObjectKey{Namespace: namespace, Name: v1beta1constants.SecretNameCloudProvider}
-		cpSecret    = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      v1beta1constants.SecretNameCloudProvider,
-				Namespace: namespace,
-			},
-			Type: corev1.SecretTypeOpaque,
-			Data: map[string][]byte{
-				equinixmetal.APIToken:  []byte("foo"),
-				equinixmetal.ProjectID: []byte("bar"),
-			},
-		}
-
 		checksums = map[string]string{
 			v1beta1constants.SecretNameCloudProvider: "8bafb35ff1ac60275d62e1cbd495aceb511fb354f74a20f7d06ecb48b3a68432",
-			"cloud-controller-manager":               "3d791b164a808638da9a8df03924be2a41e34cd664e42231c00fe369e3588272",
 		}
 
 		controlPlaneChartValues = map[string]interface{}{
-			"global": map[string]interface{}{
-				"useTokenRequestor": true,
-			},
 			"cloud-provider-equinix-metal": map[string]interface{}{
 				"replicas":          1,
 				"clusterName":       namespace,
 				"kubernetesVersion": "1.13.4",
 				"podNetwork":        cidr,
 				"podAnnotations": map[string]interface{}{
-					"checksum/secret-cloud-controller-manager": "3d791b164a808638da9a8df03924be2a41e34cd664e42231c00fe369e3588272",
-					"checksum/secret-cloudprovider":            "8bafb35ff1ac60275d62e1cbd495aceb511fb354f74a20f7d06ecb48b3a68432",
+					"checksum/secret-cloudprovider": "8bafb35ff1ac60275d62e1cbd495aceb511fb354f74a20f7d06ecb48b3a68432",
 				},
 				"metro": "ny",
 			},
 			"metallb": map[string]interface{}{},
-		}
-
-		controlPlaneShootChartValues = map[string]interface{}{
-			"global": map[string]interface{}{
-				"useTokenRequestor":      true,
-				"useProjectedTokenMount": true,
-			},
 		}
 
 		logger = log.Log.WithName("test")
@@ -154,7 +132,7 @@ var _ = Describe("ValuesProvider", func() {
 	Describe("#GetConfigChartValues", func() {
 		It("should return correct config chart values", func() {
 			// Create valuesProvider
-			vp := NewValuesProvider(logger, true, true)
+			vp := NewValuesProvider(logger)
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -171,115 +149,29 @@ var _ = Describe("ValuesProvider", func() {
 			client := mockclient.NewMockClient(ctrl)
 
 			// Create valuesProvider
-			vp := NewValuesProvider(logger, true, true)
+			vp := NewValuesProvider(logger)
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			err = vp.(inject.Client).InjectClient(client)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Call GetControlPlaneChartValues method and check the result
-			values, err := vp.GetControlPlaneChartValues(context.TODO(), cp, cluster, checksums, false)
+			values, err := vp.GetControlPlaneChartValues(context.TODO(), cp, cluster, nil, checksums, false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(values).To(Equal(controlPlaneChartValues))
 		})
 	})
 
 	Describe("#GetControlPlaneShootChartValues", func() {
-		It("should return correct control plane shoot chart values", func() {
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
+		It("should return nil", func() {
+			vp := NewValuesProvider(logger)
 
-			// Create valuesProvider
-			vp := NewValuesProvider(logger, true, true)
-			err := vp.(inject.Scheme).InjectScheme(scheme)
+			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, checksums)
 			Expect(err).NotTo(HaveOccurred())
-			err = vp.(inject.Client).InjectClient(client)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Call GetControlPlaneChartValues method and check the result
-			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(values).To(Equal(controlPlaneShootChartValues))
-		})
-	})
-
-	Describe("#GetControlPlaneShootChartValues", func() {
-		It("enables storage when persistance is enabled in configuration", func() {
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
-
-			// Create valuesProvider
-			vp := NewValuesProvider(logger, true, true)
-			err := vp.(inject.Scheme).InjectScheme(scheme)
-			Expect(err).NotTo(HaveOccurred())
-			err = vp.(inject.Client).InjectClient(client)
-			Expect(err).NotTo(HaveOccurred())
-
-			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&api.ControlPlaneConfig{})
-
-			// Call GetControlPlaneChartValues method and check the result
-			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(values).To(Equal(controlPlaneShootChartValues))
-		})
-	})
-
-	Describe("#GetControlPlaneShootChartValues", func() {
-		It("disables storage when persistance is disabled in configuration", func() {
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
-
-			// Create valuesProvider
-			vp := NewValuesProvider(logger, true, true)
-			err := vp.(inject.Scheme).InjectScheme(scheme)
-			Expect(err).NotTo(HaveOccurred())
-			err = vp.(inject.Client).InjectClient(client)
-			Expect(err).NotTo(HaveOccurred())
-
-			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&api.ControlPlaneConfig{})
-
-			// Call GetControlPlaneChartValues method and check the result
-			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(values).To(Equal(controlPlaneShootChartValues))
-		})
-	})
-
-	Describe("#GetControlPlaneShootChartValues", func() {
-		It("disables storage when persistance is not specified in configuration", func() {
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(context.TODO(), cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
-
-			// Create valuesProvider
-			vp := NewValuesProvider(logger, true, true)
-			err := vp.(inject.Scheme).InjectScheme(scheme)
-			Expect(err).NotTo(HaveOccurred())
-			err = vp.(inject.Client).InjectClient(client)
-			Expect(err).NotTo(HaveOccurred())
-
-			cp.Spec.DefaultSpec.ProviderConfig.Raw = encode(&api.ControlPlaneConfig{})
-
-			// Call GetControlPlaneChartValues method and check the result
-			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, checksums)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(values).To(Equal(controlPlaneShootChartValues))
+			Expect(values).To(BeNil())
 		})
 	})
 })
-
-func clientGet(result runtime.Object) interface{} {
-	return func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-		switch obj.(type) {
-		case *corev1.Secret:
-			*obj.(*corev1.Secret) = *result.(*corev1.Secret)
-		}
-		return nil
-	}
-}
 
 func encode(obj runtime.Object) []byte {
 	data, _ := json.Marshal(obj)
