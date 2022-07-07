@@ -32,6 +32,7 @@ spec:
         networking.gardener.cloud/to-shoot-apiserver: allowed
         networking.gardener.cloud/from-prometheus: allowed
     spec:
+      priorityClassName: gardener-system-300
       serviceAccountName: machine-controller-manager
       terminationGracePeriodSeconds: 5
       containers:
