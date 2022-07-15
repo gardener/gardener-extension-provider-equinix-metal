@@ -6,7 +6,8 @@ COPY . .
 RUN make install
 
 ############# gardener-extension-provider-equinix-metal
-FROM alpine:3.13.7 AS gardener-extension-provider-equinix-metal
+FROM gcr.io/distroless/static-debian11:nonroot AS gardener-extension-provider-equinix-metal
+WORKDIR /
 
 COPY charts /charts
 COPY --from=builder /go/bin/gardener-extension-provider-equinix-metal /gardener-extension-provider-equinix-metal
