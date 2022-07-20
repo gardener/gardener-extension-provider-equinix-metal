@@ -1,5 +1,5 @@
 {{- if .Values.vpa.enabled }}
-apiVersion: autoscaling.k8s.io/v1beta2
+apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
   name: machine-controller-manager-vpa
@@ -11,4 +11,14 @@ spec:
     name: machine-controller-manager
   updatePolicy:
     updateMode: {{ .Values.vpa.updatePolicy.updateMode | quote }}
+  resourcePolicy:
+    containerPolicies:
+    - containerName: machine-controller-manager-provider-equinix-metal
+      maxAllowed:
+        cpu: 2
+        memory: 5G
+    - containerName: equinix-metal-machine-controller-manager
+      maxAllowed:
+        cpu: 2
+        memory: 5G
 {{- end }}

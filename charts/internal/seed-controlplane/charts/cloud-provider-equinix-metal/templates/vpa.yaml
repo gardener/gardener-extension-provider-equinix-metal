@@ -1,4 +1,4 @@
-apiVersion: autoscaling.k8s.io/v1beta2
+apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
   name: cloud-controller-manager-vpa
@@ -10,3 +10,9 @@ spec:
     name: cloud-controller-manager
   updatePolicy:
     updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: cloud-provider-equinix-metal
+      maxAllowed:
+        cpu: 4
+        memory: 10G
