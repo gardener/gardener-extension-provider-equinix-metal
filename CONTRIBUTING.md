@@ -428,12 +428,6 @@ From this point the extension should be deployed on-demand, e.g. when a shoot cl
 
 ### Making changes to an extension
 
-Install the development requirements:
-
-```
-make install-requirements
-```
-
 Make code changes, then run the following:
 
 ```
