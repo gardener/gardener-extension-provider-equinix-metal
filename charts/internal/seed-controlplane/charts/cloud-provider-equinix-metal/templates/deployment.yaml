@@ -27,6 +27,7 @@ spec:
 {{- end }}
     spec:
       automountServiceAccountToken: false
+      priorityClassName: gardener-system-300
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
