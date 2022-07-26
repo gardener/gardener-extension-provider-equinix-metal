@@ -15,8 +15,10 @@
 package client
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/version"
 	"github.com/packethost/packngo"
 )
 
@@ -29,7 +31,9 @@ func NewClient(apiKey string) ClientInterface {
 	token := strings.TrimSpace(apiKey)
 
 	if token != "" {
-		return &eqxmClient{packngo.NewClientWithAuth("gardener", token, nil)}
+		client := packngo.NewClientWithAuth("gardener", token, nil)
+		client.UserAgent = fmt.Sprintf("gardener-extension-provider-equinix-metal/%s %s", version.Version, client.UserAgent)
+		return &eqxmClient{client}
 	}
 
 	return nil
