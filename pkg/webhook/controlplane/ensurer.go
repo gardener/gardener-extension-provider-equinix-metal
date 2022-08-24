@@ -62,7 +62,9 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gconte
 	}
 	ps := &new.Spec.Template.Spec
 	if c := extensionswebhook.ContainerWithName(ps.Containers, "kube-apiserver"); c != nil {
-		ensureKubeAPIServerCommandLineArgs(c, cluster.Shoot.Spec.Kubernetes.Version)
+		if err := ensureKubeAPIServerCommandLineArgs(c, cluster.Shoot.Spec.Kubernetes.Version); err != nil {
+			return err
+		}
 	}
 
 	keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old, "vpn-seed")
@@ -189,7 +191,7 @@ func appendUniqueFile(files *[]extensionsv1alpha1.File, file extensionsv1alpha1.
 	*files = append(resFiles, file)
 }
 
-func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion string) {
+func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion string) error {
 	// Ensure CSI-related admission plugins
 	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--enable-admission-plugins=",
 		"PersistentVolumeLabel", ",")
@@ -205,8 +207,11 @@ func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion string) 
 		"CSIDriverRegistry=false", ",")
 	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
 		"KubeletPluginsWatcher=false", ",")
-	c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--feature-gates=",
-		"VolumeSnapshotDataSource=true", ",")
+
+	var err error
+	if c.Command, err = setFeatureGateInCommandIfSupported(c.Command, "VolumeSnapshotDataSource", k8sVersion, "VolumeSnapshotDataSource=true"); err != nil {
+		return err
+	}
 
 	if mustSetCSIFeatureGates(k8sVersion) {
 		c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--feature-gates=",
@@ -214,6 +219,7 @@ func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion string) 
 		c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--feature-gates=",
 			"CSIDriverRegistry=true", ",")
 	}
+	return nil
 }
 
 func mustSetCSIFeatureGates(k8sVersion string) bool {
@@ -281,4 +287,15 @@ func setFeatureGateIfSupported(featureGates map[string]bool, featureGate, versio
 		delete(featureGates, featureGate)
 	}
 	return nil
+}
+
+func setFeatureGateInCommandIfSupported(command []string, featureGate, k8sVersion, value string) ([]string, error) {
+	isSupported, err := featuregatesvalidation.IsFeatureGateSupported(featureGate, k8sVersion)
+	if err != nil {
+		return nil, err
+	}
+	if isSupported {
+		return extensionswebhook.EnsureStringWithPrefixContains(command, "--feature-gates=", value, ","), nil
+	}
+	return extensionswebhook.EnsureNoStringWithPrefixContains(command, "--feature-gates=", value, ","), nil
 }
