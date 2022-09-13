@@ -21,6 +21,7 @@ import (
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 	eqxcmclient "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal/client"
+	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 
 	"github.com/gardener/gardener/extensions/pkg/util"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -45,7 +46,7 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 	)
 
 	// get the private IPs and providerIDs from the shoot nodes
-	_, shootClient, err := util.NewClientForShoot(ctx, w.Client(), w.worker.Namespace, client.Options{})
+	_, shootClient, err := util.NewClientForShoot(ctx, w.Client(), w.worker.Namespace, client.Options{}, extensionsconfig.RESTOptions{})
 	if err != nil {
 		return err
 	}
@@ -145,6 +146,26 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 	}
 
 	return w.Client().Patch(ctx, deploy, patch)
+}
+
+// PreReconcileHook implements genericactuator.WorkerDelegate.
+func (w *workerDelegate) PreReconcileHook(_ context.Context) error {
+	return nil
+}
+
+// PostReconcileHook implements genericactuator.WorkerDelegate.
+func (w *workerDelegate) PostReconcileHook(_ context.Context) error {
+	return nil
+}
+
+// PreDeleteHook implements genericactuator.WorkerDelegate.
+func (w *workerDelegate) PreDeleteHook(_ context.Context) error {
+	return nil
+}
+
+// PostDeleteHook implements genericactuator.WorkerDelegate.
+func (w *workerDelegate) PostDeleteHook(_ context.Context) error {
+	return nil
 }
 
 // getNodePrivateNetwork use the Equinix Metal API to get the CIDR of the private network given a providerID.
