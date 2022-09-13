@@ -32,9 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (a *actuator) Reconcile(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
-	logger := a.logger.WithValues("infrastructure", client.ObjectKeyFromObject(infrastructure), "operation", "reconcile")
-	return a.reconcile(ctx, logger, infrastructure, cluster, terraformer.StateConfigMapInitializerFunc(terraformer.CreateState))
+func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
+	log.WithValues("infrastructure", client.ObjectKeyFromObject(infrastructure), "operation", "reconcile")
+	return a.reconcile(ctx, log, infrastructure, cluster, terraformer.StateConfigMapInitializerFunc(terraformer.CreateState))
 }
 
 func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster, stateInitializer terraformer.StateConfigMapInitializer) error {

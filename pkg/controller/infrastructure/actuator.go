@@ -27,11 +27,9 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type actuator struct {
-	logger logr.Logger
 	common.RESTConfigContext
 	disableProjectedTokenMount bool
 }
@@ -39,7 +37,6 @@ type actuator struct {
 // NewActuator creates a new Actuator that updates the status of the handled Infrastructure resources.
 func NewActuator(disableProjectedTokenMount bool) infrastructure.Actuator {
 	return &actuator{
-		logger:                     log.Log.WithName("infrastructure-actuator"),
 		disableProjectedTokenMount: disableProjectedTokenMount,
 	}
 }

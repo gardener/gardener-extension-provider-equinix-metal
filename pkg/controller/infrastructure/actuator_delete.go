@@ -19,15 +19,16 @@ import (
 	"fmt"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	"github.com/go-logr/logr"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (a *actuator) Delete(ctx context.Context, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
-	logger := a.logger.WithValues("infrastructure", client.ObjectKeyFromObject(infrastructure), "operation", "delete")
-	tf, err := a.newTerraformer(logger, equinixmetal.TerraformerPurposeInfra, infrastructure)
+func (a *actuator) Delete(ctx context.Context, log logr.Logger, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
+	log.WithValues("infrastructure", client.ObjectKeyFromObject(infrastructure), "operation", "delete")
+	tf, err := a.newTerraformer(log, equinixmetal.TerraformerPurposeInfra, infrastructure)
 	if err != nil {
 		return fmt.Errorf("could not create the Terraformer: %+v", err)
 	}
@@ -41,7 +42,7 @@ func (a *actuator) Delete(ctx context.Context, infrastructure *extensionsv1alpha
 	// created configmaps/secrets related to the Terraformer.
 	stateIsEmpty := tf.IsStateEmpty(ctx)
 	if stateIsEmpty {
-		a.logger.Info("exiting early as infrastructure state is empty - nothing to do")
+		log.Info("exiting early as infrastructure state is empty - nothing to do")
 		return tf.CleanupConfiguration(ctx)
 	}
 
