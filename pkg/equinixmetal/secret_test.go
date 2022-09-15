@@ -72,7 +72,7 @@ var _ = Describe("Secret", func() {
 				projectID = []byte("bar")
 			)
 
-			c.EXPECT().Get(ctx, kutil.Key(namespace, name), gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret) error {
+			c.EXPECT().Get(ctx, kutil.Key(namespace, name), gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret, _ ...client.GetOption) error {
 				secret.Data = map[string][]byte{
 					APIToken:  apiToken,
 					ProjectID: projectID,
