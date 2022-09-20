@@ -1,7 +1,6 @@
 module github.com/gardener/gardener-extension-provider-equinix-metal
 
-// must use 1.16.1 or higher because of https://github.com/golang/go/issues/43985
-go 1.17
+go 1.19
 
 require (
 	github.com/Masterminds/semver v1.5.0
