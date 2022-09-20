@@ -52,6 +52,9 @@ spec:
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
+  annotations:
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
   labels:
     app: metallb
   name: speaker
@@ -402,6 +405,10 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
+      {{- if semverCompare ">= 1.19" .Capabilities.KubeVersion.GitVersion }}
+        seccompProfile:
+          type: RuntimeDefault
+      {{- end }}
       serviceAccountName: controller
       terminationGracePeriodSeconds: 0
 ---
