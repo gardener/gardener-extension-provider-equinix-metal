@@ -73,7 +73,7 @@ type ShootFramework struct {
 // NewShootFramework creates a new simple Shoot framework
 func NewShootFramework(cfg *ShootConfig) *ShootFramework {
 	f := &ShootFramework{
-		GardenerFramework: NewGardenerFrameworkFromConfig(nil),
+		GardenerFramework: newGardenerFrameworkFromConfig(nil),
 		TestDescription:   NewTestDescription("SHOOT"),
 		Config:            cfg,
 	}
@@ -85,26 +85,6 @@ func NewShootFramework(cfg *ShootConfig) *ShootFramework {
 	}, 8*time.Minute)
 	CAfterEach(f.AfterEach, 10*time.Minute)
 	return f
-}
-
-// NewShootFrameworkFromConfig creates a new Shoot framework from a shoot configuration without registering ginkgo
-// specific functions
-func NewShootFrameworkFromConfig(ctx context.Context, cfg *ShootConfig) (*ShootFramework, error) {
-	var gardenerConfig *GardenerConfig
-	if cfg != nil {
-		gardenerConfig = cfg.GardenerConfig
-	}
-	f := &ShootFramework{
-		GardenerFramework: NewGardenerFrameworkFromConfig(gardenerConfig),
-		TestDescription:   NewTestDescription("SHOOT"),
-		Config:            cfg,
-	}
-	if cfg != nil && gardenerConfig != nil {
-		if err := f.AddShoot(ctx, cfg.ShootName, cfg.GardenerConfig.ProjectNamespace); err != nil {
-			return nil, err
-		}
-	}
-	return f, nil
 }
 
 // BeforeEach should be called in ginkgo's BeforeEach.
@@ -140,11 +120,12 @@ func (f *ShootFramework) AfterEach(ctx context.Context) {
 		}
 		err = f.WaitUntilNamespaceIsDeleted(ctx, f.ShootClient, ns.Name)
 		if err != nil {
-			ctx2, cancel := context.WithTimeout(ctx, 1*time.Minute)
+			timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 			defer cancel()
-			err2 := f.dumpNamespaceResource(ctx2, fmt.Sprintf("[SHOOT %s] [NAMESPACE %s]", f.Shoot.Name, ns.Name), f.ShootClient, ns.Name)
+
+			err2 := f.dumpNamespaceResource(timeoutCtx, f.Logger, f.ShootClient, ns.Name)
 			ExpectNoError(err2)
-			err2 = f.DumpDefaultResourcesInNamespace(ctx2, fmt.Sprintf("[SHOOT %s] [NAMESPACE %s]", f.Shoot.Name, ns.Name), f.ShootClient, ns.Name)
+			err2 = f.DumpDefaultResourcesInNamespace(timeoutCtx, f.ShootClient, ns.Name)
 			ExpectNoError(err2)
 		}
 		ExpectNoError(err)
@@ -208,7 +189,7 @@ func (f *ShootFramework) AddShoot(ctx context.Context, shootName, shootNamespace
 		return nil
 	}
 
-	if !f.GardenerFrameworkConfig.SkipAccessingShoot {
+	if !f.GardenerFramework.Config.SkipAccessingShoot {
 		if err := retry.UntilTimeout(ctx, k8sClientInitPollInterval, k8sClientInitTimeout, func(ctx context.Context) (bool, error) {
 			shootClient, err = kubernetes.NewClientFromSecret(ctx, f.GardenClient.Client(), shoot.Namespace, shoot.Name+"."+gutil.ShootProjectSecretSuffixKubeconfig,
 				kubernetes.WithClientOptions(client.Options{Scheme: kubernetes.ShootScheme}),
@@ -301,11 +282,13 @@ func (f *ShootFramework) GetCloudProfile(ctx context.Context) (*gardencorev1beta
 
 // WaitForShootCondition waits for the shoot to contain the specified condition
 func (f *ShootFramework) WaitForShootCondition(ctx context.Context, interval, timeout time.Duration, conditionType gardencorev1beta1.ConditionType, conditionStatus gardencorev1beta1.ConditionStatus) error {
+	log := f.Logger.WithValues("shoot", client.ObjectKeyFromObject(f.Shoot))
+
 	return retry.UntilTimeout(ctx, interval, timeout, func(ctx context.Context) (done bool, err error) {
 		shoot := &gardencorev1beta1.Shoot{}
 		err = f.GardenClient.Client().Get(ctx, client.ObjectKey{Namespace: f.Shoot.Namespace, Name: f.Shoot.Name}, shoot)
 		if err != nil {
-			f.Logger.Infof("Error while waiting for shoot to have expected condition: %s", err.Error())
+			log.Error(err, "Error while waiting for shoot to have expected condition")
 			return retry.MinorError(err)
 		}
 
@@ -314,12 +297,14 @@ func (f *ShootFramework) WaitForShootCondition(ctx context.Context, interval, ti
 			return retry.Ok()
 		}
 
+		log = log.WithValues("expectedConditionType", conditionType, "expectedConditionStatus", conditionStatus)
+
 		if cond == nil {
-			f.Logger.Infof("Waiting for shoot %s to have expected condition (%s: %s). Currently the condition is not present", f.Shoot.Name, conditionType, conditionStatus)
-			return retry.MinorError(fmt.Errorf("shoot %q does not yet have expected condition", shoot.Name))
+			log.Info("Waiting for shoot to have expected condition status, currently the condition is not present")
+			return retry.MinorError(fmt.Errorf("shoot %q does not yet have expected condition status", shoot.Name))
 		}
 
-		f.Logger.Infof("Waiting for shoot %s to have expected condition (%s: %s). Currently: (%s: %s)", f.Shoot.Name, conditionType, conditionStatus, conditionType, cond.Status)
+		log.Info("Waiting for shoot to have expected condition status", "currentConditionStatus", cond.Status)
 		return retry.MinorError(fmt.Errorf("shoot %q does not yet have expected condition", shoot.Name))
 	})
 }

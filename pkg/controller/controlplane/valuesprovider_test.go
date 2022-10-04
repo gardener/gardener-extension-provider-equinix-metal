@@ -31,7 +31,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
@@ -90,8 +89,6 @@ var _ = Describe("ValuesProvider", func() {
 			},
 			"metallb": map[string]interface{}{},
 		}
-
-		logger = log.Log.WithName("test")
 	)
 
 	BeforeEach(func() {
@@ -132,7 +129,7 @@ var _ = Describe("ValuesProvider", func() {
 	Describe("#GetConfigChartValues", func() {
 		It("should return correct config chart values", func() {
 			// Create valuesProvider
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider()
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -149,7 +146,7 @@ var _ = Describe("ValuesProvider", func() {
 			client := mockclient.NewMockClient(ctrl)
 
 			// Create valuesProvider
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider()
 			err := vp.(inject.Scheme).InjectScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			err = vp.(inject.Client).InjectClient(client)
@@ -164,7 +161,7 @@ var _ = Describe("ValuesProvider", func() {
 
 	Describe("#GetControlPlaneShootChartValues", func() {
 		It("should return nil", func() {
-			vp := NewValuesProvider(logger)
+			vp := NewValuesProvider()
 
 			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, checksums)
 			Expect(err).NotTo(HaveOccurred())

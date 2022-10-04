@@ -47,7 +47,6 @@ func NewActuator() worker.Actuator {
 	}
 
 	return genericactuator.NewActuator(
-		log.Log.WithName("equinix-metal-worker-actuator"),
 		delegateFactory,
 		equinixmetal.MachineControllerManagerName,
 		mcmChart,

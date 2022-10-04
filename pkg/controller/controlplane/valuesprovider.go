@@ -84,10 +84,8 @@ var storageClassChart = &chart.Chart{
 }
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
-func NewValuesProvider(logger logr.Logger) genericactuator.ValuesProvider {
-	return &valuesProvider{
-		logger: logger.WithName("equinix-metal-values-provider"),
-	}
+func NewValuesProvider() genericactuator.ValuesProvider {
+	return &valuesProvider{}
 }
 
 // valuesProvider is a ValuesProvider that provides Equinix Metal-specific values for the 2 charts applied by the generic actuator.
