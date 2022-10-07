@@ -7,6 +7,7 @@ metadata:
   labels:
     app: metallb
 ---
+{{- if not .Values.pspDisabled }}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -49,6 +50,8 @@ spec:
   - secret
   - emptyDir
 ---
+{{- end }}
+{{- if not .Values.pspDisabled }}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -91,6 +94,7 @@ spec:
   - secret
   - emptyDir
 ---
+{{- end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -136,6 +140,7 @@ rules:
   verbs:
   - create
   - patch
+{{- if not .Values.pspDisabled }}
 - apiGroups:
   - policy
   resourceNames:
@@ -144,6 +149,7 @@ rules:
   - podsecuritypolicies
   verbs:
   - use
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -169,6 +175,7 @@ rules:
   verbs:
   - create
   - patch
+{{- if not .Values.pspDisabled }}
 - apiGroups:
   - policy
   resourceNames:
@@ -177,6 +184,7 @@ rules:
   - podsecuritypolicies
   verbs:
   - use
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -405,6 +413,9 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
+        supplementalGroups:
+        - 1
+        - 65535
       {{- if semverCompare ">= 1.19" .Capabilities.KubeVersion.GitVersion }}
         seccompProfile:
           type: RuntimeDefault

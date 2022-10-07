@@ -25,6 +25,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
@@ -115,11 +116,11 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 func (vp *valuesProvider) GetControlPlaneShootChartValues(
 	_ context.Context,
 	_ *extensionsv1alpha1.ControlPlane,
-	_ *extensionscontroller.Cluster,
+	cluster *extensionscontroller.Cluster,
 	_ secretsmanager.Reader,
 	_ map[string]string,
 ) (map[string]interface{}, error) {
-	return nil, nil
+	return getControlPlaneShootChartValues(cluster)
 }
 
 // getCredentials determines the credentials from the secret referenced in the ControlPlane resource.
@@ -163,6 +164,17 @@ func getControlPlaneChartValues(
 	}
 
 	return values, nil
+}
+
+// getControlPlaneShootChartValues collects and returns the control plane shoot chart values.
+func getControlPlaneShootChartValues(
+	cluster *extensionscontroller.Cluster,
+) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"metallb": map[string]interface{}{
+			"pspDisabled": gardencorev1beta1helper.IsPSPDisabled(cluster.Shoot),
+		},
+	}, nil
 }
 
 func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.ControlPlane) (*api.ControlPlaneConfig, error) {
