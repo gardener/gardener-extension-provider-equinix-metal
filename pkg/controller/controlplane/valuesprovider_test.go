@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
@@ -160,12 +161,43 @@ var _ = Describe("ValuesProvider", func() {
 	})
 
 	Describe("#GetControlPlaneShootChartValues", func() {
-		It("should return nil", func() {
-			vp := NewValuesProvider()
+		Context("podSecurityPolicy", func() {
+			It("should return correct shoot control plane chart when PodSecurityPolicy admission plugin is not disabled in the shoot", func() {
+				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
+					AdmissionPlugins: []gardencorev1beta1.AdmissionPlugin{
+						{
+							Name: "PodSecurityPolicy",
+						},
+					},
+				}
+				vp := NewValuesProvider()
+				values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(values).To(Equal(map[string]interface{}{
+					"metallb": map[string]interface{}{
+						"pspDisabled": false,
+					},
+				}))
+			})
 
-			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, checksums)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(values).To(BeNil())
+			It("should return correct shoot control plane chart when PodSecurityPolicy admission plugin is disabled in the shoot", func() {
+				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
+					AdmissionPlugins: []gardencorev1beta1.AdmissionPlugin{
+						{
+							Name:     "PodSecurityPolicy",
+							Disabled: pointer.Bool(true),
+						},
+					},
+				}
+				vp := NewValuesProvider()
+				values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(values).To(Equal(map[string]interface{}{
+					"metallb": map[string]interface{}{
+						"pspDisabled": true,
+					},
+				}))
+			})
 		})
 	})
 })

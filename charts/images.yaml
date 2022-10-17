@@ -6,7 +6,7 @@ images:
 - name: cloud-controller-manager
   sourceRepository: github.com/equinix/cloud-provider-equinix-metal
   repository: docker.io/equinix/cloud-provider-equinix-metal
-  tag: v3.3.0
+  tag: v3.5.0
 - name: machine-controller-manager
   sourceRepository: github.com/gardener/machine-controller-manager
   repository: eu.gcr.io/gardener-project/gardener/machine-controller-manager

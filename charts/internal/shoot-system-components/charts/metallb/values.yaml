@@ -1,3 +1,5 @@
 images:
   metallb-controller: image-repository:image-tag
   metallb-speaker: image-repository:image-tag
+
+pspDisabled: false
