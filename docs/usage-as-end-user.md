@@ -91,7 +91,7 @@ The default value is `false`.
 Please find below an example `Shoot` manifest:
 
 ```yaml
-apiVersion: core.gardener.cloud/v1alpha1
+apiVersion: core.gardener.cloud/v1beta1
 kind: Shoot
 metadata:
   name: my-shoot
@@ -110,6 +110,8 @@ spec:
       kind: ControlPlaneConfig
     workers:
     - name: worker-pool1
+      machine:
+        type: t1.small
       minimum: 2
       maximum: 2
       volume:
@@ -142,9 +144,9 @@ spec:
       kubernetesVersion: true
       machineImageVersion: true
   addons:
-    kubernetes-dashboard:
+    kubernetesDashboard:
       enabled: true
-    nginx-ingress:
+    nginxIngress:
       enabled: true
 ```
 
