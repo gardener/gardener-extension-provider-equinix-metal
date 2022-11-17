@@ -5,12 +5,12 @@ apiVersion: policy/v1beta1
 {{- end }}
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "name" . }}
+  name: cloud-controller-manager
   namespace: {{ .Release.Namespace }}
   labels:
-{{ include "labels" . | indent 4 }}
+    role: cloud-controller-manager
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-{{ include "labels" . | indent 6 }}
+      role: cloud-controller-manager
