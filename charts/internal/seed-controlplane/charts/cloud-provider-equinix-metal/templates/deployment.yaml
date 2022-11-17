@@ -38,7 +38,7 @@ spec:
         command:
           - ./cloud-provider-equinix-metal
           - --cloud-provider=equinixmetal
-          - --leader-elect=false
+          - --leader-elect=true
           - --allow-untagged-cloud=true
           - --authentication-skip-lookup=true
           - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
