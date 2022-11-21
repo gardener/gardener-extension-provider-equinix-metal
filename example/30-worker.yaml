@@ -15,7 +15,7 @@ metadata:
   name: shoot--foobar--eqxm
 spec:
   cloudProfile:
-    apiVersion: core.gardener.cloud/v1alpha1
+    apiVersion: core.gardener.cloud/v1beta1
     kind: CloudProfile
     spec:
       providerConfig:
@@ -27,10 +27,10 @@ spec:
           - version: 2023.5.0
             id: eqxm-image-id
   seed:
-    apiVersion: core.gardener.cloud/v1alpha1
+    apiVersion: core.gardener.cloud/v1beta1
     kind: Seed
   shoot:
-    apiVersion: core.gardener.cloud/v1alpha1
+    apiVersion: core.gardener.cloud/v1beta1
     kind: Shoot
     spec:
       kubernetes:
