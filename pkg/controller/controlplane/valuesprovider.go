@@ -151,10 +151,9 @@ func getControlPlaneChartValues(
 ) {
 	values := map[string]interface{}{
 		"cloud-provider-equinix-metal": map[string]interface{}{
-			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
-			"clusterName":       cp.Namespace,
-			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
-			"podNetwork":        extensionscontroller.GetPodNetwork(cluster),
+			"replicas":    extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
+			"clusterName": cp.Namespace,
+			"podNetwork":  extensionscontroller.GetPodNetwork(cluster),
 			"podAnnotations": map[string]interface{}{
 				"checksum/secret-cloudprovider": checksums[v1beta1constants.SecretNameCloudProvider],
 			},

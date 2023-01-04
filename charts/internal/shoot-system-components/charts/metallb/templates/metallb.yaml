@@ -416,10 +416,8 @@ spec:
         supplementalGroups:
         - 1
         - 65535
-      {{- if semverCompare ">= 1.19" .Capabilities.KubeVersion.GitVersion }}
         seccompProfile:
           type: RuntimeDefault
-      {{- end }}
       serviceAccountName: controller
       terminationGracePeriodSeconds: 0
 ---

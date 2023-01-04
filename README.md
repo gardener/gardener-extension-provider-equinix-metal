@@ -29,9 +29,6 @@ This extension controller supports the following Kubernetes versions:
 | Kubernetes 1.22 | untested    | N/A                      |
 | Kubernetes 1.21 | untested    | N/A                      |
 | Kubernetes 1.20 | untested    | N/A                      |
-| Kubernetes 1.19 | untested    | N/A                      |
-| Kubernetes 1.18 | untested    | N/A                      |
-| Kubernetes 1.17 | untested    | N/A                      |
 
 Please take a look [here](https://github.com/gardener/gardener/blob/master/docs/usage/supported_k8s_versions.md) to see which versions are supported by Gardener in general.
 

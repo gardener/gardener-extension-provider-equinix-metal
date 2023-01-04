@@ -63,7 +63,7 @@ var _ = Describe("ValuesProvider", func() {
 						Pods: &cidr,
 					},
 					Kubernetes: gardencorev1beta1.Kubernetes{
-						Version: "1.13.4",
+						Version: "1.24.4",
 						VerticalPodAutoscaler: &gardencorev1beta1.VerticalPodAutoscaler{
 							Enabled: true,
 						},
@@ -79,10 +79,9 @@ var _ = Describe("ValuesProvider", func() {
 
 		controlPlaneChartValues = map[string]interface{}{
 			"cloud-provider-equinix-metal": map[string]interface{}{
-				"replicas":          1,
-				"clusterName":       namespace,
-				"kubernetesVersion": "1.13.4",
-				"podNetwork":        cidr,
+				"replicas":    1,
+				"clusterName": namespace,
+				"podNetwork":  cidr,
 				"podAnnotations": map[string]interface{}{
 					"checksum/secret-cloudprovider": "8bafb35ff1ac60275d62e1cbd495aceb511fb354f74a20f7d06ecb48b3a68432",
 				},
