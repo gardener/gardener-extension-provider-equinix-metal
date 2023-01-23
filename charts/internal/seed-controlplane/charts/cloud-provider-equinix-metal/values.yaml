@@ -1,5 +1,4 @@
 replicas: 1
-kubernetesVersion: 1.7.5
 podAnnotations: {}
 images:
   cloud-controller-manager: image-repository
