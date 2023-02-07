@@ -24,9 +24,10 @@ package v1alpha1
 import (
 	unsafe "unsafe"
 
-	equinixmetal "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+
+	equinixmetal "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 )
 
 func init() {

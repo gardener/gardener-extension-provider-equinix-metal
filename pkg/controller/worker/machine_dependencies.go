@@ -19,10 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-	eqxcmclient "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal/client"
 	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
-
 	"github.com/gardener/gardener/extensions/pkg/util"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
@@ -33,6 +30,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	eqxcmclient "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal/client"
 )
 
 func (w *workerDelegate) DeployMachineDependencies(_ context.Context) error {

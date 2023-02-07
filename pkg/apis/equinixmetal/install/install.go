@@ -15,11 +15,11 @@
 package install
 
 import (
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/v1alpha1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/v1alpha1"
 )
 
 var (

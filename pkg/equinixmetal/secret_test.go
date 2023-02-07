@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 
-	. "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/golang/mock/gomock"
@@ -27,6 +25,8 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
 
 var _ = Describe("Secret", func() {

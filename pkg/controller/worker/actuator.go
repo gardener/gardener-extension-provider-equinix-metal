@@ -17,11 +17,6 @@ package worker
 import (
 	"context"
 
-	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
-
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
@@ -32,6 +27,11 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 )
 
 type delegateFactory struct {

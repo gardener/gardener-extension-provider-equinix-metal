@@ -17,11 +17,11 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
-	configloader "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config/loader"
-
 	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/spf13/pflag"
+
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
+	configloader "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config/loader"
 )
 
 // ConfigOptions are command line options that can be set for config.ControllerConfiguration.

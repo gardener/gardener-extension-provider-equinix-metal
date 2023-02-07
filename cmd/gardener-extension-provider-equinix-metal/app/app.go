@@ -19,15 +19,6 @@ import (
 	"fmt"
 	"os"
 
-	eqxminstall "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/install"
-	eqxmcmd "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/cmd"
-	eqxmcontrolplane "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/controlplane"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/healthcheck"
-	eqxminfrastructure "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/infrastructure"
-	eqxmworker "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/worker"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-	eqxmcontrolplaneexposure "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/webhook/controlplaneexposure"
-
 	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
@@ -41,6 +32,15 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	eqxminstall "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/install"
+	eqxmcmd "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/cmd"
+	eqxmcontrolplane "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/controlplane"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/healthcheck"
+	eqxminfrastructure "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/infrastructure"
+	eqxmworker "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/worker"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	eqxmcontrolplaneexposure "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/webhook/controlplaneexposure"
 )
 
 // NewControllerManagerCommand creates a new command for running an Equinix Metal provider controller.

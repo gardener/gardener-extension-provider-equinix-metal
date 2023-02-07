@@ -18,8 +18,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/version"
 	"github.com/packethost/packngo"
+
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/version"
 )
 
 type eqxmClient struct {

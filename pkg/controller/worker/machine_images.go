@@ -17,12 +17,12 @@ package worker
 import (
 	"context"
 
-	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
-
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/pkg/errors"
+
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
 )
 
 func (w *workerDelegate) UpdateMachineImagesStatus(ctx context.Context) error {

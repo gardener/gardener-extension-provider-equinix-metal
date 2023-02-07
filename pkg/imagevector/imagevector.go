@@ -17,11 +17,11 @@ package imagevector
 import (
 	"strings"
 
-	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	"k8s.io/apimachinery/pkg/util/runtime"
+
+	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
 
 var imageVector imagevector.ImageVector

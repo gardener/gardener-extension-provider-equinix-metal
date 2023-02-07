@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
-
 	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -32,6 +30,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
 )
 
 // NewEnsurer creates a new controlplaneexposure ensurer.
