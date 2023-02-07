@@ -13,6 +13,9 @@ vpa:
   updatePolicy:
     updateMode: "Auto"
 
+metricsPort: 8080
+healthPort: 8081
+
 controllers:
   controlplane:
     concurrentSyncs: 5
@@ -45,6 +48,11 @@ ignoreResources: false
 webhookConfig:
   servicePort: 443
   serverPort: 10250
+
+## settings for metrics, e.g. scraping by seed-prometheus
+metrics:
+  ## enable metrics scraping
+  enableScraping: true
 
 config:
   clientConnection:
