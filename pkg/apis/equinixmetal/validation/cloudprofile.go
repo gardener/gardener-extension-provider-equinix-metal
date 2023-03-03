@@ -17,9 +17,9 @@ package validation
 import (
 	"fmt"
 
-	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
-
 	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 )
 
 // ValidateCloudProfileConfig validates a CloudProfileConfig object.
