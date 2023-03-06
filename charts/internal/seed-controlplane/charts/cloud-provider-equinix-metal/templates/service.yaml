@@ -6,6 +6,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: cloud-controller-manager
+  annotations:
+    networking.resources.gardener.cloud/from-policy-pod-label-selector: all-scrape-targets
+    networking.resources.gardener.cloud/from-policy-allowed-ports: '[{"port":10253,"protocol":"TCP"}]'
 spec:
   type: ClusterIP
   clusterIP: None
