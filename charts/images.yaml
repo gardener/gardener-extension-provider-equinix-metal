@@ -5,7 +5,7 @@ images:
   tag: "v2.11.0"
 - name: cloud-controller-manager
   sourceRepository: github.com/equinix/cloud-provider-equinix-metal
-  repository: docker.io/equinix/cloud-provider-equinix-metal
+  repository: eu.gcr.io/gardener-project/3rd/equinix/cloud-provider-equinix-metal
   tag: v3.5.0
 - name: machine-controller-manager
   sourceRepository: github.com/gardener/machine-controller-manager
@@ -17,7 +17,7 @@ images:
   tag: "v0.5.0"
 - name: metabot
   sourceRepository: github.com/packethost/metabot
-  repository: packethost/metabot
+  repository: eu.gcr.io/gardener-project/3rd/packethost/metabot
   tag: v1.0.0
 - name: metallb-controller
   sourceRepository: github.com/metallb/metallb
