@@ -150,6 +150,9 @@ func getControlPlaneChartValues(
 	error,
 ) {
 	values := map[string]interface{}{
+		"global": map[string]interface{}{
+			"genericTokenKubeconfigSecretName": extensionscontroller.GenericTokenKubeconfigSecretNameFromCluster(cluster),
+		},
 		"cloud-provider-equinix-metal": map[string]interface{}{
 			"replicas":    extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 			"clusterName": cp.Namespace,
