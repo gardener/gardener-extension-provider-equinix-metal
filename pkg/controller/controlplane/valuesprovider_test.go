@@ -79,6 +79,9 @@ var _ = Describe("ValuesProvider", func() {
 		}
 
 		controlPlaneChartValues = map[string]interface{}{
+			"global": map[string]interface{}{
+				"genericTokenKubeconfigSecretName": genericTokenKubeconfigSecretName,
+			},
 			"cloud-provider-equinix-metal": map[string]interface{}{
 				"replicas":    1,
 				"clusterName": namespace,
