@@ -64,6 +64,7 @@ rules:
   - configmaps
   - endpoints
   - deployments
+  - deployments/scale
   - services
   - serviceaccounts
   - clusterroles
