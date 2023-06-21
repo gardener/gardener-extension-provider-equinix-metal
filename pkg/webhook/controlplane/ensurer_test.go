@@ -146,7 +146,7 @@ var _ = Describe("Ensurer", func() {
 			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -179,7 +179,7 @@ var _ = Describe("Ensurer", func() {
 			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -217,7 +217,7 @@ var _ = Describe("Ensurer", func() {
 			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -255,7 +255,7 @@ var _ = Describe("Ensurer", func() {
 			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -293,7 +293,7 @@ var _ = Describe("Ensurer", func() {
 			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -336,7 +336,7 @@ var _ = Describe("Ensurer", func() {
 			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -384,7 +384,7 @@ var _ = Describe("Ensurer", func() {
 			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -422,7 +422,7 @@ var _ = Describe("Ensurer", func() {
 			)
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 
 			// Call EnsureKubeControllerManagerDeployment method and check the result
 			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
@@ -452,7 +452,7 @@ var _ = Describe("Ensurer", func() {
 			)
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 
 			// Call EnsureKubeControllerManagerDeployment method and check the result
 			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
@@ -491,7 +491,7 @@ var _ = Describe("Ensurer", func() {
 			client := mockclient.NewMockClient(ctrl)
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -534,7 +534,7 @@ var _ = Describe("Ensurer", func() {
 			client := mockclient.NewMockClient(ctrl)
 
 			// Create ensurer
-			ensurer := NewEnsurer(logger)
+			ensurer := NewEnsurer(logger, false)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -584,7 +584,7 @@ var _ = Describe("Ensurer", func() {
 				}
 
 				// Create ensurer
-				ensurer := NewEnsurer(logger)
+				ensurer := NewEnsurer(logger, false)
 
 				// Call EnsureKubeletServiceUnitOptions method and check the result
 				opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, kubeletVersion, oldUnitOptions, nil)
@@ -614,7 +614,7 @@ var _ = Describe("Ensurer", func() {
 				newKubeletConfig.FeatureGates["Foo"] = true
 
 				// Create ensurer
-				ensurer := NewEnsurer(logger)
+				ensurer := NewEnsurer(logger, false)
 
 				// Call EnsureKubeletConfiguration method and check the result
 				kubeletConfig := *oldKubeletConfig
