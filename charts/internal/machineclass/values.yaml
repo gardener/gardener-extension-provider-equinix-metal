@@ -3,7 +3,8 @@ machineClasses:
 # labels:
 #   foo: bar
   projectID: abcd-1234-fff
-  OS: alpine_3
+#  OS: alpine_3
+#  ipxeScriptUrl: https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_packet.ipxe
   billingCycle: hourly
   metro: ny
   facilities:

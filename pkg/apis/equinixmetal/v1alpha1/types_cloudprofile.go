@@ -43,5 +43,9 @@ type MachineImageVersion struct {
 	// Version is the version of the image.
 	Version string `json:"version"`
 	// ID is the id of the image.
-	ID string `json:"id"`
+	// +optional
+	ID string `json:"id,omitempty"`
+	// IPXEScriptURL is url to point to a IPXE script.
+	// +optional
+	IPXEScriptURL string `json:"ipxeScriptUrl,omitempty"`
 }

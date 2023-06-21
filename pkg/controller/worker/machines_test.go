@@ -281,12 +281,13 @@ var _ = Describe("Machines", func() {
 
 				BeforeEach(func() {
 					defaultMachineClass = map[string]interface{}{
-						"OS":           machineImage,
-						"projectID":    projectID,
-						"billingCycle": "hourly",
-						"machineType":  machineType,
-						"metro":        region,
-						"sshKeys":      []string{sshKeyID},
+						"OS":            machineImage,
+						"ipxeScriptUrl": "",
+						"projectID":     projectID,
+						"billingCycle":  "hourly",
+						"machineType":   machineType,
+						"metro":         region,
+						"sshKeys":       []string{sshKeyID},
 						"tags": []string{
 							fmt.Sprintf("kubernetes.io/cluster/%s", namespace),
 							"kubernetes.io/role/node",

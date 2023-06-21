@@ -45,8 +45,8 @@ var _ = Describe("Helper", func() {
 			cfg.MachineImages = profileImages
 			image, err := FindImageFromCloudProfile(cfg, imageName, version)
 
-			Expect(image).To(Equal(expectedImage))
 			if expectedImage != "" {
+				Expect(image.ID).To(Equal(expectedImage))
 				Expect(err).NotTo(HaveOccurred())
 			} else {
 				Expect(err).To(HaveOccurred())

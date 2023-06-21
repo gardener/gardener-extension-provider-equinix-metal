@@ -102,23 +102,25 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			return err
 		}
 
-		machineImageID, err := w.findMachineImage(pool.MachineImage.Name, pool.MachineImage.Version)
+		machineImage, err := w.findMachineImage(pool.MachineImage.Name, pool.MachineImage.Version)
 		if err != nil {
 			return err
 		}
 		machineImages = appendMachineImage(machineImages, api.MachineImage{
-			Name:    pool.MachineImage.Name,
-			Version: pool.MachineImage.Version,
-			ID:      machineImageID,
+			Name:          pool.MachineImage.Name,
+			Version:       pool.MachineImage.Version,
+			ID:            machineImage.ID,
+			IPXEScriptURL: machineImage.IPXEScriptURL,
 		})
 
 		machineClassSpec := map[string]interface{}{
-			"OS":           machineImageID,
-			"projectID":    string(credentials.ProjectID),
-			"billingCycle": "hourly",
-			"machineType":  pool.MachineType,
-			"metro":        w.worker.Spec.Region,
-			"sshKeys":      []string{infrastructureStatus.SSHKeyID},
+			"OS":            machineImage.ID,
+			"ipxeScriptUrl": machineImage.IPXEScriptURL,
+			"projectID":     string(credentials.ProjectID),
+			"billingCycle":  "hourly",
+			"machineType":   pool.MachineType,
+			"metro":         w.worker.Spec.Region,
+			"sshKeys":       []string{infrastructureStatus.SSHKeyID},
 			"tags": []string{
 				fmt.Sprintf("kubernetes.io/cluster/%s", w.worker.Namespace),
 				"kubernetes.io/role/node",

@@ -209,6 +209,7 @@ func autoConvert_v1alpha1_MachineImage_To_equinixmetal_MachineImage(in *MachineI
 	out.Name = in.Name
 	out.Version = in.Version
 	out.ID = in.ID
+	out.IPXEScriptURL = in.IPXEScriptURL
 	return nil
 }
 
@@ -221,6 +222,7 @@ func autoConvert_equinixmetal_MachineImage_To_v1alpha1_MachineImage(in *equinixm
 	out.Name = in.Name
 	out.Version = in.Version
 	out.ID = in.ID
+	out.IPXEScriptURL = in.IPXEScriptURL
 	return nil
 }
 
@@ -232,6 +234,7 @@ func Convert_equinixmetal_MachineImage_To_v1alpha1_MachineImage(in *equinixmetal
 func autoConvert_v1alpha1_MachineImageVersion_To_equinixmetal_MachineImageVersion(in *MachineImageVersion, out *equinixmetal.MachineImageVersion, s conversion.Scope) error {
 	out.Version = in.Version
 	out.ID = in.ID
+	out.IPXEScriptURL = in.IPXEScriptURL
 	return nil
 }
 
@@ -243,6 +246,7 @@ func Convert_v1alpha1_MachineImageVersion_To_equinixmetal_MachineImageVersion(in
 func autoConvert_equinixmetal_MachineImageVersion_To_v1alpha1_MachineImageVersion(in *equinixmetal.MachineImageVersion, out *MachineImageVersion, s conversion.Scope) error {
 	out.Version = in.Version
 	out.ID = in.ID
+	out.IPXEScriptURL = in.IPXEScriptURL
 	return nil
 }
 

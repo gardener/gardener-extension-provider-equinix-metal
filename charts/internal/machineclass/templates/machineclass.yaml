@@ -20,7 +20,12 @@ metadata:
   namespace: {{ $.Release.Namespace }}
 providerSpec:
   projectID: {{ $machineClass.projectID }}
+  {{- if $machineClass.OS }}
   OS: {{ $machineClass.OS }}
+  {{- end }}
+  {{- if $machineClass.ipxeScriptUrl }}
+  ipxeScriptUrl: {{ $machineClass.ipxeScriptUrl }}
+  {{- end }}
   billingCycle: {{ $machineClass.billingCycle }}
   machineType: {{ $machineClass.machineType }}
   sshKeys:

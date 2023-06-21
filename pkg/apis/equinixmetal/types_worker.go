@@ -54,4 +54,6 @@ type MachineImage struct {
 	Version string
 	// ID is the id of the image.
 	ID string
+	// IPXEScriptURL is url to point to a IPXE script.
+	IPXEScriptURL string
 }
