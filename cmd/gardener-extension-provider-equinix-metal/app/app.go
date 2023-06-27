@@ -40,6 +40,7 @@ import (
 	eqxminfrastructure "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/infrastructure"
 	eqxmworker "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/worker"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
+	controlplanewebhook "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/webhook/controlplane"
 	eqxmcontrolplaneexposure "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/webhook/controlplaneexposure"
 )
 
@@ -172,6 +173,12 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			reconcileOpts.Completed().Apply(&eqxmcontrolplane.DefaultAddOptions.IgnoreOperationAnnotation)
 			reconcileOpts.Completed().Apply(&eqxmworker.DefaultAddOptions.IgnoreOperationAnnotation)
 			workerCtrlOpts.Completed().Apply(&eqxmworker.DefaultAddOptions.Controller)
+
+			// TODO(rfranzke): Remove the GardenletManagesMCM fields as soon as the general options no longer support the
+			//  GardenletManagesMCM field.
+			eqxmworker.DefaultAddOptions.GardenletManagesMCM = generalOpts.Completed().GardenletManagesMCM
+			controlplanewebhook.GardenletManagesMCM = generalOpts.Completed().GardenletManagesMCM
+			healthcheck.GardenletManagesMCM = generalOpts.Completed().GardenletManagesMCM
 
 			atomicShootWebhookConfig, err := webhookOptions.Completed().AddToManager(ctx, mgr)
 			if err != nil {
