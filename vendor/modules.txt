@@ -175,7 +175,6 @@ github.com/gardener/gardener/pkg/utils/secrets/manager
 github.com/gardener/gardener/pkg/utils/test
 github.com/gardener/gardener/pkg/utils/test/matchers
 github.com/gardener/gardener/pkg/utils/timewindow
-github.com/gardener/gardener/pkg/utils/validation/features
 github.com/gardener/gardener/pkg/utils/validation/kubernetesversion
 github.com/gardener/gardener/pkg/utils/version
 github.com/gardener/gardener/test/framework
