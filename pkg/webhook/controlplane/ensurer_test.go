@@ -30,7 +30,6 @@ import (
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
-	"github.com/gardener/gardener/pkg/utils/version"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -65,34 +64,6 @@ var _ = Describe("Ensurer", func() {
 		ctrl *gomock.Controller
 
 		dummyContext   = gcontext.NewGardenContext(nil, nil)
-		eContextK8s120 = gcontext.NewInternalGardenContext(
-			&extensionscontroller.Cluster{
-				Shoot: &gardencorev1beta1.Shoot{
-					Spec: gardencorev1beta1.ShootSpec{
-						Kubernetes: gardencorev1beta1.Kubernetes{
-							Version: "1.20.0",
-						},
-					},
-					Status: gardencorev1beta1.ShootStatus{
-						TechnicalID: namespace,
-					},
-				},
-			},
-		)
-		eContextK8s121 = gcontext.NewInternalGardenContext(
-			&extensionscontroller.Cluster{
-				Shoot: &gardencorev1beta1.Shoot{
-					Spec: gardencorev1beta1.ShootSpec{
-						Kubernetes: gardencorev1beta1.Kubernetes{
-							Version: "1.21.0",
-						},
-					},
-					Status: gardencorev1beta1.ShootStatus{
-						TechnicalID: namespace,
-					},
-				},
-			},
-		)
 		eContextK8s122 = gcontext.NewInternalGardenContext(
 			&extensionscontroller.Cluster{
 				Shoot: &gardencorev1beta1.Shoot{
@@ -129,7 +100,7 @@ var _ = Describe("Ensurer", func() {
 	})
 
 	Describe("#EnsureKubeAPIServerDeployment", func() {
-		It("should add missing elements to kube-apiserver deployment (k8s <= 1.20)", func() {
+		It("should add missing elements to kube-apiserver deployment", func() {
 			var (
 				dep = &appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
@@ -157,121 +128,12 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s120, dep, nil)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s122, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.20.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.22.0", annotations)
 		})
 
-		It("should add missing elements to kube-apiserver deployment (k8s >= 1.21)", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-									},
-								},
-							},
-						},
-					},
-				}
-			)
-
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
-
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s121, dep, nil)
-			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.21.0", annotations)
-		})
-
-		It("should modify existing elements of kube-apiserver deployment (k8s <= 1.20)", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-										Command: []string{
-											"--enable-admission-plugins=Priority,PersistentVolumeLabel",
-											"--disable-admission-plugins=",
-											"--feature-gates=Foo=true",
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			)
-
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
-
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s120, dep, nil)
-			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.20.0", annotations)
-		})
-
-		It("should modify existing elements of kube-apiserver deployment (k8s >= 1.21)", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-										Command: []string{
-											"--enable-admission-plugins=Priority,PersistentVolumeLabel",
-											"--disable-admission-plugins=",
-											"--feature-gates=Foo=true",
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-			)
-
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
-
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s121, dep, nil)
-			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.21.0", annotations)
-		})
-
-		It("should modify existing elements of kube-apiserver deployment (k8s >= 1.22)", func() {
+		It("should modify existing elements of kube-apiserver deployment", func() {
 			var (
 				dep = &appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
@@ -347,9 +209,9 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s120, dep, oldDep)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s122, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.20.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.22.0", annotations)
 
 			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
 			Expect(c).To(Not(BeNil()))
@@ -395,9 +257,9 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s120, dep, oldDep)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s122, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.20.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.22.0", annotations)
 
 			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
 			Expect(c).To(Not(BeNil()))
@@ -631,14 +493,6 @@ var _ = Describe("Ensurer", func() {
 
 			Entry("kubelet version < 1.23", semver.MustParse("1.22.0"), nil, map[string]bool{}),
 			Entry("kubelet version >= 1.23", semver.MustParse("1.23.0"), pointer.Bool(true), map[string]bool{}),
-			Entry("kubelet version = 1.21", semver.MustParse("1.21.0"), nil, map[string]bool{
-				"VolumeSnapshotDataSource": true,
-			}),
-			Entry("kubelet version < 1.21", semver.MustParse("1.20.0"), nil, map[string]bool{
-				"VolumeSnapshotDataSource": true,
-				"CSINodeInfo":              true,
-				"CSIDriverRegistry":        true,
-			}),
 		)
 	})
 
@@ -766,8 +620,6 @@ var _ = Describe("Ensurer", func() {
 })
 
 func checkKubeAPIServerDeployment(dep *appsv1.Deployment, k8sVersion string, annotations map[string]string) {
-	k8sVersionLowerThan121, _ := version.CompareVersions(k8sVersion, "<", "1.21")
-	k8sVersionLowerThan122, _ := version.CompareVersions(k8sVersion, "<", "1.22")
 
 	// Check that the kube-apiserver container still exists and contains all needed command line args,
 	// env vars, and volume mounts
@@ -776,19 +628,10 @@ func checkKubeAPIServerDeployment(dep *appsv1.Deployment, k8sVersion string, ann
 	Expect(c.Command).To(Not(test.ContainElementWithPrefixContaining("--enable-admission-plugins=", "PersistentVolumeLabel", ",")))
 	Expect(c.Command).To(test.ContainElementWithPrefixContaining("--disable-admission-plugins=", "PersistentVolumeLabel", ","))
 
-	if k8sVersionLowerThan122 {
-		Expect(c.Command).To(test.ContainElementWithPrefixContaining("--feature-gates=", "VolumeSnapshotDataSource=true", ","))
-	} else {
-		Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "VolumeSnapshotDataSource=true", ","))
-	}
+	Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "VolumeSnapshotDataSource=true", ","))
 
-	if k8sVersionLowerThan121 {
-		Expect(c.Command).To(test.ContainElementWithPrefixContaining("--feature-gates=", "CSINodeInfo=true", ","))
-		Expect(c.Command).To(test.ContainElementWithPrefixContaining("--feature-gates=", "CSIDriverRegistry=true", ","))
-	} else {
-		Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "CSINodeInfo=true", ","))
-		Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "CSIDriverRegistry=true", ","))
-	}
+	Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "CSINodeInfo=true", ","))
+	Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "CSIDriverRegistry=true", ","))
 
 	// Check that the Pod template contains all needed checksum annotations
 	Expect(dep.Spec.Template.Annotations).To(Equal(annotations))

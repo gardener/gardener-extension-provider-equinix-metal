@@ -26,7 +26,6 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/machinecontrollermanager"
-	featuregatesvalidation "github.com/gardener/gardener/pkg/utils/validation/features"
 	"github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -262,26 +261,7 @@ func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion string) 
 	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
 		"KubeletPluginsWatcher=false", ",")
 
-	var err error
-	if c.Command, err = setFeatureGateInCommandIfSupported(c.Command, "VolumeSnapshotDataSource", k8sVersion, "VolumeSnapshotDataSource=true"); err != nil {
-		return err
-	}
-
-	if mustSetCSIFeatureGates(k8sVersion) {
-		c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--feature-gates=",
-			"CSINodeInfo=true", ",")
-		c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--feature-gates=",
-			"CSIDriverRegistry=true", ",")
-	}
 	return nil
-}
-
-func mustSetCSIFeatureGates(k8sVersion string) bool {
-	k8sVersionLowerThan121, err := version.CompareVersions(k8sVersion, "<", "1.21")
-	if err != nil {
-		return true
-	}
-	return k8sVersionLowerThan121
 }
 
 func ensureKubeControllerManagerCommandLineArgs(c *corev1.Container) {
@@ -309,47 +289,9 @@ func ensureKubeletCommandLineArgs(command []string, kubeletVersion *semver.Versi
 
 // EnsureKubeletConfiguration ensures that the kubelet configuration conforms to the provider requirements.
 func (e *ensurer) EnsureKubeletConfiguration(_ context.Context, _ gcontext.GardenContext, kubeletVersion *semver.Version, new, _ *kubeletconfigv1beta1.KubeletConfiguration) error {
-	// Ensure CSI-related feature gates
-	if new.FeatureGates == nil {
-		new.FeatureGates = make(map[string]bool)
-	}
-	if err := setFeatureGateIfSupported(new.FeatureGates, "VolumeSnapshotDataSource", kubeletVersion.String()); err != nil {
-		return err
-	}
-	if err := setFeatureGateIfSupported(new.FeatureGates, "CSINodeInfo", kubeletVersion.String()); err != nil {
-		return err
-	}
-	if err := setFeatureGateIfSupported(new.FeatureGates, "CSIDriverRegistry", kubeletVersion.String()); err != nil {
-		return err
-	}
-
 	if version.ConstraintK8sGreaterEqual123.Check(kubeletVersion) {
 		new.EnableControllerAttachDetach = pointer.Bool(true)
 	}
 
 	return nil
-}
-
-func setFeatureGateIfSupported(featureGates map[string]bool, featureGate, version string) error {
-	isSupported, err := featuregatesvalidation.IsFeatureGateSupported(featureGate, version)
-	if err != nil {
-		return err
-	}
-	if isSupported {
-		featureGates[featureGate] = true
-	} else {
-		delete(featureGates, featureGate)
-	}
-	return nil
-}
-
-func setFeatureGateInCommandIfSupported(command []string, featureGate, k8sVersion, value string) ([]string, error) {
-	isSupported, err := featuregatesvalidation.IsFeatureGateSupported(featureGate, k8sVersion)
-	if err != nil {
-		return nil, err
-	}
-	if isSupported {
-		return extensionswebhook.EnsureStringWithPrefixContains(command, "--feature-gates=", value, ","), nil
-	}
-	return extensionswebhook.EnsureNoStringWithPrefixContains(command, "--feature-gates=", value, ","), nil
 }
