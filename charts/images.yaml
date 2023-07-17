@@ -22,8 +22,8 @@ images:
 - name: metallb-controller
   sourceRepository: github.com/metallb/metallb
   repository: quay.io/metallb/controller
-  tag: v0.9.5
+  tag: v0.12.1
 - name: metallb-speaker
   sourceRepository: github.com/metallb/metallb
   repository: quay.io/metallb/speaker
-  tag: v0.9.5
+  tag: v0.12.1
