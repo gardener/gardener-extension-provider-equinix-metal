@@ -45,12 +45,18 @@ spec:
       versions:
       - version: 0.0.0-stable
         id: flatcar_stable
+      - version: 3510.2.2
+        ipxeScriptUrl: https://stable.release.flatcar-linux.net/amd64-usr/3510.2.2/flatcar_production_packet.ipxe
 ```
 
 ## `CloudProfileConfig`
 
 The cloud profile configuration contains information about the real machine image IDs in the Equinix Metal environment (IDs).
 You have to map every version that you specify in `.spec.machineImages[].versions` here such that the Equinix Metal extension knows the ID for every version you want to offer.
+
+Equinix Metal supports two different options to specify the image:
+1. Supported Operating System: Images that are provided by Equinix Metal. They are referenced by their ID (`slug`). See (Operating Systems Reference)[https://deploy.equinix.com/developers/docs/metal/operating-systems/supported/#operating-systems-reference] for all supported operating system and their ids.
+2. Custom iPXE Boot: Equinix Metal supports passing custom iPXE scripts during provisioning, which allows you to install a custom operating system manually. This is useful if you want to have a custom image or want to pin to a specific version. See [Custom iPXE Boot](https://deploy.equinix.com/developers/docs/metal/operating-systems/custom-ipxe/#provisioning-with-custom-ipxe) for details.
 
 An example `CloudProfileConfig` for the Equinix Metal extension looks as follows:
 
@@ -62,6 +68,8 @@ machineImages:
   versions:
   - version: 0.0.0-stable
     id: flatcar_stable
+  - version: 3510.2.2
+    ipxeScriptUrl: https://stable.release.flatcar-linux.net/amd64-usr/3510.2.2/flatcar_production_packet.ipxe
 ```
 
 > NOTE: `CloudProfileConfig` is not a Custom Resource, so you cannot create it directly.
