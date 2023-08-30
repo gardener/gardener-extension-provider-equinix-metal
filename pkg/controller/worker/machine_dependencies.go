@@ -35,11 +35,7 @@ import (
 	eqxcmclient "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal/client"
 )
 
-func (w *workerDelegate) DeployMachineDependencies(_ context.Context) error {
-	return nil
-}
-
-func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
+func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 	const (
 		nodeNetworkEnvVarKey                  = "NODE_NETWORK"
 		equinixMetalPrivateNetworkAnnotations = "metal.equinix.com/network-4-private"
@@ -150,11 +146,6 @@ func (w *workerDelegate) CleanupMachineDependencies(ctx context.Context) error {
 
 // PreReconcileHook implements genericactuator.WorkerDelegate.
 func (w *workerDelegate) PreReconcileHook(_ context.Context) error {
-	return nil
-}
-
-// PostReconcileHook implements genericactuator.WorkerDelegate.
-func (w *workerDelegate) PostReconcileHook(_ context.Context) error {
 	return nil
 }
 
