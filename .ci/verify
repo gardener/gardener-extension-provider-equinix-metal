@@ -14,4 +14,4 @@ mkdir -p /go/src/github.com/gardener/gardener-extension-provider-equinix-metal
 cp -r . /go/src/github.com/gardener/gardener-extension-provider-equinix-metal
 cd /go/src/github.com/gardener/gardener-extension-provider-equinix-metal
 
-make verify-extended check-docforge
+make verify-extended
