@@ -310,7 +310,20 @@ string
 </em>
 </td>
 <td>
+<em>(Optional)</em>
 <p>ID is the id of the image.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ipxeScriptUrl</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>IPXEScriptURL is url to point to a IPXE script.</p>
 </td>
 </tr>
 </tbody>
@@ -351,7 +364,20 @@ string
 </em>
 </td>
 <td>
+<em>(Optional)</em>
 <p>ID is the id of the image.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ipxeScriptUrl</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>IPXEScriptURL is url to point to a IPXE script.</p>
 </td>
 </tr>
 </tbody>

@@ -43,6 +43,8 @@ spec:
       versions:
       - version: 0.0.0-stable
         id: flatcar_stable
+      - version: 3510.2.2
+        ipxeScriptUrl: https://stable.release.flatcar-linux.net/amd64-usr/3510.2.2/flatcar_production_packet.ipxe
     - name: ubuntu
       versions:
       - version: "20.04"

@@ -22,10 +22,12 @@ spec:
         apiVersion: equinixmetal.provider.extensions.gardener.cloud/v1alpha1
         kind: CloudProfileConfig
         machineImages:
-        - name: coreos
+        - name: flatcar
           versions:
           - version: 2023.5.0
             id: eqxm-image-id
+          - version: 3510.2.2
+            ipxeScriptUrl: https://stable.release.flatcar-linux.net/amd64-usr/3510.2.2/flatcar_production_packet.ipxe
   seed:
     apiVersion: core.gardener.cloud/v1beta1
     kind: Seed

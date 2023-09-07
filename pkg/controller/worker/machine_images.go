@@ -46,28 +46,31 @@ func (w *workerDelegate) UpdateMachineImagesStatus(ctx context.Context) error {
 	return nil
 }
 
-func (w *workerDelegate) findMachineImage(name, version string) (string, error) {
-	machineImageID, err := helper.FindImageFromCloudProfile(w.cloudProfileConfig, name, version)
+func (w *workerDelegate) findMachineImage(name, version string) (*api.MachineImageVersion, error) {
+	machineImage, err := helper.FindImageFromCloudProfile(w.cloudProfileConfig, name, version)
 	if err == nil {
-		return machineImageID, nil
+		return machineImage, nil
 	}
 
 	// Try to look up machine image in worker provider status as it was not found in componentconfig.
 	if providerStatus := w.worker.Status.ProviderStatus; providerStatus != nil {
 		workerStatus := &api.WorkerStatus{}
 		if _, _, err := w.Decoder().Decode(providerStatus.Raw, nil, workerStatus); err != nil {
-			return "", errors.Wrapf(err, "could not decode worker status of worker '%s'", kutil.ObjectName(w.worker))
+			return nil, errors.Wrapf(err, "could not decode worker status of worker '%s'", kutil.ObjectName(w.worker))
 		}
 
 		machineImage, err := helper.FindMachineImage(workerStatus.MachineImages, name, version)
 		if err != nil {
-			return "", worker.ErrorMachineImageNotFound(name, version)
+			return nil, worker.ErrorMachineImageNotFound(name, version)
 		}
 
-		return machineImage.ID, nil
+		return &api.MachineImageVersion{
+			Version: machineImage.Version,
+			ID:      machineImage.ID,
+		}, nil
 	}
 
-	return "", worker.ErrorMachineImageNotFound(name, version)
+	return nil, worker.ErrorMachineImageNotFound(name, version)
 }
 
 func appendMachineImage(machineImages []api.MachineImage, machineImage api.MachineImage) []api.MachineImage {
