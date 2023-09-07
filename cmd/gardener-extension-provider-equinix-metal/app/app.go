@@ -31,6 +31,7 @@ import (
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	autoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	eqxminstall "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/install"
@@ -154,6 +155,9 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 				return fmt.Errorf("could not update manager scheme: %w", err)
 			}
 			if err := druidv1alpha1.AddToScheme(scheme); err != nil {
+				return fmt.Errorf("could not update manager scheme: %w", err)
+			}
+			if err := autoscalingv1.AddToScheme(scheme); err != nil {
 				return fmt.Errorf("could not update manager scheme: %w", err)
 			}
 			if err := machinev1alpha1.AddToScheme(scheme); err != nil {
