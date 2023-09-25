@@ -64,12 +64,12 @@ var _ = Describe("Ensurer", func() {
 		ctrl *gomock.Controller
 
 		dummyContext   = gcontext.NewGardenContext(nil, nil)
-		eContextK8s122 = gcontext.NewInternalGardenContext(
+		eContextK8s126 = gcontext.NewInternalGardenContext(
 			&extensionscontroller.Cluster{
 				Shoot: &gardencorev1beta1.Shoot{
 					Spec: gardencorev1beta1.ShootSpec{
 						Kubernetes: gardencorev1beta1.Kubernetes{
-							Version: "1.22.0",
+							Version: "1.26.0",
 						},
 					},
 					Status: gardencorev1beta1.ShootStatus{
@@ -128,9 +128,9 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s122, dep, nil)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.22.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 		})
 
 		It("should modify existing elements of kube-apiserver deployment", func() {
@@ -166,9 +166,9 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s122, dep, nil)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.22.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 		})
 
 		It("should keep the NODE_NETWORK env variable in the kube-apiserver deployment if its value does not change", func() {
@@ -209,9 +209,9 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s122, dep, oldDep)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.22.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 
 			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
 			Expect(c).To(Not(BeNil()))
@@ -257,9 +257,9 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s122, dep, oldDep)
+			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.22.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 
 			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
 			Expect(c).To(Not(BeNil()))
@@ -421,7 +421,7 @@ var _ = Describe("Ensurer", func() {
 
 	Describe("#EnsureKubeletServiceUnitOptions", func() {
 		DescribeTable("should modify existing elements of kubelet.service unit options",
-			func(kubeletVersion *semver.Version, cloudProvider string, withControllerAttachDetachFlag bool) {
+			func(kubeletVersion *semver.Version, cloudProvider string) {
 				var (
 					oldUnitOptions = []*unit.UnitOption{
 						{
@@ -446,11 +446,6 @@ var _ = Describe("Ensurer", func() {
     --cloud-provider=` + cloudProvider
 				}
 
-				if withControllerAttachDetachFlag {
-					newUnitOptions[0].Value += ` \
-    --enable-controller-attach-detach=true`
-				}
-
 				// Create ensurer
 				ensurer := NewEnsurer(logger, false)
 
@@ -460,14 +455,13 @@ var _ = Describe("Ensurer", func() {
 				Expect(opts).To(Equal(newUnitOptions))
 			},
 
-			Entry("kubelet version < 1.23", semver.MustParse("1.22.0"), "external", true),
-			Entry("kubelet version >= 1.23", semver.MustParse("1.23.0"), "external", false),
+			Entry("kubelet version >= 1.24", semver.MustParse("1.26.0"), "external"),
 		)
 	})
 
 	Describe("#EnsureKubeletConfiguration", func() {
 		DescribeTable("should modify existing elements of kubelet configuration",
-			func(kubeletVersion *semver.Version, enableControllerAttachDetach *bool, featureGates map[string]bool) {
+			func(kubeletVersion *semver.Version, featureGates map[string]bool) {
 				var (
 					oldKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
 						FeatureGates: map[string]bool{
@@ -476,7 +470,7 @@ var _ = Describe("Ensurer", func() {
 					}
 					newKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
 						FeatureGates:                 featureGates,
-						EnableControllerAttachDetach: enableControllerAttachDetach,
+						EnableControllerAttachDetach: pointer.Bool(true),
 					}
 				)
 				newKubeletConfig.FeatureGates["Foo"] = true
@@ -491,8 +485,7 @@ var _ = Describe("Ensurer", func() {
 				Expect(&kubeletConfig).To(Equal(newKubeletConfig))
 			},
 
-			Entry("kubelet version < 1.23", semver.MustParse("1.22.0"), nil, map[string]bool{}),
-			Entry("kubelet version >= 1.23", semver.MustParse("1.23.0"), pointer.Bool(true), map[string]bool{}),
+			Entry("kubelet version >= 1.24", semver.MustParse("1.26.0"), map[string]bool{}),
 		)
 	})
 
