@@ -75,11 +75,11 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 	)
 
 	infrastructureStatus := &api.InfrastructureStatus{}
-	if _, _, err := w.Decoder().Decode(w.worker.Spec.InfrastructureProviderStatus.Raw, nil, infrastructureStatus); err != nil {
+	if _, _, err := w.decoder.Decode(w.worker.Spec.InfrastructureProviderStatus.Raw, nil, infrastructureStatus); err != nil {
 		return err
 	}
 
-	secret, err := extensionscontroller.GetSecretByReference(ctx, w.Client(), &w.worker.Spec.SecretRef)
+	secret, err := extensionscontroller.GetSecretByReference(ctx, w.client, &w.worker.Spec.SecretRef)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 	for _, pool := range w.worker.Spec.Pools {
 		workerConfig := &api.WorkerConfig{}
 		if pool.ProviderConfig != nil && pool.ProviderConfig.Raw != nil {
-			if _, _, err := w.Decoder().Decode(pool.ProviderConfig.Raw, nil, workerConfig); err != nil {
+			if _, _, err := w.decoder.Decode(pool.ProviderConfig.Raw, nil, workerConfig); err != nil {
 				return fmt.Errorf("could not decode provider config: %+v", err)
 			}
 		}

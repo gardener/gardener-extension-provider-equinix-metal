@@ -23,7 +23,6 @@ import (
 	"time"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
 	genericworkeractuator "github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -39,7 +38,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -75,7 +73,7 @@ var _ = Describe("Machines", func() {
 	})
 
 	Context("workerDelegate", func() {
-		workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(nil, nil, nil), nil, "", nil, nil)
+		workerDelegate, _ := NewWorkerDelegate(nil, nil, nil, "", nil, nil)
 
 		Describe("#MachineClassKind", func() {
 			It("should return the correct kind of the machine class", func() {
@@ -128,7 +126,6 @@ var _ = Describe("Machines", func() {
 				shootVersionMajorMinor string
 				shootVersion           string
 				scheme                 *runtime.Scheme
-				decoder                runtime.Decoder
 				clusterWithoutImages   *extensionscontroller.Cluster
 				cluster                *extensionscontroller.Cluster
 				w                      *extensionsv1alpha1.Worker
@@ -264,12 +261,11 @@ var _ = Describe("Machines", func() {
 				scheme = runtime.NewScheme()
 				_ = api.AddToScheme(scheme)
 				_ = apiv1alpha1.AddToScheme(scheme)
-				decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 
 				workerPoolHash1, _ = worker.WorkerPoolHash(w.Spec.Pools[0], cluster)
 				workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1], cluster)
 
-				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, clusterWithoutImages)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages)
 			})
 
 			Describe("machine images", func() {
@@ -343,7 +339,7 @@ var _ = Describe("Machines", func() {
 				})
 
 				It("should return the expected machine deployments for profile image types", func() {
-					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
 					expectGetSecretCallToWork(c, apiToken, projectID)
 
@@ -405,7 +401,7 @@ var _ = Describe("Machines", func() {
 
 					expectGetSecretCallToWork(c, apiToken, projectID)
 
-					workerDelegate, _ := NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
 					chartApplier.
 						EXPECT().
@@ -435,7 +431,7 @@ var _ = Describe("Machines", func() {
 				expectGetSecretCallToWork(c, apiToken, projectID)
 
 				clusterWithoutImages.Shoot.Spec.Kubernetes.Version = "invalid"
-				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -445,7 +441,7 @@ var _ = Describe("Machines", func() {
 			It("should return err when the infrastructure provider status cannot be decoded", func() {
 				w.Spec.InfrastructureProviderStatus = &runtime.RawExtension{Raw: []byte(`invalid`)}
 
-				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -455,7 +451,7 @@ var _ = Describe("Machines", func() {
 			It("should fail because the machine image cannot be found", func() {
 				expectGetSecretCallToWork(c, apiToken, projectID)
 
-				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, clusterWithoutImages)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -478,7 +474,7 @@ var _ = Describe("Machines", func() {
 					NodeConditions:         testNodeConditions,
 				}
 
-				workerDelegate, _ = NewWorkerDelegate(common.NewClientContext(c, scheme, decoder), chartApplier, "", w, cluster)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				resultSettings := result[0].MachineConfiguration

@@ -17,20 +17,22 @@ package infrastructure
 import (
 	"time"
 
-	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
 	"github.com/gardener/gardener/extensions/pkg/terraformer"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 )
 
 type actuator struct {
-	common.RESTConfigContext
+	client                     client.Client
+	restConfig                 *rest.Config
 	disableProjectedTokenMount bool
 }
 
@@ -44,7 +46,7 @@ func NewActuator(disableProjectedTokenMount bool) infrastructure.Actuator {
 // Helper functions
 
 func (a *actuator) newTerraformer(logger logr.Logger, purpose string, infra *extensionsv1alpha1.Infrastructure) (terraformer.Terraformer, error) {
-	tf, err := terraformer.NewForConfig(logger, a.RESTConfig(), purpose, infra.GetNamespace(), infra.GetName(), imagevector.TerraformerImage())
+	tf, err := terraformer.NewForConfig(logger, a.restConfig, purpose, infra.GetNamespace(), infra.GetName(), imagevector.TerraformerImage())
 	if err != nil {
 		return nil, err
 	}

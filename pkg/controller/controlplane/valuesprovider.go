@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
@@ -33,6 +32,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
@@ -92,8 +93,9 @@ func NewValuesProvider() genericactuator.ValuesProvider {
 // valuesProvider is a ValuesProvider that provides Equinix Metal-specific values for the 2 charts applied by the generic actuator.
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
-	common.ClientContext
-	logger logr.Logger
+	client  client.Client
+	decoder runtime.Decoder
+	logger  logr.Logger
 }
 
 // GetControlPlaneChartValues returns the values for the control plane chart applied by the generic actuator.
@@ -128,7 +130,7 @@ func (vp *valuesProvider) getCredentials(
 	ctx context.Context,
 	cp *extensionsv1alpha1.ControlPlane,
 ) (*equinixmetal.Credentials, error) {
-	secret, err := extensionscontroller.GetSecretByReference(ctx, vp.Client(), &cp.Spec.SecretRef)
+	secret, err := extensionscontroller.GetSecretByReference(ctx, vp.client, &cp.Spec.SecretRef)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get secret by reference for controlplane '%s'", kutil.ObjectName(cp))
 	}
@@ -186,7 +188,7 @@ func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.Contro
 		return cpConfig, nil
 	}
 
-	if _, _, err := vp.Decoder().Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig); err != nil {
+	if _, _, err := vp.decoder.Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig); err != nil {
 		return nil, errors.Wrapf(err, "decoding '%s'", kutil.ObjectName(cp))
 	}
 

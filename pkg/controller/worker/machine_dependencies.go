@@ -42,7 +42,7 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 	)
 
 	// get the private IPs and providerIDs from the shoot nodes
-	_, shootClient, err := util.NewClientForShoot(ctx, w.Client(), w.worker.Namespace, client.Options{}, extensionsconfig.RESTOptions{})
+	_, shootClient, err := util.NewClientForShoot(ctx, w.client, w.worker.Namespace, client.Options{}, extensionsconfig.RESTOptions{})
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 				continue
 			}
 
-			nodePrivateNetwork, err := getNodePrivateNetwork(ctx, deviceID, w.Client(), w.worker.Spec.SecretRef)
+			nodePrivateNetwork, err := getNodePrivateNetwork(ctx, deviceID, w.client, w.worker.Spec.SecretRef)
 			if err != nil {
 				return fmt.Errorf("error getting private network from Equinix Metal API for %s: %v", n.Spec.ProviderID, err)
 			}
@@ -94,12 +94,12 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 		deploy               = &appsv1.Deployment{}
 	)
 
-	if err := w.Client().Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameVPNSeedServer), deploy); err != nil {
+	if err := w.client.Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameVPNSeedServer), deploy); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameVPNSeedServer, err)
 		}
 
-		if err2 := w.Client().Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameKubeAPIServer), deploy); err2 != nil {
+		if err2 := w.client.Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameKubeAPIServer), deploy); err2 != nil {
 			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameKubeAPIServer, err2)
 		}
 		vpnSeedContainerName = "vpn-seed"
@@ -141,7 +141,7 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 		return nil
 	}
 
-	return w.Client().Patch(ctx, deploy, patch)
+	return w.client.Patch(ctx, deploy, patch)
 }
 
 // PreReconcileHook implements genericactuator.WorkerDelegate.
