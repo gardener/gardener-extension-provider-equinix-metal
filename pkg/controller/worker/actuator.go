@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
@@ -44,14 +45,18 @@ type delegateFactory struct {
 }
 
 // NewActuator creates a new Actuator that updates the status of the handled WorkerPoolConfigs.
-func NewActuator(gardenletManagesMCM bool) worker.Actuator {
+func NewActuator(mgr manager.Manager, gardenletManagesMCM bool) (worker.Actuator, error) {
 	var (
 		mcmName              string
 		mcmChartSeed         *chart.Chart
 		mcmChartShoot        *chart.Chart
 		imageVector          imagevectorutils.ImageVector
 		chartRendererFactory extensionscontroller.ChartRendererFactory
-		workerDelegate       = &delegateFactory{}
+		workerDelegate       = &delegateFactory{
+			client:     mgr.GetClient(),
+			restConfig: mgr.GetConfig(),
+			scheme:     mgr.GetScheme(),
+		}
 	)
 
 	if !gardenletManagesMCM {
@@ -63,6 +68,7 @@ func NewActuator(gardenletManagesMCM bool) worker.Actuator {
 	}
 
 	return genericactuator.NewActuator(
+		mgr,
 		workerDelegate,
 		mcmName,
 		mcmChartSeed,

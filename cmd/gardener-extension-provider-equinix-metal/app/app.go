@@ -191,7 +191,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			eqxmcontrolplane.DefaultAddOptions.ShootWebhookConfig = atomicShootWebhookConfig
 			eqxmcontrolplane.DefaultAddOptions.WebhookServerNamespace = webhookOptions.Server.Namespace
 
-			if err := controllerSwitches.Completed().AddToManager(mgr); err != nil {
+			if err := controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {
 				return fmt.Errorf("could not add controllers to manager: %w", err)
 			}
 

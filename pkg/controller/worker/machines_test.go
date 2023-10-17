@@ -53,10 +53,12 @@ var (
 
 var _ = Describe("Machines", func() {
 	var (
-		ctrl         *gomock.Controller
-		c            *mockclient.MockClient
-		chartApplier *mockkubernetes.MockChartApplier
-		statusWriter *mockclient.MockStatusWriter
+		ctrl           *gomock.Controller
+		c              *mockclient.MockClient
+		chartApplier   *mockkubernetes.MockChartApplier
+		statusWriter   *mockclient.MockStatusWriter
+		workerDelegate genericworkeractuator.WorkerDelegate
+		scheme         *runtime.Scheme
 	)
 
 	BeforeEach(func() {
@@ -66,6 +68,10 @@ var _ = Describe("Machines", func() {
 		c = mockclient.NewMockClient(ctrl)
 		chartApplier = mockkubernetes.NewMockChartApplier(ctrl)
 		statusWriter = mockclient.NewMockStatusWriter(ctrl)
+
+		scheme = runtime.NewScheme()
+		Expect(api.AddToScheme(scheme)).To(Succeed())
+		Expect(apiv1alpha1.AddToScheme(scheme)).To(Succeed())
 	})
 
 	AfterEach(func() {
@@ -73,7 +79,9 @@ var _ = Describe("Machines", func() {
 	})
 
 	Context("workerDelegate", func() {
-		workerDelegate, _ := NewWorkerDelegate(nil, nil, nil, "", nil, nil)
+		BeforeEach(func() {
+			workerDelegate, _ = NewWorkerDelegate(nil, scheme, nil, "", nil, nil)
+		})
 
 		Describe("#MachineClassKind", func() {
 			It("should return the correct kind of the machine class", func() {
@@ -125,7 +133,6 @@ var _ = Describe("Machines", func() {
 
 				shootVersionMajorMinor string
 				shootVersion           string
-				scheme                 *runtime.Scheme
 				clusterWithoutImages   *extensionscontroller.Cluster
 				cluster                *extensionscontroller.Cluster
 				w                      *extensionsv1alpha1.Worker
@@ -257,10 +264,6 @@ var _ = Describe("Machines", func() {
 						},
 					},
 				}
-
-				scheme = runtime.NewScheme()
-				_ = api.AddToScheme(scheme)
-				_ = apiv1alpha1.AddToScheme(scheme)
 
 				workerPoolHash1, _ = worker.WorkerPoolHash(w.Spec.Pools[0], cluster)
 				workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1], cluster)

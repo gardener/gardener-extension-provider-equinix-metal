@@ -19,10 +19,12 @@ import (
 	"encoding/json"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
+	mockmanager "github.com/gardener/gardener/pkg/mock/controller-runtime/manager"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 )
@@ -50,6 +51,10 @@ var _ = Describe("ValuesProvider", func() {
 		_      = api.AddToScheme(scheme)
 
 		cp *extensionsv1alpha1.ControlPlane
+
+		c   *mockclient.MockClient
+		vp  genericactuator.ValuesProvider
+		mgr *mockmanager.MockManager
 
 		cidr    = "10.250.0.0/19"
 		cluster = &extensionscontroller.Cluster{
@@ -131,6 +136,11 @@ var _ = Describe("ValuesProvider", func() {
 		}
 
 		ctrl = gomock.NewController(GinkgoT())
+		mgr = mockmanager.NewMockManager(ctrl)
+		mgr.EXPECT().GetClient().Return(c)
+		mgr.EXPECT().GetScheme().Return(scheme)
+
+		vp = NewValuesProvider(mgr)
 	})
 
 	AfterEach(func() {
@@ -139,11 +149,6 @@ var _ = Describe("ValuesProvider", func() {
 
 	Describe("#GetConfigChartValues", func() {
 		It("should return correct config chart values", func() {
-			// Create valuesProvider
-			vp := NewValuesProvider()
-			err := vp.(inject.Scheme).InjectScheme(scheme)
-			Expect(err).NotTo(HaveOccurred())
-
 			// Call GetConfigChartValues method and check the result
 			values, err := vp.GetConfigChartValues(context.TODO(), cp, cluster)
 			Expect(err).NotTo(HaveOccurred())
@@ -153,16 +158,6 @@ var _ = Describe("ValuesProvider", func() {
 
 	Describe("#GetControlPlaneChartValues", func() {
 		It("should return correct control plane chart values", func() {
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-
-			// Create valuesProvider
-			vp := NewValuesProvider()
-			err := vp.(inject.Scheme).InjectScheme(scheme)
-			Expect(err).NotTo(HaveOccurred())
-			err = vp.(inject.Client).InjectClient(client)
-			Expect(err).NotTo(HaveOccurred())
-
 			// Call GetControlPlaneChartValues method and check the result
 			values, err := vp.GetControlPlaneChartValues(context.TODO(), cp, cluster, nil, checksums, false)
 			Expect(err).NotTo(HaveOccurred())
@@ -180,7 +175,6 @@ var _ = Describe("ValuesProvider", func() {
 						},
 					},
 				}
-				vp := NewValuesProvider()
 				values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, nil)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(values).To(Equal(map[string]interface{}{
@@ -199,7 +193,6 @@ var _ = Describe("ValuesProvider", func() {
 						},
 					},
 				}
-				vp := NewValuesProvider()
 				values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, nil)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(values).To(Equal(map[string]interface{}{

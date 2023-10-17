@@ -27,13 +27,14 @@ import (
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
@@ -86,8 +87,11 @@ var storageClassChart = &chart.Chart{
 }
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
-func NewValuesProvider() genericactuator.ValuesProvider {
-	return &valuesProvider{}
+func NewValuesProvider(mgr manager.Manager) genericactuator.ValuesProvider {
+	return &valuesProvider{
+		client:  mgr.GetClient(),
+		decoder: serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+	}
 }
 
 // valuesProvider is a ValuesProvider that provides Equinix Metal-specific values for the 2 charts applied by the generic actuator.
@@ -95,7 +99,6 @@ type valuesProvider struct {
 	genericactuator.NoopValuesProvider
 	client  client.Client
 	decoder runtime.Decoder
-	logger  logr.Logger
 }
 
 // GetControlPlaneChartValues returns the values for the control plane chart applied by the generic actuator.
