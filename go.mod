@@ -1,6 +1,6 @@
 module github.com/gardener/gardener-extension-provider-equinix-metal
 
-go 1.19
+go 1.21
 
 require (
 	github.com/Masterminds/semver v1.5.0
