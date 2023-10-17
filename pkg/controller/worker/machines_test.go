@@ -41,6 +41,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	apiv1alpha1 "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/v1alpha1"
 	. "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/worker"
@@ -352,7 +353,7 @@ var _ = Describe("Machines", func() {
 						EXPECT().
 						Apply(
 							ctx,
-							filepath.Join(equinixmetal.InternalChartsPath, "machineclass"),
+							filepath.Join(charts.InternalChartsPath, "machineclass"),
 							namespace,
 							"machineclass",
 							kubernetes.Values(machineClasses),
@@ -410,7 +411,7 @@ var _ = Describe("Machines", func() {
 						EXPECT().
 						Apply(
 							ctx,
-							filepath.Join(equinixmetal.InternalChartsPath, "machineclass"),
+							filepath.Join(charts.InternalChartsPath, "machineclass"),
 							namespace,
 							"machineclass",
 							kubernetes.Values(machineClasses),

@@ -32,10 +32,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 )
 
 type delegateFactory struct {

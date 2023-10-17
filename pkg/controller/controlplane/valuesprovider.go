@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
@@ -47,8 +48,9 @@ func shootAccessSecretsFunc(namespace string) []*gutil.AccessSecret {
 }
 
 var controlPlaneChart = &chart.Chart{
-	Name: "seed-controlplane",
-	Path: filepath.Join(equinixmetal.InternalChartsPath, "seed-controlplane"),
+	Name:       "seed-controlplane",
+	EmbeddedFS: &charts.InternalChart,
+	Path:       filepath.Join(charts.InternalChartsPath, "seed-controlplane"),
 	SubCharts: []*chart.Chart{
 		{
 			Name:   "cloud-provider-equinix-metal",
@@ -63,8 +65,9 @@ var controlPlaneChart = &chart.Chart{
 }
 
 var controlPlaneShootChart = &chart.Chart{
-	Name: "shoot-system-components",
-	Path: filepath.Join(equinixmetal.InternalChartsPath, "shoot-system-components"),
+	Name:       "shoot-system-components",
+	EmbeddedFS: &charts.InternalChart,
+	Path:       filepath.Join(charts.InternalChartsPath, "shoot-system-components"),
 	SubCharts: []*chart.Chart{
 		{
 			Name: "cloud-provider-equinix-metal",
@@ -82,8 +85,9 @@ var controlPlaneShootChart = &chart.Chart{
 }
 
 var storageClassChart = &chart.Chart{
-	Name: "shoot-storageclasses",
-	Path: filepath.Join(equinixmetal.InternalChartsPath, "shoot-storageclasses"),
+	Name:       "shoot-storageclasses",
+	EmbeddedFS: &charts.InternalChart,
+	Path:       filepath.Join(charts.InternalChartsPath, "shoot-storageclasses"),
 }
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.

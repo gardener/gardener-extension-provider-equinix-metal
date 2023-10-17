@@ -26,8 +26,8 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 )
 
 type actuator struct {

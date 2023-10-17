@@ -22,8 +22,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 )
 
 const (

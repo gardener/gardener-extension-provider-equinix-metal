@@ -14,8 +14,6 @@
 
 package equinixmetal
 
-import "path/filepath"
-
 const (
 	// Name is the name of the Equinix Metal provider controller.
 	Name = "provider-equinix-metal"
@@ -53,13 +51,6 @@ const (
 	MachineControllerManagerMonitoringConfigName = "machine-controller-manager-monitoring-config"
 	// CloudControllerManagerName is a constant for the name of the CloudController deployed by the worker controller.
 	CloudControllerManagerName = "cloud-controller-manager"
-)
-
-var (
-	// ChartsPath is the path to the charts
-	ChartsPath = filepath.Join("charts")
-	// InternalChartsPath is the path to the internal charts
-	InternalChartsPath = filepath.Join(ChartsPath, "internal")
 )
 
 // Credentials stores Equinix Metal credentials.

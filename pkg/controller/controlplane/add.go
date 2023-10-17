@@ -27,8 +27,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/imagevector"
 )
 
 var (
