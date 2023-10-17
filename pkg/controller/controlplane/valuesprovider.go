@@ -39,8 +39,8 @@ import (
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
 
-func shootAccessSecretsFunc(namespace string) []*gutil.ShootAccessSecret {
-	return []*gutil.ShootAccessSecret{
+func shootAccessSecretsFunc(namespace string) []*gutil.AccessSecret {
+	return []*gutil.AccessSecret{
 		gutil.NewShootAccessSecret(equinixmetal.CloudControllerManagerImageName, namespace),
 	}
 }
