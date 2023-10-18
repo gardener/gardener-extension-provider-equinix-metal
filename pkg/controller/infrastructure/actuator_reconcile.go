@@ -56,7 +56,7 @@ func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastruc
 		SetEnvVars(generateTerraformInfraVariablesEnvironment(infrastructure.Spec.SecretRef)...).
 		InitializeWith(ctx,
 			terraformer.DefaultInitializer(
-				a.Client(),
+				a.client,
 				mainTF.String(),
 				variablesTF,
 				[]byte(terraformTFVars),
@@ -111,5 +111,5 @@ func (a *actuator) updateProviderStatus(ctx context.Context, tf terraformer.Terr
 		},
 	}
 	infrastructure.Status.State = &runtime.RawExtension{Raw: stateByte}
-	return a.Client().Status().Patch(ctx, infrastructure, patch)
+	return a.client.Status().Patch(ctx, infrastructure, patch)
 }

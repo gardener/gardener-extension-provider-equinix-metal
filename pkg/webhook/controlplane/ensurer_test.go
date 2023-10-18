@@ -30,9 +30,9 @@ import (
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -43,7 +43,6 @@ import (
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
 const (
@@ -62,6 +61,7 @@ func TestController(t *testing.T) {
 var _ = Describe("Ensurer", func() {
 	var (
 		ctrl *gomock.Controller
+		c    *mockclient.MockClient
 
 		dummyContext   = gcontext.NewGardenContext(nil, nil)
 		eContextK8s126 = gcontext.NewInternalGardenContext(
@@ -92,6 +92,7 @@ var _ = Describe("Ensurer", func() {
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
+		c = mockclient.NewMockClient(ctrl)
 		ctx = context.TODO()
 	})
 
@@ -118,17 +119,12 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
+			ensurer := NewEnsurer(c, logger, false)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 		})
@@ -156,17 +152,12 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
+			ensurer := NewEnsurer(c, logger, false)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 		})
@@ -199,17 +190,12 @@ var _ = Describe("Ensurer", func() {
 
 			oldDep.Spec.Template.Spec.Containers[1].Env = []corev1.EnvVar{nodeNetworkEnvVar}
 
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
+			ensurer := NewEnsurer(c, logger, false)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 
@@ -247,17 +233,12 @@ var _ = Describe("Ensurer", func() {
 
 			dep.Spec.Template.Spec.Containers[1].Env[0].Value = newValue
 
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-			client.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
+			ensurer := NewEnsurer(c, logger, false)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 
@@ -289,8 +270,7 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
+			ensurer := NewEnsurer(c, logger, false)
 
 			// Call EnsureKubeControllerManagerDeployment method and check the result
 			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
@@ -319,8 +299,7 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
+			ensurer := NewEnsurer(c, logger, false)
 
 			// Call EnsureKubeControllerManagerDeployment method and check the result
 			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
@@ -355,16 +334,10 @@ var _ = Describe("Ensurer", func() {
 
 			oldDep.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{nodeNetworkEnvVar}
 
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
+			ensurer := NewEnsurer(c, logger, false)
 
 			// Call EnsureVPNSeedServerDeployment method and check the result
-			err = ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
+			err := ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
 
 			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed-server")
@@ -398,16 +371,10 @@ var _ = Describe("Ensurer", func() {
 
 			dep.Spec.Template.Spec.Containers[0].Env[0].Value = newValue
 
-			// Create mock client
-			client := mockclient.NewMockClient(ctrl)
-
-			// Create ensurer
-			ensurer := NewEnsurer(logger, false)
-			err := ensurer.(inject.Client).InjectClient(client)
-			Expect(err).To(Not(HaveOccurred()))
+			ensurer := NewEnsurer(c, logger, false)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err = ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
+			err := ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
 
 			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed-server")
@@ -446,8 +413,7 @@ var _ = Describe("Ensurer", func() {
     --cloud-provider=` + cloudProvider
 				}
 
-				// Create ensurer
-				ensurer := NewEnsurer(logger, false)
+				ensurer := NewEnsurer(c, logger, false)
 
 				// Call EnsureKubeletServiceUnitOptions method and check the result
 				opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, kubeletVersion, oldUnitOptions, nil)
@@ -475,8 +441,7 @@ var _ = Describe("Ensurer", func() {
 				)
 				newKubeletConfig.FeatureGates["Foo"] = true
 
-				// Create ensurer
-				ensurer := NewEnsurer(logger, false)
+				ensurer := NewEnsurer(c, logger, false)
 
 				// Call EnsureKubeletConfiguration method and check the result
 				kubeletConfig := *oldKubeletConfig
@@ -501,7 +466,7 @@ var _ = Describe("Ensurer", func() {
 
 		Context("when gardenlet does not manage MCM", func() {
 			BeforeEach(func() {
-				ensurer = NewEnsurer(logger, false)
+				ensurer = NewEnsurer(c, logger, false)
 			})
 
 			It("should do nothing", func() {
@@ -513,7 +478,7 @@ var _ = Describe("Ensurer", func() {
 
 		Context("when gardenlet manages MCM", func() {
 			BeforeEach(func() {
-				ensurer = NewEnsurer(logger, true)
+				ensurer = NewEnsurer(c, logger, true)
 				DeferCleanup(testutils.WithVar(&ImageVector, imagevector.ImageVector{{
 					Name:       "machine-controller-manager-provider-equinix-metal",
 					Repository: "foo",
@@ -578,7 +543,7 @@ var _ = Describe("Ensurer", func() {
 
 		Context("when gardenlet does not manage MCM", func() {
 			BeforeEach(func() {
-				ensurer = NewEnsurer(logger, false)
+				ensurer = NewEnsurer(c, logger, false)
 			})
 
 			It("should do nothing", func() {
@@ -590,7 +555,7 @@ var _ = Describe("Ensurer", func() {
 
 		Context("when gardenlet manages MCM", func() {
 			BeforeEach(func() {
-				ensurer = NewEnsurer(logger, true)
+				ensurer = NewEnsurer(c, logger, true)
 			})
 
 			It("should inject the sidecar container policy", func() {

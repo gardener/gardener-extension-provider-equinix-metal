@@ -16,10 +16,11 @@ package worker
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
+	"slices"
 
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/go-logr/logr"
@@ -28,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	extensionsworkerhelper "github.com/gardener/gardener/extensions/pkg/controller/worker/helper"
@@ -45,13 +47,8 @@ type stateReconciler struct {
 
 // NewStateReconciler creates a new reconcile.Reconciler that reconciles
 // Worker's State resources of Gardener's `extensions.gardener.cloud` API group.
-func NewStateReconciler() reconcile.Reconciler {
-	return &stateReconciler{}
-}
-
-func (r *stateReconciler) InjectClient(client client.Client) error {
-	r.client = client
-	return nil
+func NewStateReconciler(mgr manager.Manager) reconcile.Reconciler {
+	return &stateReconciler{client: mgr.GetClient()}
 }
 
 func (r *stateReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
@@ -162,7 +159,9 @@ func getExistingMachineSetsMap(ctx context.Context, c client.Client, namespace s
 	}
 
 	// When we read from the cache we get unsorted results, hence, we sort to prevent unnecessary state updates from happening.
-	sort.Slice(existingMachineSets.Items, func(i, j int) bool { return existingMachineSets.Items[i].Name < existingMachineSets.Items[j].Name })
+	slices.SortFunc(existingMachineSets.Items, func(a, b machinev1alpha1.MachineSet) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	return extensionsworkerhelper.BuildOwnerToMachineSetsMap(existingMachineSets.Items), nil
 }
@@ -189,7 +188,9 @@ func getExistingMachinesMap(ctx context.Context, c client.Client, namespace stri
 	}
 
 	// When we read from the cache we get unsorted results, hence, we sort to prevent unnecessary state updates from happening.
-	sort.Slice(filteredMachines, func(i, j int) bool { return filteredMachines[i].Name < filteredMachines[j].Name })
+	slices.SortFunc(filteredMachines, func(a, b machinev1alpha1.Machine) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	return extensionsworkerhelper.BuildOwnerToMachinesMap(filteredMachines), nil
 }

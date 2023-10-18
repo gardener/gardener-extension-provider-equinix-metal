@@ -15,6 +15,8 @@
 package controlplane
 
 import (
+	"context"
+
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -53,14 +55,14 @@ type AddArgs struct {
 }
 
 // DefaultPredicates returns the default predicates for a controlplane reconciler.
-func DefaultPredicates(ignoreOperationAnnotation bool) []predicate.Predicate {
-	return extensionspredicate.DefaultControllerPredicates(ignoreOperationAnnotation, extensionspredicate.ShootNotFailedPredicate())
+func DefaultPredicates(ctx context.Context, mgr manager.Manager, ignoreOperationAnnotation bool) []predicate.Predicate {
+	return extensionspredicate.DefaultControllerPredicates(ignoreOperationAnnotation, extensionspredicate.ShootNotFailedPredicate(ctx, mgr))
 }
 
 // Add creates a new ControlPlane Controller and adds it to the Manager.
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, args AddArgs) error {
-	args.ControllerOptions.Reconciler = NewReconciler(args.Actuator)
+func Add(ctx context.Context, mgr manager.Manager, args AddArgs) error {
+	args.ControllerOptions.Reconciler = NewReconciler(mgr, args.Actuator)
 
 	ctrl, err := controller.New(ControllerName, mgr, args.ControllerOptions)
 	if err != nil {
@@ -70,12 +72,12 @@ func Add(mgr manager.Manager, args AddArgs) error {
 	predicates := extensionspredicate.AddTypePredicate(args.Predicates, args.Type)
 	if args.IgnoreOperationAnnotation {
 		if err := ctrl.Watch(
-			&source.Kind{Type: &extensionsv1alpha1.Cluster{}},
-			mapper.EnqueueRequestsFrom(ClusterToControlPlaneMapper(predicates), mapper.UpdateWithNew, ctrl.GetLogger()),
+			source.Kind(mgr.GetCache(), &extensionsv1alpha1.Cluster{}),
+			mapper.EnqueueRequestsFrom(ctx, mgr.GetCache(), ClusterToControlPlaneMapper(mgr, predicates), mapper.UpdateWithNew, ctrl.GetLogger()),
 		); err != nil {
 			return err
 		}
 	}
 
-	return ctrl.Watch(&source.Kind{Type: &extensionsv1alpha1.ControlPlane{}}, &handler.EnqueueRequestForObject{}, predicates...)
+	return ctrl.Watch(source.Kind(mgr.GetCache(), &extensionsv1alpha1.ControlPlane{}), &handler.EnqueueRequestForObject{}, predicates...)
 }

@@ -123,6 +123,9 @@ type SeedStatus struct {
 	// ClientCertificateExpirationTimestamp is the timestamp at which gardenlet's client certificate expires.
 	// +optional
 	ClientCertificateExpirationTimestamp *metav1.Time `json:"clientCertificateExpirationTimestamp,omitempty" protobuf:"bytes,8,opt,name=clientCertificateExpirationTimestamp"`
+	// LastOperation holds information about the last operation on the Seed.
+	// +optional
+	LastOperation *LastOperation `json:"lastOperation,omitempty" protobuf:"bytes,9,opt,name=lastOperation"`
 }
 
 // SeedBackup contains the object store configuration for backups for shoot (currently only etcd).
@@ -165,18 +168,22 @@ type SeedDNSProvider struct {
 	// Zones *DNSIncludeExclude `json:"zones,omitempty" protobuf:"bytes,4,opt,name=zones"`
 }
 
-// Ingress configures the Ingress specific settings of the Seed cluster
+// Ingress configures the Ingress specific settings of the cluster
 type Ingress struct {
-	// Domain specifies the IngressDomain of the Seed cluster pointing to the ingress controller endpoint. It will be used
-	// to construct ingress URLs for system applications running in Shoot clusters. Once set this field is immutable.
-	Domain string `json:"domain" protobuf:"bytes,1,opt,name=domain"`
+	// Domain specifies the IngressDomain of the cluster pointing to the ingress controller endpoint. It will be used
+	// to construct ingress URLs for system applications running in Shoot/Garden clusters. Once set this field is immutable.
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
+	// +kubebuilder:validation:Pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+	Domain string `json:"domain" protobuf:"bytes,1,name=domain"`
 	// Controller configures a Gardener managed Ingress Controller listening on the ingressDomain
-	Controller IngressController `json:"controller" protobuf:"bytes,2,opt,name=controller"`
+	Controller IngressController `json:"controller" protobuf:"bytes,2,name=controller"`
 }
 
 // IngressController enables a Gardener managed Ingress Controller listening on the ingressDomain
 type IngressController struct {
-	// Kind defines which kind of IngressController to use, for example `nginx`
+	// Kind defines which kind of IngressController to use. At the moment only `nginx` is supported
+	// +kubebuilder:validation:Enum="nginx"
 	Kind string `json:"kind" protobuf:"bytes,1,opt,name=kind"`
 	// ProviderConfig specifies infrastructure specific configuration for the ingressController
 	// +optional
@@ -248,26 +255,39 @@ type SeedSettings struct {
 	// VerticalPodAutoscaler controls certain settings for the vertical pod autoscaler components deployed in the seed.
 	// +optional
 	VerticalPodAutoscaler *SeedSettingVerticalPodAutoscaler `json:"verticalPodAutoscaler,omitempty" protobuf:"bytes,5,opt,name=verticalPodAutoscaler"`
-	// SeedSettingOwnerChecks controls certain owner checks settings for shoots scheduled on this seed.
-	//
-	// Deprecated: This field is deprecated. The "bad-case" control plane migration is being removed in favor of the HA Shoot control planes (see https://github.com/gardener/gardener/issues/6302).
-	// The field is locked to false (i.e. if the field value is true a validation error will be returned). In this way gardenlet will clean up all owner DNSRecords.
-	// Finally, the field will be removed from the API in a future version of Gardener.
-	// +optional
-	OwnerChecks *SeedSettingOwnerChecks `json:"ownerChecks,omitempty" protobuf:"bytes,6,opt,name=ownerChecks"`
+
+	// OwnerChecks is tombstoned to show why 6 is reserved protobuf tag.
+	// OwnerChecks *SeedSettingOwnerChecks `json:"ownerChecks,omitempty" protobuf:"bytes,6,opt,name=ownerChecks"`
+
 	// DependencyWatchdog controls certain settings for the dependency-watchdog components deployed in the seed.
 	// +optional
 	DependencyWatchdog *SeedSettingDependencyWatchdog `json:"dependencyWatchdog,omitempty" protobuf:"bytes,7,opt,name=dependencyWatchdog"`
 	// TopologyAwareRouting controls certain settings for topology-aware traffic routing in the seed.
-	// See https://github.com/gardener/gardener/blob/master/docs/usage/topology_aware_routing.md.
+	// See https://github.com/gardener/gardener/blob/master/docs/operations/topology_aware_routing.md.
 	// +optional
 	TopologyAwareRouting *SeedSettingTopologyAwareRouting `json:"topologyAwareRouting,omitempty" protobuf:"bytes,8,opt,name=topologyAwareRouting"`
 }
 
 // SeedSettingExcessCapacityReservation controls the excess capacity reservation for shoot control planes in the seed.
 type SeedSettingExcessCapacityReservation struct {
-	// Enabled controls whether the excess capacity reservation should be enabled.
-	Enabled bool `json:"enabled" protobuf:"bytes,1,opt,name=enabled"`
+	// Enabled controls whether the default excess capacity reservation should be enabled. When not specified, the functionality is enabled.
+	// +optional
+	Enabled *bool `json:"enabled,omitempty" protobuf:"bytes,1,opt,name=enabled"`
+	// Configs configures excess capacity reservation deployments for shoot control planes in the seed.
+	// +optional
+	Configs []SeedSettingExcessCapacityReservationConfig `json:"configs,omitempty" protobuf:"bytes,2,rep,name=configs"`
+}
+
+// SeedSettingExcessCapacityReservationConfig configures excess capacity reservation deployments for shoot control planes in the seed.
+type SeedSettingExcessCapacityReservationConfig struct {
+	// Resources specify the resource requests and limits of the excess-capacity-reservation pod.
+	Resources corev1.ResourceList `json:"resources" protobuf:"bytes,1,rep,name=resources,casttype=k8s.io/api/core/v1.ResourceList,castkey=k8s.io/api/core/v1.ResourceName"`
+	// NodeSelector specifies the node where the excess-capacity-reservation pod should run.
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,2,rep,name=nodeSelector"`
+	// Tolerations specify the tolerations for the the excess-capacity-reservation pod.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty" protobuf:"bytes,3,rep,name=tolerations"`
 }
 
 // SeedSettingScheduling controls settings for scheduling decisions for the seed.
@@ -315,15 +335,6 @@ type SeedSettingVerticalPodAutoscaler struct {
 	// Enabled controls whether the VPA components shall be deployed into the garden namespace in the seed cluster. It
 	// is enabled by default because Gardener heavily relies on a VPA being deployed. You should only disable this if
 	// your seed cluster already has another, manually/custom managed VPA deployment.
-	Enabled bool `json:"enabled" protobuf:"bytes,1,opt,name=enabled"`
-}
-
-// SeedSettingOwnerChecks controls certain owner checks settings for shoots scheduled on this seed.
-//
-// Deprecated: This field is deprecated. The "bad-case" control plane migration is being removed in favor of the HA Shoot control planes (see https://github.com/gardener/gardener/issues/6302).
-// The field is no-op and will be removed in a future version.
-type SeedSettingOwnerChecks struct {
-	// Enabled controls whether owner checks are enabled for shoots scheduled on this seed.
 	Enabled bool `json:"enabled" protobuf:"bytes,1,opt,name=enabled"`
 }
 
@@ -380,7 +391,7 @@ type SeedSettingDependencyWatchdogProber struct {
 }
 
 // SeedSettingTopologyAwareRouting controls certain settings for topology-aware traffic routing in the seed.
-// See https://github.com/gardener/gardener/blob/master/docs/usage/topology_aware_routing.md.
+// See https://github.com/gardener/gardener/blob/master/docs/operations/topology_aware_routing.md.
 type SeedSettingTopologyAwareRouting struct {
 	// Enabled controls whether certain Services deployed in the seed cluster should be topology-aware.
 	// These Services are etcd-main-client, etcd-events-client, kube-apiserver, gardener-resource-manager and vpa-webhook.
@@ -425,9 +436,6 @@ type SeedVolumeProvider struct {
 const (
 	// SeedBackupBucketsReady is a constant for a condition type indicating that associated BackupBuckets are ready.
 	SeedBackupBucketsReady ConditionType = "BackupBucketsReady"
-	// SeedBootstrapped is a constant for a condition type indicating that the seed cluster has been
-	// bootstrapped.
-	SeedBootstrapped ConditionType = "Bootstrapped"
 	// SeedExtensionsReady is a constant for a condition type indicating that the extensions are ready.
 	SeedExtensionsReady ConditionType = "ExtensionsReady"
 	// SeedGardenletReady is a constant for a condition type indicating that the Gardenlet is ready.
