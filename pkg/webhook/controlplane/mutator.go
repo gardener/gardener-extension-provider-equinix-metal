@@ -20,18 +20,17 @@ import (
 	"fmt"
 	"strings"
 
+	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
+	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
+	resourcemanagerv1alpha1 "github.com/gardener/gardener/pkg/resourcemanager/apis/config/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
-	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
-	resourcemanagerv1alpha1 "github.com/gardener/gardener/pkg/resourcemanager/apis/config/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
 )
 
 var (
