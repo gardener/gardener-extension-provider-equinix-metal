@@ -59,7 +59,7 @@ spec:
         {{- end }}
         # Required to make CCM manage MetalLB ConfigMap.
         - name: METAL_LOAD_BALANCER
-          value: metallb:///
+          value: metallb:///kube-system/metallb-config
         ports:
         # Equinix Metal's CCM is based on K8S 1.11 and uses 10253 port by default.
         - containerPort: 10253
