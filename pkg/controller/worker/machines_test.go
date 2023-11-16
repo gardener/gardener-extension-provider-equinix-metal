@@ -351,8 +351,9 @@ var _ = Describe("Machines", func() {
 
 					chartApplier.
 						EXPECT().
-						Apply(
+						ApplyFromEmbeddedFS(
 							ctx,
+							charts.InternalChart,
 							filepath.Join(charts.InternalChartsPath, "machineclass"),
 							namespace,
 							"machineclass",
@@ -409,8 +410,9 @@ var _ = Describe("Machines", func() {
 
 					chartApplier.
 						EXPECT().
-						Apply(
+						ApplyFromEmbeddedFS(
 							ctx,
+							charts.InternalChart,
 							filepath.Join(charts.InternalChartsPath, "machineclass"),
 							namespace,
 							"machineclass",

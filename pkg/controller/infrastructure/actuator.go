@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
@@ -37,8 +38,13 @@ type actuator struct {
 }
 
 // NewActuator creates a new Actuator that updates the status of the handled Infrastructure resources.
-func NewActuator(disableProjectedTokenMount bool) infrastructure.Actuator {
+func NewActuator(
+	mgr manager.Manager,
+	disableProjectedTokenMount bool,
+) infrastructure.Actuator {
 	return &actuator{
+		restConfig:                 mgr.GetConfig(),
+		client:                     mgr.GetClient(),
 		disableProjectedTokenMount: disableProjectedTokenMount,
 	}
 }

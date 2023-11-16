@@ -22,6 +22,7 @@ import (
 	"github.com/gardener/gardener/pkg/component/extensions/operatingsystemconfig/original/components/kubelet"
 	"github.com/gardener/gardener/pkg/component/extensions/operatingsystemconfig/utils"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -46,8 +47,20 @@ func AddToManager(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 			{Obj: &appsv1.Deployment{}},
 			{Obj: &vpaautoscalingv1.VerticalPodAutoscaler{}},
 			{Obj: &extensionsv1alpha1.OperatingSystemConfig{}},
+			{Obj: &corev1.ConfigMap{}},
 		},
-		Mutator: genericmutator.NewMutator(mgr, NewEnsurer(mgr.GetClient(), logger, GardenletManagesMCM), utils.NewUnitSerializer(),
-			kubelet.NewConfigCodec(fciCodec), fciCodec, logger),
+		Mutator: &customMutator{
+			client: mgr.GetClient(),
+			delegateMutator: genericmutator.NewMutator(
+				mgr,
+				NewEnsurer(mgr.GetClient(),
+					logger,
+					GardenletManagesMCM),
+				utils.NewUnitSerializer(),
+				kubelet.NewConfigCodec(fciCodec),
+				fciCodec,
+				logger,
+			),
+		},
 	})
 }

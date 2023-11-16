@@ -44,7 +44,7 @@ type AddOptions struct {
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddOptions) error {
 	return infrastructure.Add(ctx, mgr, infrastructure.AddArgs{
-		Actuator:          NewActuator(opts.DisableProjectedTokenMount),
+		Actuator:          NewActuator(mgr, opts.DisableProjectedTokenMount),
 		ControllerOptions: opts.Controller,
 		Predicates:        infrastructure.DefaultPredicates(ctx, mgr, opts.IgnoreOperationAnnotation),
 		Type:              equinixmetal.Type,
