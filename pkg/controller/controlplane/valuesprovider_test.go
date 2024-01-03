@@ -32,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/utils/pointer"
 
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 )
@@ -166,41 +165,12 @@ var _ = Describe("ValuesProvider", func() {
 	})
 
 	Describe("#GetControlPlaneShootChartValues", func() {
-		Context("podSecurityPolicy", func() {
-			It("should return correct shoot control plane chart when PodSecurityPolicy admission plugin is not disabled in the shoot", func() {
-				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
-					AdmissionPlugins: []gardencorev1beta1.AdmissionPlugin{
-						{
-							Name: "PodSecurityPolicy",
-						},
-					},
-				}
-				values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, nil)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(values).To(Equal(map[string]interface{}{
-					"metallb": map[string]interface{}{
-						"pspDisabled": false,
-					},
-				}))
-			})
-
-			It("should return correct shoot control plane chart when PodSecurityPolicy admission plugin is disabled in the shoot", func() {
-				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
-					AdmissionPlugins: []gardencorev1beta1.AdmissionPlugin{
-						{
-							Name:     "PodSecurityPolicy",
-							Disabled: pointer.Bool(true),
-						},
-					},
-				}
-				values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, nil)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(values).To(Equal(map[string]interface{}{
-					"metallb": map[string]interface{}{
-						"pspDisabled": true,
-					},
-				}))
-			})
+		It("should return correct shoot control plane chart", func() {
+			values, err := vp.GetControlPlaneShootChartValues(context.TODO(), cp, cluster, nil, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(values).To(Equal(map[string]interface{}{
+				"metallb": map[string]interface{}{},
+			}))
 		})
 	})
 })

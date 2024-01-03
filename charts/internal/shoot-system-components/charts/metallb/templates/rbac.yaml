@@ -43,16 +43,6 @@ rules:
   verbs:
   - create
   - patch
-{{- if not .Values.pspDisabled }}
-- apiGroups:
-  - policy
-  resourceNames:
-  - controller
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - use
-{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -78,16 +68,6 @@ rules:
   verbs:
   - create
   - patch
-{{- if not .Values.pspDisabled }}
-- apiGroups:
-  - policy
-  resourceNames:
-  - speaker
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - use
-{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
