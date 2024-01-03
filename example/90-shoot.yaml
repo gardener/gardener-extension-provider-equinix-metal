@@ -29,7 +29,7 @@ spec:
       - ewr1
       - ny5
   kubernetes:
-    version: 1.24.7
+    version: 1.28.2
     kubelet:
       failSwapOn: false
   networking:

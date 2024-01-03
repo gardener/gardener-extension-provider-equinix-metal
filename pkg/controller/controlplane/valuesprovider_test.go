@@ -75,7 +75,7 @@ var _ = Describe("ValuesProvider", func() {
 						Pods: &cidr,
 					},
 					Kubernetes: gardencorev1beta1.Kubernetes{
-						Version: "1.24.4",
+						Version: "1.28.2",
 						VerticalPodAutoscaler: &gardencorev1beta1.VerticalPodAutoscaler{
 							Enabled: true,
 						},
