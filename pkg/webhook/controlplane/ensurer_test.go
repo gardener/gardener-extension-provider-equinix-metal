@@ -18,7 +18,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -387,71 +386,59 @@ var _ = Describe("Ensurer", func() {
 	})
 
 	Describe("#EnsureKubeletServiceUnitOptions", func() {
-		DescribeTable("should modify existing elements of kubelet.service unit options",
-			func(kubeletVersion *semver.Version, cloudProvider string) {
-				var (
-					oldUnitOptions = []*unit.UnitOption{
-						{
-							Section: "Service",
-							Name:    "ExecStart",
-							Value: `/opt/bin/hyperkube kubelet \
+		It("should modify existing elements of kubelet.service unit options", func() {
+			var (
+				oldUnitOptions = []*unit.UnitOption{
+					{
+						Section: "Service",
+						Name:    "ExecStart",
+						Value: `/opt/bin/hyperkube kubelet \
     --config=/var/lib/kubelet/config/kubelet`,
-						},
-					}
-					newUnitOptions = []*unit.UnitOption{
-						{
-							Section: "Service",
-							Name:    "ExecStart",
-							Value: `/opt/bin/hyperkube kubelet \
-    --config=/var/lib/kubelet/config/kubelet`,
-						},
-					}
-				)
-
-				if cloudProvider != "" {
-					newUnitOptions[0].Value += ` \
-    --cloud-provider=` + cloudProvider
+					},
 				}
+				newUnitOptions = []*unit.UnitOption{
+					{
+						Section: "Service",
+						Name:    "ExecStart",
+						Value: `/opt/bin/hyperkube kubelet \
+    --config=/var/lib/kubelet/config/kubelet \
+    --cloud-provider=external`,
+					},
+				}
+			)
 
-				ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger, false)
 
-				// Call EnsureKubeletServiceUnitOptions method and check the result
-				opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, kubeletVersion, oldUnitOptions, nil)
-				Expect(err).To(Not(HaveOccurred()))
-				Expect(opts).To(Equal(newUnitOptions))
-			},
-
-			Entry("kubelet version >= 1.24", semver.MustParse("1.26.0"), "external"),
-		)
+			// Call EnsureKubeletServiceUnitOptions method and check the result
+			opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, nil, oldUnitOptions, nil)
+			Expect(err).To(Not(HaveOccurred()))
+			Expect(opts).To(Equal(newUnitOptions))
+		})
 	})
 
 	Describe("#EnsureKubeletConfiguration", func() {
-		DescribeTable("should modify existing elements of kubelet configuration",
-			func(kubeletVersion *semver.Version, featureGates map[string]bool) {
-				var (
-					oldKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
-						FeatureGates: map[string]bool{
-							"Foo": true,
-						},
-					}
-					newKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
-						FeatureGates:                 featureGates,
-						EnableControllerAttachDetach: pointer.Bool(true),
-					}
-				)
-				newKubeletConfig.FeatureGates["Foo"] = true
+		It("should modify existing elements of kubelet configuration", func() {
+			var (
+				oldKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
+					FeatureGates: map[string]bool{
+						"Foo": true,
+					},
+				}
+				newKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
+					FeatureGates:                 map[string]bool{},
+					EnableControllerAttachDetach: pointer.Bool(true),
+				}
+			)
+			newKubeletConfig.FeatureGates["Foo"] = true
 
-				ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger, false)
 
-				// Call EnsureKubeletConfiguration method and check the result
-				kubeletConfig := *oldKubeletConfig
-				err := ensurer.EnsureKubeletConfiguration(ctx, dummyContext, kubeletVersion, &kubeletConfig, nil)
-				Expect(err).To(Not(HaveOccurred()))
-				Expect(&kubeletConfig).To(Equal(newKubeletConfig))
-			},
-
-			Entry("kubelet version >= 1.24", semver.MustParse("1.26.0"), map[string]bool{}),
-		)
+			// Call EnsureKubeletConfiguration method and check the result
+			kubeletConfig := *oldKubeletConfig
+			err := ensurer.EnsureKubeletConfiguration(ctx, dummyContext, nil, &kubeletConfig, nil)
+			Expect(err).To(Not(HaveOccurred()))
+			Expect(&kubeletConfig).To(Equal(newKubeletConfig))
+		})
 	})
 
 	Describe("#EnsureMachineControllerManagerDeployment", func() {
