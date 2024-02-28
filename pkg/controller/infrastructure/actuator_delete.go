@@ -50,3 +50,7 @@ func (a *actuator) Delete(ctx context.Context, log logr.Logger, infrastructure *
 		SetEnvVars(generateTerraformInfraVariablesEnvironment(infrastructure.Spec.SecretRef)...).
 		Destroy(ctx)
 }
+
+func (a *actuator) ForceDelete(_ context.Context, _ logr.Logger, _ *extensionsv1alpha1.Infrastructure, _ *extensionscontroller.Cluster) error {
+	return nil
+}
