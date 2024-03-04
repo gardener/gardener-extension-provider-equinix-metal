@@ -1,23 +1,23 @@
 images:
 - name: terraformer
   sourceRepository: github.com/gardener/terraformer
-  repository: eu.gcr.io/gardener-project/gardener/terraformer-equinixmetal
+  repository: europe-docker.pkg.dev/gardener-project/releases/gardener/terraformer-equinixmetal
   tag: "v2.23.0"
 - name: cloud-controller-manager
   sourceRepository: github.com/equinix/cloud-provider-equinix-metal
-  repository: eu.gcr.io/gardener-project/3rd/equinix/cloud-provider-equinix-metal
+  repository: europe-docker.pkg.dev/gardener-project/releases/3rd/equinix/cloud-provider-equinix-metal
   tag: v3.6.2
 - name: machine-controller-manager
   sourceRepository: github.com/gardener/machine-controller-manager
-  repository: eu.gcr.io/gardener-project/gardener/machine-controller-manager
+  repository: europe-docker.pkg.dev/gardener-project/releases/gardener/machine-controller-manager
   tag: "v0.50.1"
 - name: machine-controller-manager-provider-equinix-metal
   sourceRepository: github.com/gardener/machine-controller-manager-provider-equinix-metal
-  repository: eu.gcr.io/gardener-project/gardener/machine-controller-manager-provider-equinix-metal
+  repository: europe-docker.pkg.dev/gardener-project/releases/gardener/machine-controller-manager-provider-equinix-metal
   tag: "v0.7.0"
 - name: metabot
   sourceRepository: github.com/packethost/metabot
-  repository: eu.gcr.io/gardener-project/3rd/packethost/metabot
+  repository: europe-docker.pkg.dev/gardener-project/releases/3rd/packethost/metabot
   tag: v1.0.0
 - name: metallb-controller
   sourceRepository: github.com/metallb/metallb
