@@ -21,28 +21,36 @@ import (
 
 	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/util"
-	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/controlplane"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 	eqxcmclient "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal/client"
 )
 
 func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 	const (
-		nodeNetworkEnvVarKey                  = "NODE_NETWORK"
 		equinixMetalPrivateNetworkAnnotations = "metal.equinix.com/network-4-private"
 	)
 
 	// get the private IPs and providerIDs from the shoot nodes
 	_, shootClient, err := util.NewClientForShoot(ctx, w.client, w.worker.Namespace, client.Options{}, extensionsconfig.RESTOptions{})
+	if err != nil {
+		return err
+	}
+
+	credentials, err := equinixmetal.GetCredentialsFromSecretRef(ctx, w.client, w.worker.Spec.SecretRef)
+	if err != nil {
+		return fmt.Errorf("could not get credentials from secret: %v", err)
+	}
+
+	equinixClient, err := eqxcmclient.NewClient(string(credentials.APIToken))
 	if err != nil {
 		return err
 	}
@@ -53,7 +61,7 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 	}
 
 	// go through each node, for each one without the right annotation, get the private network
-	targetCIDRs := sets.NewString()
+	targetCIDRs := sets.New[string]()
 	for _, n := range shootNodes.Items {
 		if n.Annotations[equinixMetalPrivateNetworkAnnotations] == "" {
 			// we didn't have it, so get it from the Equinix Metal API, and save it
@@ -62,7 +70,7 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 				continue
 			}
 
-			nodePrivateNetwork, err := getNodePrivateNetwork(ctx, deviceID, w.client, w.worker.Spec.SecretRef)
+			nodePrivateNetwork, err := GetNodePrivateNetwork(ctx, equinixClient, deviceID)
 			if err != nil {
 				return fmt.Errorf("error getting private network from Equinix Metal API for %s: %v", n.Spec.ProviderID, err)
 			}
@@ -86,62 +94,26 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 		targetCIDRs.Insert(n.Annotations[equinixMetalPrivateNetworkAnnotations])
 	}
 
-	// Check if the `vpn-seed-server` deployment exists. If yes then the ReversedVPN feature gate is enabled in
-	// gardenlet and we have to configure the `vpn-seed` container here. Otherwise, the ReversedVPN feature gate is
-	// disabled and the `vpn-seed` container resides in the `kube-apiserver` deployment.
-	var (
-		vpnSeedContainerName = "vpn-seed-server"
-		deploy               = &appsv1.Deployment{}
-	)
-
-	if err := w.client.Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameVPNSeedServer), deploy); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameVPNSeedServer, err)
-		}
-
-		if err2 := w.client.Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameKubeAPIServer), deploy); err2 != nil {
-			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameKubeAPIServer, err2)
-		}
-		vpnSeedContainerName = "vpn-seed"
+	infra := &extensionsv1alpha1.Infrastructure{}
+	if err := w.client.Get(ctx, kutil.Key(w.worker.Namespace, w.worker.Name), infra); err != nil {
+		return fmt.Errorf("failed to get %s infrastructure: %v", w.worker.Name, err)
 	}
 
-	var (
-		envVarExists  bool
-		envVarChanged bool
+	if infra.Status.NodesCIDR == nil ||
+		controlplane.ParseJoinedNetwork(*infra.Status.NodesCIDR).Equal(targetCIDRs) {
 
-		patch                  = client.StrategicMergeFrom(deploy.DeepCopy())
-		nodeNetworkEnvVarValue = strings.Join(targetCIDRs.List(), ",")
-	)
+		var (
+			patch         = client.StrategicMergeFrom(infra.DeepCopy())
+			joinedNetwork = controlplane.JoinedNetworksCidr(targetCIDRs)
+		)
 
-	for i, ctr := range deploy.Spec.Template.Spec.Containers {
-		if ctr.Name != vpnSeedContainerName {
-			continue
-		}
-
-		for j, env := range ctr.Env {
-			if env.Name != nodeNetworkEnvVarKey {
-				continue
-			}
-
-			envVarExists = true
-
-			if env.Value != nodeNetworkEnvVarValue {
-				deploy.Spec.Template.Spec.Containers[i].Env[j].Value = nodeNetworkEnvVarValue
-				envVarChanged = true
-			}
-		}
-
-		if !envVarExists {
-			deploy.Spec.Template.Spec.Containers[i].Env = append(ctr.Env, corev1.EnvVar{Name: nodeNetworkEnvVarKey, Value: nodeNetworkEnvVarValue})
-			envVarChanged = true
+		infra.Status.NodesCIDR = &joinedNetwork
+		if err := w.client.Patch(ctx, infra, patch); err != nil {
+			return err
 		}
 	}
 
-	if !envVarChanged {
-		return nil
-	}
-
-	return w.client.Patch(ctx, deploy, patch)
+	return controlplane.EnsureNodeNetworkOfVpnSeed(ctx, w.client, w.worker.Namespace, targetCIDRs)
 }
 
 // PreReconcileHook implements genericactuator.WorkerDelegate.
@@ -159,32 +131,25 @@ func (w *workerDelegate) PostDeleteHook(_ context.Context) error {
 	return nil
 }
 
-// getNodePrivateNetwork use the Equinix Metal API to get the CIDR of the private network given a providerID.
-func getNodePrivateNetwork(ctx context.Context, deviceID string, kClient client.Client, secretRef corev1.SecretReference) (string, error) {
-	credentials, err := equinixmetal.GetCredentialsFromSecretRef(ctx, kClient, secretRef)
-	if err != nil {
-		return "", fmt.Errorf("could not get credentials from secret: %v", err)
-	}
-
-	pClient := eqxcmclient.NewClient(string(credentials.APIToken))
-
-	device, err := pClient.DeviceGet(deviceID)
+// GetNodePrivateNetwork use the Equinix Metal API to get the CIDR of the private network given a providerID.
+func GetNodePrivateNetwork(ctx context.Context, equinixClient eqxcmclient.ClientInterface, deviceID string) (string, error) {
+	device, err := equinixClient.GetDevice(ctx, deviceID)
 	if err != nil {
 		return "", err
 	}
 
-	for _, net := range device.Network {
+	for _, net := range device.IpAddresses {
 		// we only want the private, management, ipv4 network
-		if net.Public || !net.Management || net.AddressFamily != 4 {
+		if net.GetPublic() || !net.GetManagement() || net.GetAddressFamily() != 4 {
 			continue
 		}
 
 		parent := net.ParentBlock
-		if parent == nil || parent.Network == "" || parent.CIDR == 0 {
-			return "", fmt.Errorf("no network information provided for private address %s", net.String())
+		if parent == nil || parent.GetNetwork() == "" || parent.GetCidr() == 0 {
+			return "", fmt.Errorf("no network information provided for private address %s", net.GetNetwork())
 		}
 
-		return fmt.Sprintf("%s/%d", parent.Network, parent.CIDR), nil
+		return fmt.Sprintf("%s/%d", parent.GetNetwork(), parent.GetCidr()), nil
 	}
 
 	return "", nil

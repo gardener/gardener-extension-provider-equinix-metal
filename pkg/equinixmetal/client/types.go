@@ -15,11 +15,19 @@
 package client
 
 import (
-	"github.com/packethost/packngo"
+	"context"
+
+	"github.com/equinix/equinix-sdk-go/services/metalv1"
 )
 
 // ClientInterface is an interface which must be implemented by Equinix Metal clients.
 type ClientInterface interface {
-	DeviceGet(id string) (device *packngo.Device, err error)
-	NetworkGet(id string) (addr *packngo.IPAddressReservation, err error)
+	GetDevice(
+		ctx context.Context,
+		deviceID string,
+	) (*metalv1.Device, error)
+	GetNetwork(
+		ctx context.Context,
+		projectID string,
+	) (*metalv1.IPReservationList, error)
 }
