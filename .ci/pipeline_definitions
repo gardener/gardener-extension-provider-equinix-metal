@@ -8,21 +8,21 @@ gardener-extension-provider-equinix-metal:
       publish:
         dockerimages:
           gardener-extension-provider-equinix-metal:
-            registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/extensions/provider-equinix-metal'
+            registry: 'gcp-opensource'
+            image: 'europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/provider-equinix-metal'
             dockerfile: 'Dockerfile'
             target: gardener-extension-provider-equinix-metal
+      component_descriptor:
+        ocm_repository: europe-docker.pkg.dev/gardener-project/snapshots
   jobs:
     head-update:
       traits:
-        component_descriptor: ~
         draft_release: ~
         options:
           public_build_logs: true
     pull-request:
       traits:
         pull-request: ~
-        component_descriptor: ~
         options:
           public_build_logs: true
     release:
@@ -38,9 +38,12 @@ gardener-extension-provider-equinix-metal:
           channel_cfgs:
             internal_scp_workspace:
               channel_name: 'C9CEBQPGE' #sap-tech-gardener
-              slack_cfg_name: 'scp_workspace'
-        component_descriptor: ~
+              slack_cfg_name: 'ti_workspace_writeonly'
+        component_descriptor:
+          ocm_repository: europe-docker.pkg.dev/gardener-project/releases
         publish:
           dockerimages:
             gardener-extension-provider-equinix-metal:
               tag_as_latest: true
+              registry: 'gcp-opensource'
+              image: 'europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/provider-equinix-metal'
