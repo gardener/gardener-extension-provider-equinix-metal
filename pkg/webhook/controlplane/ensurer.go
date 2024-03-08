@@ -16,6 +16,7 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
@@ -26,6 +27,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/machinecontrollermanager"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -36,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
+	eqxcontrolplane "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/controlplane"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
 
@@ -114,8 +117,6 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gconte
 		}
 	}
 
-	keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old, "vpn-seed")
-
 	return controlplane.EnsureSecretChecksumAnnotation(ctx, &new.Spec.Template, e.client, new.Namespace, v1beta1constants.SecretNameCloudProvider)
 }
 
@@ -129,48 +130,24 @@ func (e *ensurer) EnsureKubeControllerManagerDeployment(ctx context.Context, gct
 }
 
 // EnsureVPNSeedServerDeployment ensures that the vpn-seed-server deployment conforms to the provider requirements.
-func (e *ensurer) EnsureVPNSeedServerDeployment(_ context.Context, _ gcontext.GardenContext, new, old *appsv1.Deployment) error {
-	keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old, "vpn-seed-server")
-	return nil
-}
-
-func keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old *appsv1.Deployment, containerName string) {
-	if old == nil {
-		return
+func (e *ensurer) EnsureVPNSeedServerDeployment(ctx context.Context, gCtx gcontext.GardenContext, new, old *appsv1.Deployment) error {
+	cluster, err := gCtx.GetCluster(ctx)
+	if err != nil {
+		return err
 	}
-
-	// Preserve NODE_NETWORK env variable in vpn-seed container. The Worker controller sets this flag at the end of its
-	// reconciliation, however, the kube-apiserver deployment is created earlier, so let's keep the value until the
-	// Worker controller updates it. This is to not trigger avoidable rollouts/restarts.
-	var (
-		newContainer        = extensionswebhook.ContainerWithName(new.Spec.Template.Spec.Containers, containerName)
-		oldVPNSeedContainer = extensionswebhook.ContainerWithName(old.Spec.Template.Spec.Containers, containerName)
-
-		nodeNetworkEnvVarName  = "NODE_NETWORK"
-		nodeNetworkEnvVarValue string
-	)
-
-	if oldVPNSeedContainer != nil {
-		for _, env := range oldVPNSeedContainer.Env {
-			if env.Name == nodeNetworkEnvVarName {
-				nodeNetworkEnvVarValue = env.Value
-				break
-			}
-		}
+	infra := &extensionsv1alpha1.Infrastructure{}
+	if err := e.client.Get(ctx, kutil.Key(new.Namespace, cluster.Shoot.Name), infra); err != nil {
+		return fmt.Errorf("failed to get %s infrastructure: %v", cluster.Shoot.Name, err)
 	}
-
-	if newContainer != nil && nodeNetworkEnvVarValue != "" {
-		for _, env := range newContainer.Env {
-			if env.Name == nodeNetworkEnvVarName && env.Value != nodeNetworkEnvVarValue {
-				return
-			}
-		}
-
-		newContainer.Env = extensionswebhook.EnsureEnvVarWithName(newContainer.Env, corev1.EnvVar{
-			Name:  nodeNetworkEnvVarName,
-			Value: nodeNetworkEnvVarValue,
-		})
+	if infra.Status.NodesCIDR == nil {
+		e.logger.V(2).Info("node cidr not defined")
+		return nil
 	}
+	return eqxcontrolplane.EnsureNodeNetworkOfVpnSeed(
+		ctx,
+		e.client,
+		new.Namespace,
+		eqxcontrolplane.ParseJoinedNetwork(*infra.Status.NodesCIDR))
 }
 
 // EnsureAdditionalUnits ensures that additional required system units are added.
