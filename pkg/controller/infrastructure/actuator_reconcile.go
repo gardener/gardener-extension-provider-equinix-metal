@@ -27,7 +27,13 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, infrastructur
 	return a.reconcile(ctx, log, infrastructure, cluster, terraformer.StateConfigMapInitializerFunc(terraformer.CreateState))
 }
 
-func (a *actuator) reconcile(ctx context.Context, logger logr.Logger, infrastructure *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster, stateInitializer terraformer.StateConfigMapInitializer) error {
+func (a *actuator) reconcile(
+	ctx context.Context,
+	logger logr.Logger,
+	infrastructure *extensionsv1alpha1.Infrastructure,
+	cluster *extensionscontroller.Cluster,
+	stateInitializer terraformer.StateConfigMapInitializer,
+) error {
 	var (
 		terraformConfig = GenerateTerraformInfraConfig(infrastructure)
 		mainTF          bytes.Buffer
@@ -71,7 +77,11 @@ func GenerateTerraformInfraConfig(infrastructure *extensionsv1alpha1.Infrastruct
 	}
 }
 
-func (a *actuator) updateProviderStatus(ctx context.Context, tf terraformer.Terraformer, infrastructure *extensionsv1alpha1.Infrastructure) error {
+func (a *actuator) updateProviderStatus(
+	ctx context.Context,
+	tf terraformer.Terraformer,
+	infrastructure *extensionsv1alpha1.Infrastructure,
+) error {
 	outputVarKeys := []string{
 		equinixmetal.SSHKeyID,
 	}
