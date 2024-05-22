@@ -12,8 +12,6 @@ const (
 	TerraformerImageName = "terraformer"
 	// CloudControllerManagerImageName is the name of the cloud-controller-manager image.
 	CloudControllerManagerImageName = "cloud-controller-manager"
-	// MachineControllerManagerImageName is the name of the MachineControllerManager image.
-	MachineControllerManagerImageName = "machine-controller-manager"
 	// MachineControllerManagerEquinixMetalImageName is the name of the MachineControllerManager EquinixMetal providerimage.
 	MachineControllerManagerEquinixMetalImageName = "machine-controller-manager-provider-equinix-metal"
 	// MetabotImageName is the name of the metabot image.
@@ -33,12 +31,6 @@ const (
 	// SSHKeyID key for accessing SSH key ID from outputs in terraform
 	SSHKeyID = "key_pair_id"
 
-	// MachineControllerManagerName is a constant for the name of the machine-controller-manager.
-	MachineControllerManagerName = "machine-controller-manager"
-	// MachineControllerManagerVpaName is the name of the VerticalPodAutoscaler of the machine-controller-manager deployment.
-	MachineControllerManagerVpaName = "machine-controller-manager-vpa"
-	// MachineControllerManagerMonitoringConfigName is the name of the ConfigMap containing monitoring stack configurations for machine-controller-manager.
-	MachineControllerManagerMonitoringConfigName = "machine-controller-manager-monitoring-config"
 	// CloudControllerManagerName is a constant for the name of the CloudController deployed by the worker controller.
 	CloudControllerManagerName = "cloud-controller-manager"
 )

@@ -7,10 +7,6 @@ images:
   sourceRepository: github.com/equinix/cloud-provider-equinix-metal
   repository: europe-docker.pkg.dev/gardener-project/releases/3rd/equinix/cloud-provider-equinix-metal
   tag: v3.6.2
-- name: machine-controller-manager
-  sourceRepository: github.com/gardener/machine-controller-manager
-  repository: europe-docker.pkg.dev/gardener-project/releases/gardener/machine-controller-manager
-  tag: "v0.50.1"
 - name: machine-controller-manager-provider-equinix-metal
   sourceRepository: github.com/gardener/machine-controller-manager-provider-equinix-metal
   repository: europe-docker.pkg.dev/gardener-project/releases/gardener/machine-controller-manager-provider-equinix-metal
