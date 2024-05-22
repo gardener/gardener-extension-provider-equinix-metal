@@ -89,9 +89,11 @@ var _ = Describe("Machines", func() {
 				machineImageVersion string
 				machineImage        string
 
-				machineType string
-				sshKeyID    string
-				userData    = []byte("some-user-data")
+				machineType           string
+				sshKeyID              string
+				userData              []byte
+				userDataSecretName    string
+				userDataSecretDataKey string
 
 				namePool1           string
 				minPool1            int32
@@ -134,6 +136,8 @@ var _ = Describe("Machines", func() {
 				machineType = "large"
 				sshKeyID = "1-2-3-4"
 				userData = []byte("some-user-data")
+				userDataSecretName = "userdata-secret-name"
+				userDataSecretDataKey = "userdata-secret-key"
 
 				namePool1 = "pool-1"
 				minPool1 = 5
@@ -221,7 +225,10 @@ var _ = Describe("Machines", func() {
 									Name:    machineImageName,
 									Version: machineImageVersion,
 								},
-								UserData: userData,
+								UserDataSecretRef: &corev1.SecretKeySelector{
+									LocalObjectReference: corev1.LocalObjectReference{Name: userDataSecretName},
+									Key:                  userDataSecretDataKey,
+								},
 								Zones: []string{
 									facility1,
 									facility2,
@@ -238,6 +245,8 @@ var _ = Describe("Machines", func() {
 									Name:    machineImageName,
 									Version: machineImageVersion,
 								},
+								// TODO: Use UserDataSecretRef like in first pool once this field got removed from the
+								//  API.
 								UserData: userData,
 							},
 						},
@@ -249,6 +258,15 @@ var _ = Describe("Machines", func() {
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages)
 			})
+
+			expectGetUserDataSecretCallToWork := func() {
+				c.EXPECT().Get(ctx, client.ObjectKey{Namespace: namespace, Name: userDataSecretName}, gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(
+					func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret, _ ...client.GetOption) error {
+						secret.Data = map[string][]byte{userDataSecretDataKey: userData}
+						return nil
+					},
+				)
+			}
 
 			Describe("machine images", func() {
 				var (
@@ -324,6 +342,7 @@ var _ = Describe("Machines", func() {
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
 					expectGetSecretCallToWork(c, apiToken, projectID)
+					expectGetUserDataSecretCallToWork()
 
 					// Test workerDelegate.DeployMachineClasses()
 
@@ -383,6 +402,7 @@ var _ = Describe("Machines", func() {
 					machineClasses["machineClasses"].([]map[string]interface{})[1]["reservedDevicesOnly"] = reservedDevicesOnly
 
 					expectGetSecretCallToWork(c, apiToken, projectID)
+					expectGetUserDataSecretCallToWork()
 
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
@@ -459,6 +479,8 @@ var _ = Describe("Machines", func() {
 				}
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
+
+				expectGetUserDataSecretCallToWork()
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				resultSettings := result[0].MachineConfiguration
