@@ -10,22 +10,18 @@ import (
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
-	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	gardener "github.com/gardener/gardener/pkg/client/kubernetes"
-	"github.com/gardener/gardener/pkg/utils/chart"
-	imagevectorutils "github.com/gardener/gardener/pkg/utils/imagevector"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/helper"
-	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
 
 type delegateFactory struct {
@@ -35,36 +31,19 @@ type delegateFactory struct {
 }
 
 // NewActuator creates a new Actuator that updates the status of the handled WorkerPoolConfigs.
-func NewActuator(mgr manager.Manager, gardenletManagesMCM bool) (worker.Actuator, error) {
+func NewActuator(mgr manager.Manager, gardenCluster cluster.Cluster) worker.Actuator {
 	var (
-		mcmName              string
-		mcmChartSeed         *chart.Chart
-		mcmChartShoot        *chart.Chart
-		imageVector          imagevectorutils.ImageVector
-		chartRendererFactory extensionscontroller.ChartRendererFactory
-		workerDelegate       = &delegateFactory{
+		workerDelegate = &delegateFactory{
 			client:     mgr.GetClient(),
 			restConfig: mgr.GetConfig(),
 			scheme:     mgr.GetScheme(),
 		}
 	)
 
-	if !gardenletManagesMCM {
-		mcmName = equinixmetal.MachineControllerManagerName
-		mcmChartSeed = mcmChart
-		mcmChartShoot = mcmShootChart
-		imageVector = imagevector.ImageVector()
-		chartRendererFactory = extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot)
-	}
-
 	return genericactuator.NewActuator(
 		mgr,
+		gardenCluster,
 		workerDelegate,
-		mcmName,
-		mcmChartSeed,
-		mcmChartShoot,
-		imageVector,
-		chartRendererFactory,
 		nil,
 	)
 }

@@ -22,8 +22,6 @@ import (
 
 var (
 	logger = log.Log.WithName("equinix-metal-controlplane-webhook")
-	// GardenletManagesMCM specifies whether the machine-controller-manager should be managed.
-	GardenletManagesMCM bool
 )
 
 // AddToManager creates a webhook and adds it to the manager.
@@ -43,9 +41,7 @@ func AddToManager(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 			client: mgr.GetClient(),
 			delegateMutator: genericmutator.NewMutator(
 				mgr,
-				NewEnsurer(mgr.GetClient(),
-					logger,
-					GardenletManagesMCM),
+				NewEnsurer(mgr.GetClient(), logger),
 				utils.NewUnitSerializer(),
 				kubelet.NewConfigCodec(fciCodec),
 				fciCodec,

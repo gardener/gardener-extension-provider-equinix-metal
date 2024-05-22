@@ -15,14 +15,14 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/component/machinecontrollermanager"
+	"github.com/gardener/gardener/pkg/component/nodemanagement/machinecontrollermanager"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
@@ -30,19 +30,17 @@ import (
 )
 
 // NewEnsurer creates a new controlplane ensurer.
-func NewEnsurer(client client.Client, logger logr.Logger, gardenletManagesMCM bool) genericmutator.Ensurer {
+func NewEnsurer(client client.Client, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
-		logger:              logger.WithName("equinix-metal-controlplane-ensurer"),
-		client:              client,
-		gardenletManagesMCM: gardenletManagesMCM,
+		logger: logger.WithName("equinix-metal-controlplane-ensurer"),
+		client: client,
 	}
 }
 
 type ensurer struct {
 	genericmutator.NoopEnsurer
-	client              client.Client
-	logger              logr.Logger
-	gardenletManagesMCM bool
+	client client.Client
+	logger logr.Logger
 }
 
 // ImageVector is exposed for testing.
@@ -50,10 +48,6 @@ var ImageVector = imagevector.ImageVector()
 
 // EnsureMachineControllerManagerDeployment ensures that the machine-controller-manager deployment conforms to the provider requirements.
 func (e *ensurer) EnsureMachineControllerManagerDeployment(_ context.Context, _ gcontext.GardenContext, newObj, _ *appsv1.Deployment) error {
-	if !e.gardenletManagesMCM {
-		return nil
-	}
-
 	image, err := ImageVector.FindImage(equinixmetal.MachineControllerManagerEquinixMetalImageName)
 	if err != nil {
 		return err
@@ -68,10 +62,6 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(_ context.Context, _ 
 
 // EnsureMachineControllerManagerVPA ensures that the machine-controller-manager VPA conforms to the provider requirements.
 func (e *ensurer) EnsureMachineControllerManagerVPA(_ context.Context, _ gcontext.GardenContext, newObj, _ *vpaautoscalingv1.VerticalPodAutoscaler) error {
-	if !e.gardenletManagesMCM {
-		return nil
-	}
-
 	var (
 		minAllowed = corev1.ResourceList{}
 		maxAllowed = corev1.ResourceList{
@@ -93,13 +83,9 @@ func (e *ensurer) EnsureMachineControllerManagerVPA(_ context.Context, _ gcontex
 
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the provider requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gcontext.GardenContext, new, old *appsv1.Deployment) error {
-	cluster, err := gctx.GetCluster(ctx)
-	if err != nil {
-		return err
-	}
 	ps := &new.Spec.Template.Spec
 	if c := extensionswebhook.ContainerWithName(ps.Containers, "kube-apiserver"); c != nil {
-		if err := ensureKubeAPIServerCommandLineArgs(c, cluster.Shoot.Spec.Kubernetes.Version); err != nil {
+		if err := ensureKubeAPIServerCommandLineArgs(c); err != nil {
 			return err
 		}
 	}
@@ -164,11 +150,12 @@ func keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old *appsv1.Deployment, 
 }
 
 // EnsureAdditionalUnits ensures that additional required system units are added.
-func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
-	var (
-		command      = "start"
-		trueVar      = true
-		bgpRouteUnit = `[Unit]
+func (e *ensurer) EnsureAdditionalUnits(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
+	extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+		Name:    "bgp-peer-route.service",
+		Enable:  ptr.To(true),
+		Command: ptr.To(extensionsv1alpha1.CommandStart),
+		Content: ptr.To(`[Unit]
 Description=Routes to BGP peers
 After=network.target
 Wants=network.target
@@ -178,20 +165,13 @@ WantedBy=kubelet.service
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/opt/bin/bgp-peer.sh
-`
-	)
-
-	extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
-		Name:    "bgp-peer-route.service",
-		Enable:  &trueVar,
-		Command: &command,
-		Content: &bgpRouteUnit,
+`),
 	})
 	return nil
 }
 
 // EnsureAdditionalFiles ensures that additional required system files are added.
-func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
+func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
 	var (
 		permissions       int32 = 0755
 		customFileContent       = `#!/bin/sh
@@ -228,7 +208,7 @@ func appendUniqueFile(files *[]extensionsv1alpha1.File, file extensionsv1alpha1.
 	*files = append(resFiles, file)
 }
 
-func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion string) error {
+func ensureKubeAPIServerCommandLineArgs(c *corev1.Container) error {
 	// Ensure CSI-related admission plugins
 	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--enable-admission-plugins=",
 		"PersistentVolumeLabel", ",")
@@ -268,7 +248,7 @@ func ensureKubeletCommandLineArgs(command []string) []string {
 
 // EnsureKubeletConfiguration ensures that the kubelet configuration conforms to the provider requirements.
 func (e *ensurer) EnsureKubeletConfiguration(_ context.Context, _ gcontext.GardenContext, _ *semver.Version, new, _ *kubeletconfigv1beta1.KubeletConfiguration) error {
-	new.EnableControllerAttachDetach = pointer.Bool(true)
+	new.EnableControllerAttachDetach = ptr.To(true)
 
 	return nil
 }

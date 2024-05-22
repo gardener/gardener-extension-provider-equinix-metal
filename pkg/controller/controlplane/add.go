@@ -6,7 +6,6 @@ package controlplane
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
@@ -15,7 +14,6 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/util"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
@@ -41,16 +39,11 @@ type AddOptions struct {
 // AddToManagerWithOptions adds a controller with the given Options to the given manager.
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddOptions) error {
-	webhookServer := mgr.GetWebhookServer()
-	defaultServer, ok := webhookServer.(*webhook.DefaultServer)
-	if !ok {
-		return fmt.Errorf("expected *webhook.DefaultServer, got %T", webhookServer)
-	}
 	actuator, err := genericactuator.NewActuator(mgr, equinixmetal.Name,
 		nil, shootAccessSecretsFunc, nil, nil,
 		nil, controlPlaneChart, controlPlaneShootChart, nil, storageClassChart, nil,
 		NewValuesProvider(mgr), extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
-		imagevector.ImageVector(), "", opts.ShootWebhookConfig, opts.WebhookServerNamespace, int32(defaultServer.Options.Port))
+		imagevector.ImageVector(), "", opts.ShootWebhookConfig, opts.WebhookServerNamespace)
 	if err != nil {
 		return err
 	}
