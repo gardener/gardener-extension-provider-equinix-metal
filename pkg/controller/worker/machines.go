@@ -87,6 +87,11 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			IPXEScriptURL: machineImage.IPXEScriptURL,
 		})
 
+		userData, err := worker.FetchUserData(ctx, w.client, w.worker.Namespace, pool)
+		if err != nil {
+			return err
+		}
+
 		machineClassSpec := map[string]interface{}{
 			"OS":            machineImage.ID,
 			"ipxeScriptUrl": machineImage.IPXEScriptURL,
@@ -100,7 +105,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 				"kubernetes.io/role/node",
 			},
 			"secret": map[string]interface{}{
-				"cloudConfig": string(pool.UserData),
+				"cloudConfig": string(userData),
 			},
 			"credentialsSecretRef": map[string]interface{}{
 				"name":      w.worker.Spec.SecretRef.Name,
