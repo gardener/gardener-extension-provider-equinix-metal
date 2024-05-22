@@ -20,7 +20,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	mockkubernetes "github.com/gardener/gardener/pkg/client/kubernetes/mock"
-	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
+	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -72,18 +72,6 @@ var _ = Describe("Machines", func() {
 	Context("workerDelegate", func() {
 		BeforeEach(func() {
 			workerDelegate, _ = NewWorkerDelegate(nil, scheme, nil, "", nil, nil)
-		})
-
-		Describe("#MachineClassKind", func() {
-			It("should return the correct kind of the machine class", func() {
-				Expect(workerDelegate.MachineClassKind()).To(Equal("MachineClass"))
-			})
-		})
-
-		Describe("#MachineClassList", func() {
-			It("should return the correct type for the machine class list", func() {
-				Expect(workerDelegate.MachineClassList()).To(Equal(&machinev1alpha1.MachineClassList{}))
-			})
 		})
 
 		Describe("#GenerateMachineDeployments, #DeployMachineClasses", func() {
@@ -298,8 +286,8 @@ var _ = Describe("Machines", func() {
 						machineClassWithHashPool2 = fmt.Sprintf("%s-%s", machineClassNamePool2, workerPoolHash2)
 					)
 
-					addNameAndSecretToMachineClass(machineClassPool1, apiToken, machineClassWithHashPool1, w.Spec.SecretRef)
-					addNameAndSecretToMachineClass(machineClassPool2, apiToken, machineClassWithHashPool2, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool1, machineClassWithHashPool1, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool2, machineClassWithHashPool2, w.Spec.SecretRef)
 
 					machineClassPool1["facilities"] = []string{facility1, facility2}
 
@@ -531,10 +519,10 @@ func copyMachineClass(def map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-func addNameAndSecretToMachineClass(class map[string]interface{}, apiToken, name string, credentialsSecretRef corev1.SecretReference) {
+func addNameAndSecretToMachineClass(class map[string]interface{}, name string, credentialsSecretRef corev1.SecretReference) {
 	class["name"] = name
 	class["labels"] = map[string]string{
-		v1beta1constants.GardenerPurpose: genericworkeractuator.GardenPurposeMachineClass,
+		v1beta1constants.GardenerPurpose: v1beta1constants.GardenPurposeMachineClass,
 	}
 	class["credentialsSecretRef"] = map[string]interface{}{
 		"name":      credentialsSecretRef.Name,

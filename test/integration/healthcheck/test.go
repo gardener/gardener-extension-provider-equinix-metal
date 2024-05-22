@@ -33,7 +33,6 @@ import (
 	"time"
 
 	genericcontrolplaneactuator "github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
-	genericworkeractuator "github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/test/framework"
@@ -56,7 +55,6 @@ var _ = ginkgo.Describe("integration test: health checks", func() {
 	f := createShootFramework()
 
 	ginkgo.Context("ControlPlane", func() {
-
 		ginkgo.Context("Condition type: ShootControlPlaneHealthy", func() {
 			f.Serial().Release().CIt(fmt.Sprintf("ControlPlane CRD should contain unhealthy condition because the deployment '%s' cannot be found in the shoot namespace in the seed", equinixmetal.CloudControllerManagerName), func(ctx context.Context) {
 				err := healthcheckoperation.ControlPlaneHealthCheckDeleteSeedDeployment(ctx, f, f.Shoot.GetName(), equinixmetal.CloudControllerManagerName, gardencorev1beta1.ShootControlPlaneHealthy)
@@ -73,21 +71,6 @@ var _ = ginkgo.Describe("integration test: health checks", func() {
 	})
 
 	ginkgo.Context("Worker", func() {
-
-		ginkgo.Context("Condition type: ShootControlPlaneHealthy", func() {
-			f.Serial().Release().CIt(fmt.Sprintf("Worker CRD should contain unhealthy condition because the deployment '%s' cannot be found in the shoot namespace in the seed", equinixmetal.MachineControllerManagerName), func(ctx context.Context) {
-				err := healthcheckoperation.WorkerHealthCheckDeleteSeedDeployment(ctx, f, f.Shoot.GetName(), equinixmetal.MachineControllerManagerName, gardencorev1beta1.ShootControlPlaneHealthy)
-				framework.ExpectNoError(err)
-			}, timeout)
-		})
-
-		ginkgo.Context("Condition type: ShootSystemComponentsHealthy", func() {
-			f.Serial().Release().CIt(fmt.Sprintf("Worker CRD should contain unhealthy condition due to ManagedResource ('%s') unhealthy", genericworkeractuator.McmShootResourceName), func(ctx context.Context) {
-				err := healthcheckoperation.WorkerHealthCheckWithManagedResource(ctx, setupContextTimeout, f, genericworkeractuator.McmShootResourceName, gardencorev1beta1.ShootSystemComponentsHealthy)
-				framework.ExpectNoError(err)
-			}, timeout)
-		})
-
 		ginkgo.Context("Condition type: ShootEveryNodeReady", func() {
 			f.Serial().Release().CIt("Worker CRD should contain unhealthy condition because not enough machines are available", func(ctx context.Context) {
 				err := healthcheckoperation.MachineDeletionHealthCheck(ctx, f)

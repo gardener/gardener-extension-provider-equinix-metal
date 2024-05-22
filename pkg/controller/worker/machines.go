@@ -14,28 +14,11 @@ import (
 	genericworkeractuator "github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
-
-// MachineClassKind yields the name of the machine class.
-func (w *workerDelegate) MachineClassKind() string {
-	return "MachineClass"
-}
-
-// MachineClass yields a newly initialized machine class object.
-func (w *workerDelegate) MachineClass() client.Object {
-	return &machinev1alpha1.MachineClass{}
-}
-
-// MachineClassList yields a newly initialized MachineClassList object.
-func (w *workerDelegate) MachineClassList() client.ObjectList {
-	return &machinev1alpha1.MachineClassList{}
-}
 
 // DeployMachineClasses generates and creates the Equinix Metal specific machine classes.
 func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
@@ -158,7 +141,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 
 		machineClassSpec["name"] = className
 		machineClassSpec["labels"] = map[string]string{
-			v1beta1constants.GardenerPurpose: genericworkeractuator.GardenPurposeMachineClass,
+			v1beta1constants.GardenerPurpose: v1beta1constants.GardenPurposeMachineClass,
 		}
 
 		machineClasses = append(machineClasses, machineClassSpec)
