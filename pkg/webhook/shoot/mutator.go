@@ -36,10 +36,6 @@ func (m *mutator) Mutate(ctx context.Context, new, _ client.Object) error {
 		return nil
 	}
 
-	if deployment.GetName() == "vpn-shoot" {
-		extensionswebhook.LogMutation(logger, deployment.Kind, deployment.Namespace, deployment.Name)
-		return m.mutateVPNShootDeployment(ctx, deployment)
-	}
-
-	return nil
+	extensionswebhook.LogMutation(logger, deployment.Kind, deployment.Namespace, deployment.Name)
+	return m.mutateVPNShootDeployment(ctx, deployment)
 }
