@@ -23,7 +23,7 @@ const (
 	nodeNetworkFile          = "nodeNetwork"
 )
 
-func (m *mutator) mutateVPNShootDeployment(ctx context.Context, deployment *appsv1.Deployment) error {
+func (m *mutator) mutateVPNShootDeployment(_ context.Context, deployment *appsv1.Deployment) error {
 	metabotImage, err := imagevector.ImageVector().FindImage(equinixmetal.MetabotImageName)
 	if err != nil {
 		return err
