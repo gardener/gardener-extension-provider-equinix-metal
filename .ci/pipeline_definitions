@@ -1,4 +1,16 @@
 gardener-extension-provider-equinix-metal:
+  templates: 
+    helmcharts:
+    - &provider-equinix-metal
+      name: provider-equinix-metal
+      dir: charts/gardener-extension-provider-equinix-metal
+      registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
+      mappings:
+      - ref: ocm-resource:gardener-extension-provider-equinix-metal.repository
+        attribute: image.repository
+      - ref: ocm-resource:gardener-extension-provider-equinix-metal.tag
+        attribute: image.tag
+
   template: 'default'
   base_definition:
     repo: ~
@@ -20,11 +32,15 @@ gardener-extension-provider-equinix-metal:
         draft_release: ~
         options:
           public_build_logs: true
+        helmcharts:
+          - *provider-equinix-metal
     pull-request:
       traits:
         pull-request: ~
         options:
           public_build_logs: true
+        helmcharts:
+          - *provider-equinix-metal
     release:
       traits:
         version:
@@ -47,3 +63,6 @@ gardener-extension-provider-equinix-metal:
               tag_as_latest: true
               registry: 'gcp-opensource'
               image: 'europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/provider-equinix-metal'
+          helmcharts:
+          - <<: *provider-equinix-metal
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
