@@ -12,7 +12,6 @@ import (
 	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -84,12 +83,12 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 		deploy               = &appsv1.Deployment{}
 	)
 
-	if err := w.client.Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameVPNSeedServer), deploy); err != nil {
+	if err := w.client.Get(ctx, client.ObjectKey{Namespace: w.worker.Namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer}, deploy); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameVPNSeedServer, err)
 		}
 
-		if err2 := w.client.Get(ctx, kutil.Key(w.worker.Namespace, v1beta1constants.DeploymentNameKubeAPIServer), deploy); err2 != nil {
+		if err2 := w.client.Get(ctx, client.ObjectKey{Namespace: w.worker.Namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer}, deploy); err2 != nil {
 			return fmt.Errorf("failed to get %s deployment: %v", v1beta1constants.DeploymentNameKubeAPIServer, err2)
 		}
 		vpnSeedContainerName = "vpn-seed"

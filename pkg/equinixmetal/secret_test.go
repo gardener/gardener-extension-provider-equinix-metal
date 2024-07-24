@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -48,7 +47,7 @@ var _ = Describe("Secret", func() {
 		It("should return an error because secret could not be read", func() {
 			fakeErr := errors.New("error")
 
-			c.EXPECT().Get(ctx, kutil.Key(namespace, name), gomock.AssignableToTypeOf(&corev1.Secret{})).Return(fakeErr)
+			c.EXPECT().Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(fakeErr)
 
 			credentials, err := GetCredentialsFromSecretRef(ctx, c, secretRef)
 
@@ -62,7 +61,7 @@ var _ = Describe("Secret", func() {
 				projectID = []byte("bar")
 			)
 
-			c.EXPECT().Get(ctx, kutil.Key(namespace, name), gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret, _ ...client.GetOption) error {
+			c.EXPECT().Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret, _ ...client.GetOption) error {
 				secret.Data = map[string][]byte{
 					APIToken:  apiToken,
 					ProjectID: projectID,
