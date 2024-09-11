@@ -1,7 +1,7 @@
 # [Gardener Extension for Equinix Metal provider](https://gardener.cloud)
 
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/gardener-extension-provider-equinix-metal)](https://api.reuse.software/info/github.com/gardener/gardener-extension-provider-equinix-metal)
-[![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job)
+[![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener-public/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener-public/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gardener/gardener-extension-provider-equinix-metal)](https://goreportcard.com/report/github.com/gardener/gardener-extension-provider-equinix-metal)
 
 Project Gardener implements the automated management and operation of [Kubernetes](https://kubernetes.io/) clusters as a service.
