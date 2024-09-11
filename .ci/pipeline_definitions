@@ -1,5 +1,5 @@
 gardener-extension-provider-equinix-metal:
-  templates: 
+  templates:
     helmcharts:
     - &provider-equinix-metal
       name: provider-equinix-metal
@@ -32,15 +32,17 @@ gardener-extension-provider-equinix-metal:
         draft_release: ~
         options:
           public_build_logs: true
-        helmcharts:
-          - *provider-equinix-metal
+        publish:
+          helmcharts:
+          - <<: *provider-equinix-metal
     pull-request:
       traits:
         pull-request: ~
         options:
           public_build_logs: true
-        helmcharts:
-          - *provider-equinix-metal
+        publish:
+          helmcharts:
+          - <<: *provider-equinix-metal
     release:
       traits:
         version:
