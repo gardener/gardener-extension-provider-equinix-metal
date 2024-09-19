@@ -6,7 +6,6 @@ package controlplane
 
 import (
 	"context"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -147,6 +146,133 @@ func keepNodeNetworkEnvVarIfPresentInOldDeployment(new, old *appsv1.Deployment, 
 			Value: nodeNetworkEnvVarValue,
 		})
 	}
+}
+
+// EnsureAdditionalProvisionUnits ensures that additional required system units are added, that are required during provisioning.
+func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
+
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+		if worker.DataVolumes != nil {
+			switch worker.Machine.Image.Name {
+			case "flatcar":
+				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+					Name:    "lvm-setup.service",
+					Enable:  ptr.To(true),
+					Command: ptr.To(extensionsv1alpha1.CommandStart),
+					Content: ptr.To(`[Unit]
+        Description=LVM Setup
+        ConditionFirstBoot=yes
+        DefaultDependencies=no
+        Before=local-fs-pre.target
+        [Service]
+        Type=oneshot
+        Restart=on-failure
+        RemainAfterExit=yes
+        ExecStart=/opt/bin/lvm.sh
+        [Install]
+        WantedBy=multi-user.target
+`),
+				})
+
+				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+					Name:    "var-lib-docker.mount",
+					Enable:  ptr.To(true),
+					Command: ptr.To(extensionsv1alpha1.CommandStart),
+					Content: ptr.To(`[Unit]
+        Description=Mount LVM to docker dir
+        After=lvm-setup.service
+        Before=docker.service
+        [Mount]
+        What=/dev/vg-docker/vol_docker
+        Where=/var/lib/docker
+        Type=ext4
+        Options=defaults
+        [Install]
+        WantedBy=local-fs.target
+`),
+				})
+
+				return nil
+			}
+
+		}
+	}
+	return nil
+}
+
+// EnsureAdditionalProvisionFiles ensures that additional required system files are added, that are required during provisioning.
+func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+		if worker.DataVolumes != nil {
+			switch worker.Machine.Image.Name {
+			case "flatcar":
+
+				var (
+					permissions       int32 = 0755
+					customFileContent       = `#!/bin/bash
+          set -euo pipefail
+
+
+          # Function to find all disks
+          find_volumes(){
+            lsblk -d -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}'
+          }
+
+          create_pvs() {
+            disks=$(find_volumes)
+            usable_disks=""
+
+            for disk in $disks; do
+              if pvcreate -y $disk 2>&1 | grep -q "successfully created"; then
+                usable_disks="$usable_disks $disk"
+              fi
+            done
+
+            echo $usable_disks
+          }
+
+          # Get the list of usable disks
+          usable_disks=$(create_pvs)
+
+          # Create Physical Volumes
+          pvcreate ${usable_disks}
+
+          # Create Volume Group
+          vgcreate vg-docker ${usable_disks}
+
+          # Create Logical Volume for data
+          lvcreate -n vol_docker -l 100%FREE vg-docker
+
+          # Format the data volume with ext4 filesystem
+          mkfs.ext4 /dev/vg-docker/vol_docker
+`
+				)
+
+				appendUniqueFile(new, extensionsv1alpha1.File{
+					Path:        "/opt/bin/lvm.sh",
+					Permissions: &permissions,
+					Content: extensionsv1alpha1.FileContent{
+						Inline: &extensionsv1alpha1.FileContentInline{
+							Encoding: "",
+							Data:     customFileContent,
+						},
+					},
+				})
+				return nil
+			}
+		}
+	}
+	return nil
 }
 
 // EnsureAdditionalUnits ensures that additional required system units are added.
