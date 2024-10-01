@@ -18,6 +18,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
+	"github.com/gardener/gardener/pkg/utils/version"
 	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -67,6 +68,20 @@ var _ = Describe("Ensurer", func() {
 				},
 			},
 		)
+		eContextK8s131 = gcontext.NewInternalGardenContext(
+			&extensionscontroller.Cluster{
+				Shoot: &gardencorev1beta1.Shoot{
+					Spec: gardencorev1beta1.ShootSpec{
+						Kubernetes: gardencorev1beta1.Kubernetes{
+							Version: "1.31.0",
+						},
+					},
+					Status: gardencorev1beta1.ShootStatus{
+						TechnicalID: namespace,
+					},
+				},
+			},
+		)
 
 		secretKey = client.ObjectKey{Namespace: namespace, Name: v1beta1constants.SecretNameCloudProvider}
 		secret    = &corev1.Secret{
@@ -90,100 +105,102 @@ var _ = Describe("Ensurer", func() {
 	})
 
 	Describe("#EnsureKubeAPIServerDeployment", func() {
-		It("should add missing elements to kube-apiserver deployment", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-									},
+		var (
+			dep     *appsv1.Deployment
+			ensurer genericmutator.Ensurer
+		)
+
+		BeforeEach(func() {
+			dep = &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "kube-apiserver",
 								},
 							},
 						},
 					},
-				}
-			)
+				},
+			}
 
+			ensurer = NewEnsurer(c, logger)
+		})
+
+		It("should add missing elements to kube-apiserver deployment (k8s < 1.31)", func() {
 			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			ensurer := NewEnsurer(c, logger)
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 		})
 
+		It("should add missing elements to kube-apiserver deployment (k8s >= 1.31)", func() {
+			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s131, dep, nil)
+			Expect(err).To(Not(HaveOccurred()))
+			checkKubeAPIServerDeployment(dep, "1.31.0", annotations)
+		})
+
 		It("should modify existing elements of kube-apiserver deployment", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-										Command: []string{
-											"--enable-admission-plugins=Priority,PersistentVolumeLabel",
-											"--disable-admission-plugins=",
-											"--feature-gates=Foo=true",
-										},
+			dep = &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "kube-apiserver",
+									Command: []string{
+										"--enable-admission-plugins=Priority,PersistentVolumeLabel",
+										"--disable-admission-plugins=",
+										"--feature-gates=Foo=true",
 									},
 								},
 							},
 						},
 					},
-				}
-			)
+				},
+			}
 
 			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			ensurer := NewEnsurer(c, logger)
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 		})
 
 		It("should keep the NODE_NETWORK env variable in the kube-apiserver deployment if its value does not change", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-									},
-									{
-										Name: "vpn-seed",
-									},
+			dep = &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "kube-apiserver",
+								},
+								{
+									Name: "vpn-seed",
 								},
 							},
 						},
 					},
-				}
-				oldDep            = dep.DeepCopy()
-				nodeNetworkEnvVar = corev1.EnvVar{
-					Name:  "NODE_NETWORK",
-					Value: "foobar",
-				}
-			)
+				},
+			}
+			oldDep := dep.DeepCopy()
+			nodeNetworkEnvVar := corev1.EnvVar{
+				Name:  "NODE_NETWORK",
+				Value: "foobar",
+			}
 
 			oldDep.Spec.Template.Spec.Containers[1].Env = []corev1.EnvVar{nodeNetworkEnvVar}
 
 			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			ensurer := NewEnsurer(c, logger)
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
@@ -194,39 +211,34 @@ var _ = Describe("Ensurer", func() {
 		})
 
 		It("should not keep the NODE_NETWORK env variable in the kube-apiserver deployment if its value changes", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-									},
-									{
-										Name: "vpn-seed",
-										Env: []corev1.EnvVar{{
-											Name:  "NODE_NETWORK",
-											Value: "foobar",
-										}},
-									},
+			dep = &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "kube-apiserver",
+								},
+								{
+									Name: "vpn-seed",
+									Env: []corev1.EnvVar{{
+										Name:  "NODE_NETWORK",
+										Value: "foobar",
+									}},
 								},
 							},
 						},
 					},
-				}
-				oldDep   = dep.DeepCopy()
-				newValue = "barfoo"
-			)
+				},
+			}
+			oldDep := dep.DeepCopy()
+			newValue := "barfoo"
 
 			dep.Spec.Template.Spec.Containers[1].Env[0].Value = newValue
 
 			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			ensurer := NewEnsurer(c, logger)
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
@@ -261,7 +273,6 @@ var _ = Describe("Ensurer", func() {
 
 			ensurer := NewEnsurer(c, logger)
 
-			// Call EnsureKubeControllerManagerDeployment method and check the result
 			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeControllerManagerDeployment(dep)
@@ -290,7 +301,6 @@ var _ = Describe("Ensurer", func() {
 
 			ensurer := NewEnsurer(c, logger)
 
-			// Call EnsureKubeControllerManagerDeployment method and check the result
 			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeControllerManagerDeployment(dep)
@@ -325,7 +335,6 @@ var _ = Describe("Ensurer", func() {
 
 			ensurer := NewEnsurer(c, logger)
 
-			// Call EnsureVPNSeedServerDeployment method and check the result
 			err := ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -362,7 +371,6 @@ var _ = Describe("Ensurer", func() {
 
 			ensurer := NewEnsurer(c, logger)
 
-			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -399,7 +407,6 @@ var _ = Describe("Ensurer", func() {
 
 			ensurer := NewEnsurer(c, logger)
 
-			// Call EnsureKubeletServiceUnitOptions method and check the result
 			opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, nil, oldUnitOptions, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(opts).To(Equal(newUnitOptions))
@@ -423,7 +430,6 @@ var _ = Describe("Ensurer", func() {
 
 			ensurer := NewEnsurer(c, logger)
 
-			// Call EnsureKubeletConfiguration method and check the result
 			kubeletConfig := *oldKubeletConfig
 			err := ensurer.EnsureKubeletConfiguration(ctx, dummyContext, nil, &kubeletConfig, nil)
 			Expect(err).To(Not(HaveOccurred()))
@@ -522,13 +528,17 @@ var _ = Describe("Ensurer", func() {
 })
 
 func checkKubeAPIServerDeployment(dep *appsv1.Deployment, k8sVersion string, annotations map[string]string) {
+	k8sVersionAtLeast131, _ := version.CompareVersions(k8sVersion, ">=", "1.31")
 
 	// Check that the kube-apiserver container still exists and contains all needed command line args,
 	// env vars, and volume mounts
 	c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "kube-apiserver")
 	Expect(c).To(Not(BeNil()))
-	Expect(c.Command).To(Not(test.ContainElementWithPrefixContaining("--enable-admission-plugins=", "PersistentVolumeLabel", ",")))
-	Expect(c.Command).To(test.ContainElementWithPrefixContaining("--disable-admission-plugins=", "PersistentVolumeLabel", ","))
+
+	if !k8sVersionAtLeast131 {
+		Expect(c.Command).To(Not(test.ContainElementWithPrefixContaining("--enable-admission-plugins=", "PersistentVolumeLabel", ",")))
+		Expect(c.Command).To(test.ContainElementWithPrefixContaining("--disable-admission-plugins=", "PersistentVolumeLabel", ","))
+	}
 
 	// Check that the Pod template contains all needed checksum annotations
 	Expect(dep.Spec.Template.Annotations).To(Equal(annotations))
