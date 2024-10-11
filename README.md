@@ -52,6 +52,22 @@ certain conditions:
 
 Feedback and contributions are always welcome. Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/gardener-extension-provider-equinix-metal/issues) or join our [Slack channel #gardener](https://kubernetes.slack.com/messages/gardener) (please invite yourself to the Kubernetes workspace [here](http://slack.k8s.io)).
 
+## Contributing
+We appreciate contributions, but you need to follow certain processes:
+
+### Process
+To contribute, please open an issue, follow the template and describe what
+you'd like to do.
+
+For smaller fixes, you can usually start work already, for bigger changes,
+please wait for a maintainer to get back to you on the issue.
+
+### Technical
+Please make sure that your code is tested.
+
+Make sure to run `make generate` and add the generated files to your commit as 
+otherwise the tests will most likely fail.
+
 ## Learn more!
 
 Please find further resources about out project here:
