@@ -6,6 +6,7 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
 	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -156,15 +157,9 @@ func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcont
 		return err
 	}
 
-	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-		if worker.DataVolumes != nil {
-			switch worker.Machine.Image.Name {
-			case "flatcar":
-				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
-					Name:    "lvm-setup.service",
-					Enable:  ptr.To(true),
-					Command: ptr.To(extensionsv1alpha1.CommandStart),
-					Content: ptr.To(`[Unit]
+	// Define LVM setup unit
+	var lvmSetup = `
+[Unit]
         Description=LVM Setup
         ConditionFirstBoot=yes
         DefaultDependencies=no
@@ -176,25 +171,43 @@ func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcont
         ExecStart=/opt/bin/lvm.sh
         [Install]
         WantedBy=multi-user.target
-`),
-				})
-
-				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
-					Name:    "var-lib-docker.mount",
-					Enable:  ptr.To(true),
-					Command: ptr.To(extensionsv1alpha1.CommandStart),
-					Content: ptr.To(`[Unit]
-        Description=Mount LVM to docker dir
+`
+	// Define LVM mount unit
+	var lvmMountContainerd = `
+[Unit]
+        Description=Mount LVM to containerd dir
         After=lvm-setup.service
-        Before=docker.service
+        Before=containerd.service
         [Mount]
-        What=/dev/vg-docker/vol_docker
-        Where=/var/lib/docker
+        What=/dev/vg-containerd/vol_containerd
+        Where=/var/lib/containerd
         Type=ext4
         Options=defaults
         [Install]
         WantedBy=local-fs.target
-`),
+`
+	var operatingsystems map[string]int
+	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+		if worker.DataVolumes != nil {
+			// fail if multiple OSes are used
+			operatingsystems[worker.Machine.Image.Name]++
+			if len(operatingsystems) > 1 {
+				return fmt.Errorf("multiple operatingsystems used")
+			}
+			switch worker.Machine.Image.Name {
+			case "flatcar":
+				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+					Name:    "lvm-setup.service",
+					Enable:  ptr.To(true),
+					Command: ptr.To(extensionsv1alpha1.CommandStart),
+					Content: ptr.To(lvmSetup),
+				})
+
+				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+					Name:    "var-lib-containerd.mount",
+					Enable:  ptr.To(true),
+					Command: ptr.To(extensionsv1alpha1.CommandStart),
+					Content: ptr.To(lvmMountContainerd),
 				})
 
 				return nil
@@ -212,8 +225,17 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
 		return err
 	}
 
+	var operatingsystems map[string]int
 	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+		// if any worker is having any value set for `DataVolume`
+		// this script creates a lvm from all remaining non-boot disks.
 		if worker.DataVolumes != nil {
+			// fail if multiple OSes are used
+			operatingsystems[worker.Machine.Image.Name]++
+			if len(operatingsystems) > 1 {
+				return fmt.Errorf("multiple operatingsystems used")
+			}
+
 			switch worker.Machine.Image.Name {
 			case "flatcar":
 
@@ -248,13 +270,13 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
           pvcreate ${usable_disks}
 
           # Create Volume Group
-          vgcreate vg-docker ${usable_disks}
+          vgcreate vg-containerd ${usable_disks}
 
           # Create Logical Volume for data
-          lvcreate -n vol_docker -l 100%FREE vg-docker
+          lvcreate -n vol_containerd -l 100%FREE vg-containerd
 
           # Format the data volume with ext4 filesystem
-          mkfs.ext4 /dev/vg-docker/vol_docker
+          mkfs.ext4 /dev/vg-containerd/vol_containerd
 `
 				)
 
