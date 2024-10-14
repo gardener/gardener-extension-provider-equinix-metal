@@ -187,7 +187,7 @@ func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcont
         [Install]
         WantedBy=local-fs.target
 `
-	var operatingsystems map[string]int
+	operatingsystems := make(map[string]int)
 	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
 		if worker.DataVolumes != nil {
 			// fail if multiple OSes are used
@@ -226,7 +226,7 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
 		return err
 	}
 
-	var operatingsystems map[string]int
+	operatingsystems := make(map[string]int)
 	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
 		// if any worker is having any value set for `DataVolume`
 		// this script creates a lvm from all remaining non-boot disks.
