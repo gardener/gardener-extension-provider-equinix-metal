@@ -45,7 +45,8 @@ Static code checks and tests can be executed by running `make verify`. We are us
 You can use all available disks on your Equinix instance, but only under 
 certain conditions:
 * You must use Flatcar
-* You must have a homogenous worker pool
+* You must have a homogenous worker pool (all workers use the same OS and 
+  container engine)
 * You must set any value for `DataVolume`
 
 ## Feedback and Support
