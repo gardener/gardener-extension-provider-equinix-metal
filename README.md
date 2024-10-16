@@ -41,6 +41,14 @@ You can run the controller locally on your machine by executing `make start`.
 
 Static code checks and tests can be executed by running `make verify`. We are using Go modules for Golang package dependency management and [Ginkgo](https://github.com/onsi/ginkgo)/[Gomega](https://github.com/onsi/gomega) for testing.
 
+## Caveats
+You can use all available disks on your Equinix instance, but only under 
+certain conditions:
+* You must use Flatcar
+* You must have a homogenous worker pool (all workers use the same OS and 
+  container engine)
+* You must set any value for `DataVolume`
+
 ## Feedback and Support
 
 Feedback and contributions are always welcome. Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/gardener-extension-provider-equinix-metal/issues) or join our [Slack channel #gardener](https://kubernetes.slack.com/messages/gardener) (please invite yourself to the Kubernetes workspace [here](http://slack.k8s.io)).
