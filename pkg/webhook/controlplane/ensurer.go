@@ -193,7 +193,7 @@ func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcont
 			// fail if multiple OSes are used
 			operatingsystems[worker.Machine.Image.Name]++
 			if len(operatingsystems) > 1 {
-				return fmt.Errorf("multiple operatingsystems used")
+				return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
 			}
 			switch worker.Machine.Image.Name {
 			case "flatcar":
@@ -234,7 +234,7 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
 			// fail if multiple OSes are used
 			operatingsystems[worker.Machine.Image.Name]++
 			if len(operatingsystems) > 1 {
-				return fmt.Errorf("multiple operatingsystems used")
+				return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
 			}
 
 			switch worker.Machine.Image.Name {
