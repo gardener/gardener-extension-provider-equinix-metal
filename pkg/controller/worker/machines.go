@@ -71,7 +71,8 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			}
 		}
 
-		workerPoolHash, err := worker.WorkerPoolHash(pool, w.cluster)
+		// TODO(duciwuci): add ProviderConfig to V2
+		workerPoolHash, err := worker.WorkerPoolHash(pool, w.cluster, nil, nil)
 		if err != nil {
 			return err
 		}
