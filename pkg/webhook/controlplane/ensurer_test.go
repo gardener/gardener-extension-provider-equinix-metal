@@ -53,12 +53,12 @@ var _ = Describe("Ensurer", func() {
 		c    *mockclient.MockClient
 
 		dummyContext   = gcontext.NewGardenContext(nil, nil)
-		eContextK8s126 = gcontext.NewInternalGardenContext(
+		eContextK8s127 = gcontext.NewInternalGardenContext(
 			&extensionscontroller.Cluster{
 				Shoot: &gardencorev1beta1.Shoot{
 					Spec: gardencorev1beta1.ShootSpec{
 						Kubernetes: gardencorev1beta1.Kubernetes{
-							Version: "1.26.0",
+							Version: "1.27.1",
 						},
 					},
 					Status: gardencorev1beta1.ShootStatus{
@@ -113,9 +113,9 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s127, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.27.1", annotations)
 		})
 
 		It("should modify existing elements of kube-apiserver deployment", func() {
@@ -146,9 +146,9 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s127, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.27.1", annotations)
 		})
 
 		It("should keep the NODE_NETWORK env variable in the kube-apiserver deployment if its value does not change", func() {
@@ -184,9 +184,9 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s127, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.27.1", annotations)
 
 			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
 			Expect(c).To(Not(BeNil()))
@@ -227,9 +227,9 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s127, dep, oldDep)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.27.1", annotations)
 
 			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
 			Expect(c).To(Not(BeNil()))
