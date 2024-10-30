@@ -7,8 +7,6 @@ spec:
   kubernetes:
     versions:
     - version: 1.27.2
-    - version: 1.26.7
-    - version: 1.25.10
       #expirationDate: "2023-03-15T23:59:59Z"
   machineImages:
   - name: flatcar
