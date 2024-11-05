@@ -1,16 +1,6 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package config
 
@@ -158,6 +148,8 @@ type GardenletControllerConfiguration struct {
 	ManagedSeed *ManagedSeedControllerConfiguration
 	// TokenRequestorControllerConfiguration defines the configuration of the TokenRequestor controller.
 	TokenRequestor *TokenRequestorControllerConfiguration
+	// VPAEvictionRequirements defines the configuration of the VPAEvictionRequirements controller.
+	VPAEvictionRequirements *VPAEvictionRequirementsControllerConfiguration
 }
 
 // BackupBucketControllerConfiguration defines the configuration of the BackupBucket
@@ -351,6 +343,12 @@ type TokenRequestorControllerConfiguration struct {
 	ConcurrentSyncs *int
 }
 
+// VPAEvictionRequirementsControllerConfiguration defines the configuration of the VPAEvictionRequirements controller.
+type VPAEvictionRequirementsControllerConfiguration struct {
+	// ConcurrentSyncs is the number of workers used for the controller to work on events.
+	ConcurrentSyncs *int
+}
+
 // ResourcesConfiguration defines the total capacity for seed resources and the amount reserved for use by Gardener.
 type ResourcesConfiguration struct {
 	// Capacity defines the total resources of a seed.
@@ -461,6 +459,8 @@ type ETCDConfig struct {
 	// "github.com/gardener/etcd-druid/pkg/features/features.go".
 	// Default: nil
 	FeatureGates map[string]bool
+	// DeltaSnapshotRetentionPeriod defines the duration for which delta snapshots will be retained, excluding the latest snapshot set.
+	DeltaSnapshotRetentionPeriod *metav1.Duration
 }
 
 // ETCDController contains config specific to ETCD controller
@@ -491,6 +491,9 @@ type BackupCompactionController struct {
 	// ActiveDeadlineDuration defines duration after which a running backup compaction job will be killed
 	// Defaults to 3 hours
 	ActiveDeadlineDuration *metav1.Duration
+	// MetricsScrapeWaitDuration is the duration to wait for after compaction job is completed, to allow Prometheus metrics to be scraped
+	// Defaults to 60 seconds
+	MetricsScrapeWaitDuration *metav1.Duration
 }
 
 // ETCDBackupLeaderElection contains configuration for the leader election for the etcd backup-restore sidecar.
@@ -543,8 +546,6 @@ type RemoteWriteMonitoringConfig struct {
 	URL string
 	// Keep contains a list of metrics that will be remote written
 	Keep []string
-	// QueueConfig contains the queue_config for prometheus remote write.
-	QueueConfig *string
 }
 
 // NodeToleration contains information about node toleration options.

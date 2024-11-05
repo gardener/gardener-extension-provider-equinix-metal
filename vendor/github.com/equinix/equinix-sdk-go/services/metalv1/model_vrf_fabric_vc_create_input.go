@@ -1,9 +1,6 @@
 /*
 Metal API
 
-# Introduction Equinix Metal provides a RESTful HTTP API which can be reached at <https://api.equinix.com/metal/v1>. This document describes the API and how to use it.  The API allows you to programmatically interact with all of your Equinix Metal resources, including devices, networks, addresses, organizations, projects, and your user account. Every feature of the Equinix Metal web interface is accessible through the API.  The API docs are generated from the Equinix Metal OpenAPI specification and are officially hosted at <https://metal.equinix.com/developers/api>.  # Common Parameters  The Equinix Metal API uses a few methods to minimize network traffic and improve throughput. These parameters are not used in all API calls, but are used often enough to warrant their own section. Look for these parameters in the documentation for the API calls that support them.  ## Pagination  Pagination is used to limit the number of results returned in a single request. The API will return a maximum of 100 results per page. To retrieve additional results, you can use the `page` and `per_page` query parameters.  The `page` parameter is used to specify the page number. The first page is `1`. The `per_page` parameter is used to specify the number of results per page. The maximum number of results differs by resource type.  ## Sorting  Where offered, the API allows you to sort results by a specific field. To sort results use the `sort_by` query parameter with the root level field name as the value. The `sort_direction` parameter is used to specify the sort direction, either either `asc` (ascending) or `desc` (descending).  ## Filtering  Filtering is used to limit the results returned in a single request. The API supports filtering by certain fields in the response. To filter results, you can use the field as a query parameter.  For example, to filter the IP list to only return public IPv4 addresses, you can filter by the `type` field, as in the following request:  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/projects/id/ips?type=public_ipv4 ```  Only IP addresses with the `type` field set to `public_ipv4` will be returned.  ## Searching  Searching is used to find matching resources using multiple field comparissons. The API supports searching in resources that define this behavior. Currently the search parameter is only available on devices, ssh_keys, api_keys and memberships endpoints.  To search resources you can use the `search` query parameter.  ## Include and Exclude  For resources that contain references to other resources, sucha as a Device that refers to the Project it resides in, the Equinix Metal API will returns `href` values (API links) to the associated resource.  ```json {   ...   \"project\": {     \"href\": \"/metal/v1/projects/f3f131c8-f302-49ef-8c44-9405022dc6dd\"   } } ```  If you're going need the project details, you can avoid a second API request.  Specify the contained `href` resources and collections that you'd like to have included in the response using the `include` query parameter.  For example:  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=projects ```  The `include` parameter is generally accepted in `GET`, `POST`, `PUT`, and `PATCH` requests where `href` resources are presented.  To have multiple resources include, use a comma-separated list (e.g. `?include=emails,projects,memberships`).  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=emails,projects,memberships ```  You may also include nested associations up to three levels deep using dot notation (`?include=memberships.projects`):  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=memberships.projects ```  To exclude resources, and optimize response delivery, use the `exclude` query parameter. The `exclude` parameter is generally accepted in `GET`, `POST`, `PUT`, and `PATCH` requests for fields with nested object responses. When excluded, these fields will be replaced with an object that contains only an `href` field.
-
-API version: 1.0.0
 Contact: support@equinixmetal.com
 */
 
@@ -21,9 +18,10 @@ var _ MappedNullable = &VrfFabricVcCreateInput{}
 
 // VrfFabricVcCreateInput struct for VrfFabricVcCreateInput
 type VrfFabricVcCreateInput struct {
-	// The preferred email used for communication and notifications about the Equinix Fabric interconnection. Required when using a Project API key. Optional and defaults to the primary user email address when using a User API key.
+	// The preferred email used for communication and notifications about the Equinix Fabric interconnection. Optional and defaults to the primary user email address when using a User API key or the organization owner email address when using a Project API key.
 	ContactEmail *string `json:"contact_email,omitempty"`
 	Description  *string `json:"description,omitempty"`
+	FacilityId   *string `json:"facility_id,omitempty"`
 	// A Metro ID or code. When creating Fabric VCs (Metal Billed), this is where interconnection will be originating from, as we pre-authorize the use of one of our shared ports as the origin of the interconnection using A-Side service tokens. We only allow local connections for Fabric VCs (Metal Billed), so the destination location must be the same as the origin. For Fabric VCs (Fabric Billed), or shared connections, this will be the destination of the interconnection. We allow remote connections for Fabric VCs (Fabric Billed), so the origin of the interconnection can be a different metro set here.
 	Metro   string  `json:"metro"`
 	Name    string  `json:"name"`
@@ -32,7 +30,7 @@ type VrfFabricVcCreateInput struct {
 	Redundancy       string                                  `json:"redundancy"`
 	ServiceTokenType VlanFabricVcCreateInputServiceTokenType `json:"service_token_type"`
 	// A interconnection speed, in bps, mbps, or gbps. For Fabric VCs, this represents the maximum speed of the interconnection. For Fabric VCs (Metal Billed), this can only be one of the following:  ''50mbps'', ''200mbps'', ''500mbps'', ''1gbps'', ''2gbps'', ''5gbps'' or ''10gbps'', and is required for creation. For Fabric VCs (Fabric Billed), this field will always default to ''10gbps'' even if it is not provided. For example, ''500000000'', ''50m'', or' ''500mbps'' will all work as valid inputs.
-	Speed *int64                      `json:"speed,omitempty"`
+	Speed *string                     `json:"speed,omitempty"`
 	Tags  []string                    `json:"tags,omitempty"`
 	Type  VlanFabricVcCreateInputType `json:"type"`
 	// This field holds a list of VRF UUIDs that will be set automatically on the virtual circuits of Fabric VCs on creation, and can hold up to two UUIDs. Two UUIDs are required when requesting redundant Fabric VCs. The first UUID will be set on the primary virtual circuit, while the second UUID will be set on the secondary. The two UUIDs can be the same if both the primary and secondary virtual circuits will be in the same VRF. This parameter is included in the specification as a developer preview and is generally unavailable. Please contact our Support team for more details.
@@ -127,6 +125,38 @@ func (o *VrfFabricVcCreateInput) HasDescription() bool {
 // SetDescription gets a reference to the given string and assigns it to the Description field.
 func (o *VrfFabricVcCreateInput) SetDescription(v string) {
 	o.Description = &v
+}
+
+// GetFacilityId returns the FacilityId field value if set, zero value otherwise.
+func (o *VrfFabricVcCreateInput) GetFacilityId() string {
+	if o == nil || IsNil(o.FacilityId) {
+		var ret string
+		return ret
+	}
+	return *o.FacilityId
+}
+
+// GetFacilityIdOk returns a tuple with the FacilityId field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *VrfFabricVcCreateInput) GetFacilityIdOk() (*string, bool) {
+	if o == nil || IsNil(o.FacilityId) {
+		return nil, false
+	}
+	return o.FacilityId, true
+}
+
+// HasFacilityId returns a boolean if a field has been set.
+func (o *VrfFabricVcCreateInput) HasFacilityId() bool {
+	if o != nil && !IsNil(o.FacilityId) {
+		return true
+	}
+
+	return false
+}
+
+// SetFacilityId gets a reference to the given string and assigns it to the FacilityId field.
+func (o *VrfFabricVcCreateInput) SetFacilityId(v string) {
+	o.FacilityId = &v
 }
 
 // GetMetro returns the Metro field value
@@ -258,9 +288,9 @@ func (o *VrfFabricVcCreateInput) SetServiceTokenType(v VlanFabricVcCreateInputSe
 }
 
 // GetSpeed returns the Speed field value if set, zero value otherwise.
-func (o *VrfFabricVcCreateInput) GetSpeed() int64 {
+func (o *VrfFabricVcCreateInput) GetSpeed() string {
 	if o == nil || IsNil(o.Speed) {
-		var ret int64
+		var ret string
 		return ret
 	}
 	return *o.Speed
@@ -268,7 +298,7 @@ func (o *VrfFabricVcCreateInput) GetSpeed() int64 {
 
 // GetSpeedOk returns a tuple with the Speed field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *VrfFabricVcCreateInput) GetSpeedOk() (*int64, bool) {
+func (o *VrfFabricVcCreateInput) GetSpeedOk() (*string, bool) {
 	if o == nil || IsNil(o.Speed) {
 		return nil, false
 	}
@@ -284,8 +314,8 @@ func (o *VrfFabricVcCreateInput) HasSpeed() bool {
 	return false
 }
 
-// SetSpeed gets a reference to the given int64 and assigns it to the Speed field.
-func (o *VrfFabricVcCreateInput) SetSpeed(v int64) {
+// SetSpeed gets a reference to the given string and assigns it to the Speed field.
+func (o *VrfFabricVcCreateInput) SetSpeed(v string) {
 	o.Speed = &v
 }
 
@@ -385,6 +415,9 @@ func (o VrfFabricVcCreateInput) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Description) {
 		toSerialize["description"] = o.Description
 	}
+	if !IsNil(o.FacilityId) {
+		toSerialize["facility_id"] = o.FacilityId
+	}
 	toSerialize["metro"] = o.Metro
 	toSerialize["name"] = o.Name
 	if !IsNil(o.Project) {
@@ -450,6 +483,7 @@ func (o *VrfFabricVcCreateInput) UnmarshalJSON(data []byte) (err error) {
 	if err = json.Unmarshal(data, &additionalProperties); err == nil {
 		delete(additionalProperties, "contact_email")
 		delete(additionalProperties, "description")
+		delete(additionalProperties, "facility_id")
 		delete(additionalProperties, "metro")
 		delete(additionalProperties, "name")
 		delete(additionalProperties, "project")

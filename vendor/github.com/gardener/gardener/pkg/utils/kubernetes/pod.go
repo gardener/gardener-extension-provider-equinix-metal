@@ -1,22 +1,13 @@
-// Copyright 2023 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file.
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kubernetes
 
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	appsv1 "k8s.io/api/apps/v1"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
@@ -28,8 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/gardener/gardener/pkg/utils"
 )
 
 // VisitPodSpec calls the given visitor for the PodSpec contained in the given object. The visitor may mutate the
@@ -84,7 +73,7 @@ func VisitPodSpec(obj runtime.Object, visit func(*corev1.PodSpec)) error {
 func VisitContainers(podSpec *corev1.PodSpec, visit func(*corev1.Container), containerNames ...string) {
 	for i, c := range podSpec.InitContainers {
 		container := c
-		if len(containerNames) == 0 || utils.ValueExists(container.Name, containerNames) {
+		if len(containerNames) == 0 || slices.Contains(containerNames, container.Name) {
 			visit(&container)
 			podSpec.InitContainers[i] = container
 		}
@@ -92,7 +81,7 @@ func VisitContainers(podSpec *corev1.PodSpec, visit func(*corev1.Container), con
 
 	for i, c := range podSpec.Containers {
 		container := c
-		if len(containerNames) == 0 || utils.ValueExists(container.Name, containerNames) {
+		if len(containerNames) == 0 || slices.Contains(containerNames, container.Name) {
 			visit(&container)
 			podSpec.Containers[i] = container
 		}

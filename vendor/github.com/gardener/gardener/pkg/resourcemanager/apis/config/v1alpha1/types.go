@@ -1,16 +1,6 @@
-// Copyright 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
@@ -115,10 +105,10 @@ type ResourceManagerControllerConfiguration struct {
 	ManagedResource ManagedResourceControllerConfig `json:"managedResource"`
 	// NetworkPolicy is the configuration for the networkpolicy controller.
 	NetworkPolicy NetworkPolicyControllerConfig `json:"networkPolicy"`
-	// Node is the configuration for the node controller.
-	Node NodeControllerConfig `json:"node"`
-	// Secret is the configuration for the secret controller.
-	Secret SecretControllerConfig `json:"secret"`
+	// NodeCriticalComponents is the configuration for the node critical components controller.
+	NodeCriticalComponents NodeCriticalComponentsControllerConfig `json:"nodeCriticalComponents"`
+	// NodeAgentReconciliationDelay is the configuration for the node-agent reconciliation delay controller.
+	NodeAgentReconciliationDelay NodeAgentReconciliationDelayControllerConfig `json:"nodeAgentReconciliationDelay"`
 	// TokenInvalidator is the configuration for the token-invalidator controller.
 	TokenInvalidator TokenInvalidatorControllerConfig `json:"tokenInvalidator"`
 	// TokenRequestor is the configuration for the token-requestor controller.
@@ -200,13 +190,6 @@ type IngressControllerSelector struct {
 	PodSelector metav1.LabelSelector `json:"podSelector"`
 }
 
-// SecretControllerConfig is the configuration for the secret controller.
-type SecretControllerConfig struct {
-	// ConcurrentSyncs is the number of concurrent worker routines for this controller.
-	// +optional
-	ConcurrentSyncs *int `json:"concurrentSyncs,omitempty"`
-}
-
 // TokenInvalidatorControllerConfig is the configuration for the token-invalidator controller.
 type TokenInvalidatorControllerConfig struct {
 	// Enabled defines whether this controller is enabled.
@@ -225,8 +208,8 @@ type TokenRequestorControllerConfig struct {
 	ConcurrentSyncs *int `json:"concurrentSyncs,omitempty"`
 }
 
-// NodeControllerConfig is the configuration for the node controller.
-type NodeControllerConfig struct {
+// NodeCriticalComponentsControllerConfig is the configuration for the node critical components controller.
+type NodeCriticalComponentsControllerConfig struct {
 	// Enabled defines whether this controller is enabled.
 	Enabled bool `json:"enabled"`
 	// ConcurrentSyncs is the number of concurrent worker routines for this controller.
@@ -235,6 +218,18 @@ type NodeControllerConfig struct {
 	// Backoff is the duration to use as backoff when Nodes have non-ready node-critical pods (defaults to 10s).
 	// +optional
 	Backoff *metav1.Duration `json:"backoff,omitempty"`
+}
+
+// NodeAgentReconciliationDelayControllerConfig is the configuration for the node-agent reconciliation delay controller.
+type NodeAgentReconciliationDelayControllerConfig struct {
+	// Enabled defines whether this controller is enabled.
+	Enabled bool `json:"enabled"`
+	// MinDelay is the minimum duration to use for delays (default: 0s).
+	// +optional
+	MinDelay *metav1.Duration `json:"minDelay,omitempty"`
+	// MaxDelay is the maximum duration to use for delays (default: 5m).
+	// +optional
+	MaxDelay *metav1.Duration `json:"maxDelay,omitempty"`
 }
 
 // ResourceManagerWebhookConfiguration defines the configuration of the webhooks.

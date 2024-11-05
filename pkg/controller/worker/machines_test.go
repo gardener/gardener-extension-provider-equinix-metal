@@ -1,16 +1,6 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package worker_test
 
@@ -30,7 +20,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	mockkubernetes "github.com/gardener/gardener/pkg/client/kubernetes/mock"
-	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
+	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -84,18 +74,6 @@ var _ = Describe("Machines", func() {
 			workerDelegate, _ = NewWorkerDelegate(nil, scheme, nil, "", nil, nil)
 		})
 
-		Describe("#MachineClassKind", func() {
-			It("should return the correct kind of the machine class", func() {
-				Expect(workerDelegate.MachineClassKind()).To(Equal("MachineClass"))
-			})
-		})
-
-		Describe("#MachineClassList", func() {
-			It("should return the correct type for the machine class list", func() {
-				Expect(workerDelegate.MachineClassList()).To(Equal(&machinev1alpha1.MachineClassList{}))
-			})
-		})
-
 		Describe("#GenerateMachineDeployments, #DeployMachineClasses", func() {
 			var (
 				namespace        string
@@ -111,9 +89,11 @@ var _ = Describe("Machines", func() {
 				machineImageVersion string
 				machineImage        string
 
-				machineType string
-				sshKeyID    string
-				userData    = []byte("some-user-data")
+				machineType           string
+				sshKeyID              string
+				userData              []byte
+				userDataSecretName    string
+				userDataSecretDataKey string
 
 				namePool1           string
 				minPool1            int32
@@ -156,6 +136,8 @@ var _ = Describe("Machines", func() {
 				machineType = "large"
 				sshKeyID = "1-2-3-4"
 				userData = []byte("some-user-data")
+				userDataSecretName = "userdata-secret-name"
+				userDataSecretDataKey = "userdata-secret-key"
 
 				namePool1 = "pool-1"
 				minPool1 = 5
@@ -243,7 +225,10 @@ var _ = Describe("Machines", func() {
 									Name:    machineImageName,
 									Version: machineImageVersion,
 								},
-								UserData: userData,
+								UserDataSecretRef: &corev1.SecretKeySelector{
+									LocalObjectReference: corev1.LocalObjectReference{Name: userDataSecretName},
+									Key:                  userDataSecretDataKey,
+								},
 								Zones: []string{
 									facility1,
 									facility2,
@@ -260,6 +245,8 @@ var _ = Describe("Machines", func() {
 									Name:    machineImageName,
 									Version: machineImageVersion,
 								},
+								// TODO: Use UserDataSecretRef like in first pool once this field got removed from the
+								//  API.
 								UserData: userData,
 							},
 						},
@@ -271,6 +258,15 @@ var _ = Describe("Machines", func() {
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages)
 			})
+
+			expectGetUserDataSecretCallToWork := func() {
+				c.EXPECT().Get(ctx, client.ObjectKey{Namespace: namespace, Name: userDataSecretName}, gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(
+					func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret, _ ...client.GetOption) error {
+						secret.Data = map[string][]byte{userDataSecretDataKey: userData}
+						return nil
+					},
+				)
+			}
 
 			Describe("machine images", func() {
 				var (
@@ -308,8 +304,8 @@ var _ = Describe("Machines", func() {
 						machineClassWithHashPool2 = fmt.Sprintf("%s-%s", machineClassNamePool2, workerPoolHash2)
 					)
 
-					addNameAndSecretToMachineClass(machineClassPool1, apiToken, machineClassWithHashPool1, w.Spec.SecretRef)
-					addNameAndSecretToMachineClass(machineClassPool2, apiToken, machineClassWithHashPool2, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool1, machineClassWithHashPool1, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool2, machineClassWithHashPool2, w.Spec.SecretRef)
 
 					machineClassPool1["facilities"] = []string{facility1, facility2}
 
@@ -346,6 +342,7 @@ var _ = Describe("Machines", func() {
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
 					expectGetSecretCallToWork(c, apiToken, projectID)
+					expectGetUserDataSecretCallToWork()
 
 					// Test workerDelegate.DeployMachineClasses()
 
@@ -405,6 +402,7 @@ var _ = Describe("Machines", func() {
 					machineClasses["machineClasses"].([]map[string]interface{})[1]["reservedDevicesOnly"] = reservedDevicesOnly
 
 					expectGetSecretCallToWork(c, apiToken, projectID)
+					expectGetUserDataSecretCallToWork()
 
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
@@ -482,6 +480,8 @@ var _ = Describe("Machines", func() {
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster)
 
+				expectGetUserDataSecretCallToWork()
+
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				resultSettings := result[0].MachineConfiguration
 				resultNodeConditions := strings.Join(testNodeConditions, ",")
@@ -541,10 +541,10 @@ func copyMachineClass(def map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-func addNameAndSecretToMachineClass(class map[string]interface{}, apiToken, name string, credentialsSecretRef corev1.SecretReference) {
+func addNameAndSecretToMachineClass(class map[string]interface{}, name string, credentialsSecretRef corev1.SecretReference) {
 	class["name"] = name
 	class["labels"] = map[string]string{
-		v1beta1constants.GardenerPurpose: genericworkeractuator.GardenPurposeMachineClass,
+		v1beta1constants.GardenerPurpose: v1beta1constants.GardenPurposeMachineClass,
 	}
 	class["credentialsSecretRef"] = map[string]interface{}{
 		"name":      credentialsSecretRef.Name,

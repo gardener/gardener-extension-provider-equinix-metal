@@ -1,16 +1,6 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package flow provides utilities to construct a directed acyclic computational graph
 // that is then executed and monitored with maximum parallelism.
@@ -79,6 +69,7 @@ type node struct {
 	targetIDs TaskIDs
 	required  int
 	fn        TaskFn
+	skip      bool
 }
 
 func (n *node) String() string {
@@ -91,6 +82,7 @@ func (n *node) addTargets(taskIDs ...TaskID) {
 		n.targetIDs = NewTaskIDs(TaskIDSlice(taskIDs))
 		return
 	}
+
 	n.targetIDs.Insert(TaskIDSlice(taskIDs))
 }
 
@@ -114,8 +106,9 @@ func (f *Flow) Run(ctx context.Context, opts Opts) error {
 }
 
 type nodeResult struct {
-	TaskID TaskID
-	Error  error
+	TaskID  TaskID
+	Error   error
+	skipped bool
 }
 
 // Stats are the statistics of a Flow execution.
@@ -125,6 +118,7 @@ type Stats struct {
 	Succeeded TaskIDs
 	Failed    TaskIDs
 	Running   TaskIDs
+	Skipped   TaskIDs
 	Pending   TaskIDs
 }
 
@@ -142,6 +136,7 @@ func (s *Stats) Copy() *Stats {
 		s.Succeeded.Copy(),
 		s.Failed.Copy(),
 		s.Running.Copy(),
+		s.Skipped.Copy(),
 		s.Pending.Copy(),
 	}
 }
@@ -155,6 +150,7 @@ func InitialStats(flowName string, all TaskIDs) *Stats {
 		NewTaskIDs(),
 		NewTaskIDs(),
 		NewTaskIDs(),
+		NewTaskIDs(),
 		all.Copy(),
 	}
 }
@@ -162,8 +158,10 @@ func InitialStats(flowName string, all TaskIDs) *Stats {
 func newExecution(flow *Flow, opts Opts) *execution {
 	all := NewTaskIDs()
 
-	for name := range flow.nodes {
-		all.Insert(name)
+	for name, task := range flow.nodes {
+		if !task.skip {
+			all.Insert(name)
+		}
 	}
 
 	log := logf.Log.WithName("flow").WithValues(logKeyFlow, flow.name)
@@ -200,24 +198,40 @@ type execution struct {
 }
 
 func (e *execution) runNode(ctx context.Context, id TaskID) {
+	log := e.log.WithValues(logKeyTask, id)
+
+	node := e.flow.nodes[id]
+	if node.skip {
+		log.V(1).Info("Skipped")
+		e.stats.Skipped.Insert(id)
+
+		go func() {
+			e.done <- &nodeResult{TaskID: id, Error: nil, skipped: true}
+		}()
+
+		return
+	}
+
 	if e.errorContext != nil {
 		e.errorContext.AddErrorID(string(id))
 	}
+
 	e.stats.Pending.Delete(id)
 	e.stats.Running.Insert(id)
+
 	go func() {
 		start := time.Now().UTC()
 
-		e.log.WithValues(logKeyTask, id).V(1).Info("Started")
-		err := e.flow.nodes[id].fn(ctx)
+		log.V(1).Info("Started")
+		err := node.fn(ctx)
 		end := time.Now().UTC()
-		e.log.WithValues(logKeyTask, id).V(1).Info("Finished", "duration", end.Sub(start))
+		log.V(1).Info("Finished", "duration", end.Sub(start))
 
 		if err != nil {
-			e.log.WithValues(logKeyTask, id).Error(err, "Error")
+			log.Error(err, "Error")
 			err = fmt.Errorf("task %q failed: %w", id, err)
 		} else {
-			e.log.WithValues(logKeyTask, id).Info("Succeeded")
+			log.Info("Succeeded")
 		}
 
 		e.done <- &nodeResult{TaskID: id, Error: err}
@@ -278,22 +292,31 @@ func (e *execution) run(ctx context.Context) error {
 			e.runNode(ctx, name)
 		}
 	}
+
 	e.reportProgress(ctx)
 
-	for e.stats.Running.Len() > 0 {
+	for e.stats.Running.Len() > 0 || e.stats.Skipped.Len() > 0 {
 		result := <-e.done
-		if result.Error != nil {
-			e.taskErrors = append(e.taskErrors, errorsutils.WithID(string(result.TaskID), result.Error))
-			e.updateFailure(result.TaskID)
-		} else {
-			e.updateSuccess(result.TaskID)
-			if e.errorContext != nil && e.errorContext.HasLastErrorWithID(string(result.TaskID)) {
-				e.cleanErrors(ctx, result.TaskID)
-			}
+		if result.skipped {
+			e.stats.Skipped.Delete(result.TaskID)
 			if cancelErr = ctx.Err(); cancelErr == nil {
 				e.processTriggers(ctx, result.TaskID)
 			}
+		} else {
+			if result.Error != nil {
+				e.taskErrors = append(e.taskErrors, errorsutils.WithID(string(result.TaskID), result.Error))
+				e.updateFailure(result.TaskID)
+			} else {
+				e.updateSuccess(result.TaskID)
+				if e.errorContext != nil && e.errorContext.HasLastErrorWithID(string(result.TaskID)) {
+					e.cleanErrors(ctx, result.TaskID)
+				}
+				if cancelErr = ctx.Err(); cancelErr == nil {
+					e.processTriggers(ctx, result.TaskID)
+				}
+			}
 		}
+
 		e.reportProgress(ctx)
 	}
 

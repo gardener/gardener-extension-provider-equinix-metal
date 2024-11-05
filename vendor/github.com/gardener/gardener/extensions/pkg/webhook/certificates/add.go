@@ -1,16 +1,6 @@
-// Copyright 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package certificates
 
@@ -20,9 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/utils/clock"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener/extensions/pkg/webhook"
@@ -37,10 +26,11 @@ var DefaultSyncPeriod = 5 * time.Minute
 func AddCertificateManagementToManager(
 	ctx context.Context,
 	mgr manager.Manager,
+	sourceCluster cluster.Cluster,
 	clock clock.Clock,
-	sourceWebhookConfigs []client.Object,
-	shootWebhookConfig *admissionregistrationv1.MutatingWebhookConfiguration,
-	atomicShootWebhookConfig *atomic.Value,
+	sourceWebhookConfigs webhook.Configs,
+	shootWebhookConfigs *webhook.Configs,
+	atomicShootWebhookConfigs *atomic.Value,
 	shootNamespaceSelector map[string]string,
 	shootWebhookManagedResourceName string,
 	componentName string,
@@ -60,8 +50,8 @@ func AddCertificateManagementToManager(
 		Clock:                           clock,
 		SyncPeriod:                      DefaultSyncPeriod,
 		SourceWebhookConfigs:            sourceWebhookConfigs,
-		ShootWebhookConfig:              shootWebhookConfig,
-		AtomicShootWebhookConfig:        atomicShootWebhookConfig,
+		ShootWebhookConfigs:             shootWebhookConfigs,
+		AtomicShootWebhookConfigs:       atomicShootWebhookConfigs,
 		CASecretName:                    caSecretName,
 		ServerSecretName:                serverSecretName,
 		Namespace:                       namespace,
@@ -71,7 +61,7 @@ func AddCertificateManagementToManager(
 		ShootNamespaceSelector:          shootNamespaceSelector,
 		Mode:                            mode,
 		URL:                             url,
-	}).AddToManager(ctx, mgr); err != nil {
+	}).AddToManager(ctx, mgr, sourceCluster); err != nil {
 		return fmt.Errorf("failed to add webhook server certificate reconciler: %w", err)
 	}
 
@@ -82,7 +72,7 @@ func AddCertificateManagementToManager(
 		ServerSecretName: serverSecretName,
 		Namespace:        namespace,
 		Identity:         identity,
-	}).AddToManager(ctx, mgr); err != nil {
+	}).AddToManager(ctx, mgr, sourceCluster); err != nil {
 		return fmt.Errorf("failed to add webhook server certificate reloader: %w", err)
 	}
 

@@ -1,21 +1,12 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package controlplane
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
@@ -27,9 +18,11 @@ import (
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/pkg/errors"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,7 +41,7 @@ func shootAccessSecretsFunc(namespace string) []*gutil.AccessSecret {
 
 var controlPlaneChart = &chart.Chart{
 	Name:       "seed-controlplane",
-	EmbeddedFS: &charts.InternalChart,
+	EmbeddedFS: charts.InternalChart,
 	Path:       filepath.Join(charts.InternalChartsPath, "seed-controlplane"),
 	SubCharts: []*chart.Chart{
 		{
@@ -58,6 +51,8 @@ var controlPlaneChart = &chart.Chart{
 				{Type: &corev1.Service{}, Name: "cloud-controller-manager"},
 				{Type: &appsv1.Deployment{}, Name: "cloud-controller-manager"},
 				{Type: &corev1.ConfigMap{}, Name: "cloud-controller-manager-observability-config"},
+				{Type: &monitoringv1.ServiceMonitor{}, Name: "shoot-cloud-controller-manager"},
+				{Type: &monitoringv1.PrometheusRule{}, Name: "shoot-cloud-controller-manager"},
 			},
 		},
 	},
@@ -65,7 +60,7 @@ var controlPlaneChart = &chart.Chart{
 
 var controlPlaneShootChart = &chart.Chart{
 	Name:       "shoot-system-components",
-	EmbeddedFS: &charts.InternalChart,
+	EmbeddedFS: charts.InternalChart,
 	Path:       filepath.Join(charts.InternalChartsPath, "shoot-system-components"),
 	SubCharts: []*chart.Chart{
 		{
@@ -85,7 +80,7 @@ var controlPlaneShootChart = &chart.Chart{
 
 var storageClassChart = &chart.Chart{
 	Name:       "shoot-storageclasses",
-	EmbeddedFS: &charts.InternalChart,
+	EmbeddedFS: charts.InternalChart,
 	Path:       filepath.Join(charts.InternalChartsPath, "shoot-storageclasses"),
 }
 
@@ -106,7 +101,7 @@ type valuesProvider struct {
 
 // GetControlPlaneChartValues returns the values for the control plane chart applied by the generic actuator.
 func (vp *valuesProvider) GetControlPlaneChartValues(
-	_ context.Context,
+	ctx context.Context,
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
 	_ secretsmanager.Reader,
@@ -116,8 +111,16 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 	map[string]interface{},
 	error,
 ) {
+	// TODO(rfranzke): Delete this after August 2024.
+	gep19Monitoring := vp.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: cp.Namespace}, &appsv1.StatefulSet{}) == nil
+	if gep19Monitoring {
+		if err := kutil.DeleteObject(ctx, vp.client, &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cloud-controller-manager-observability-config", Namespace: cp.Namespace}}); err != nil {
+			return nil, fmt.Errorf("failed deleting cloud-controller-manager-observability-config ConfigMap: %w", err)
+		}
+	}
+
 	// Get control plane chart values
-	return getControlPlaneChartValues(cp, cluster, checksums, scaledDown)
+	return getControlPlaneChartValues(cp, cluster, checksums, scaledDown, gep19Monitoring)
 }
 
 // GetControlPlaneShootChartValues returns the values for the control plane shoot chart applied by the generic actuator.
@@ -153,6 +156,7 @@ func getControlPlaneChartValues(
 	cluster *extensionscontroller.Cluster,
 	checksums map[string]string,
 	scaledDown bool,
+	gep19Monitoring bool,
 ) (
 	map[string]interface{},
 	error,
@@ -168,7 +172,8 @@ func getControlPlaneChartValues(
 			"podAnnotations": map[string]interface{}{
 				"checksum/secret-cloudprovider": checksums[v1beta1constants.SecretNameCloudProvider],
 			},
-			"metro": cluster.Shoot.Spec.Region,
+			"metro":           cluster.Shoot.Spec.Region,
+			"gep19Monitoring": gep19Monitoring,
 		},
 		"metallb": map[string]interface{}{},
 	}

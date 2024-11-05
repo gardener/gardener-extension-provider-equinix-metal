@@ -1,16 +1,6 @@
-// Copyright 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package cache
 
@@ -54,36 +44,24 @@ func (c *aggregator) cacheForKind(kind schema.GroupVersionKind) cache.Cache {
 	return cache
 }
 
-func processError(err error) error {
-	if !IsAPIError(err) {
-		// Return every other, unspecified error as a `CacheError` to allow users to follow up with a proper error handling.
-		// For instance, a `Multinamespace` cache returns an unspecified error for unknown namespaces.
-		// https://github.com/kubernetes-sigs/controller-runtime/blob/b5065bd85190e92864522fcc85aa4f6a3cce4f82/pkg/cache/multi_namespace_cache.go#L132
-		return NewCacheError(err)
-	}
-	return err
-}
-
 // Get retrieves an obj for the given object key from the Kubernetes Cluster.
 // Every non-API related error is returned as a `CacheError`.
 func (c *aggregator) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-	if err := c.cacheForObject(obj).Get(ctx, key, obj, opts...); err != nil {
-		return processError(err)
-	}
-	return nil
+	return c.cacheForObject(obj).Get(ctx, key, obj, opts...)
 }
 
 // List retrieves list of objects for a given namespace and list options.
 // Every non-API related error is returned as a `CacheError`.
 func (c *aggregator) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
-	if err := c.cacheForObject(list).List(ctx, list, opts...); err != nil {
-		return processError(err)
-	}
-	return nil
+	return c.cacheForObject(list).List(ctx, list, opts...)
 }
 
 func (c *aggregator) GetInformer(ctx context.Context, obj client.Object, opts ...cache.InformerGetOption) (cache.Informer, error) {
 	return c.cacheForObject(obj).GetInformer(ctx, obj, opts...)
+}
+
+func (c *aggregator) RemoveInformer(ctx context.Context, obj client.Object) error {
+	return c.cacheForObject(obj).RemoveInformer(ctx, obj)
 }
 
 func (c *aggregator) GetInformerForKind(ctx context.Context, gvk schema.GroupVersionKind, opts ...cache.InformerGetOption) (cache.Informer, error) {
@@ -104,6 +82,7 @@ func (c *aggregator) Start(ctx context.Context) error {
 			}
 		}(gvk, runtimecache)
 	}
+
 	go func() {
 		if err := c.fallbackCache.Start(ctx); err != nil {
 			logf.Log.Error(err, "Fallback cache failed to start")

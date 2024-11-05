@@ -1,16 +1,6 @@
-// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file.
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package framework
 
@@ -20,17 +10,16 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	seedmanagementv1alpha1 "github.com/gardener/gardener/pkg/apis/seedmanagement/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	gardenerutils "github.com/gardener/gardener/pkg/utils/gardener"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/kubernetes/health"
 	"github.com/gardener/gardener/pkg/utils/retry"
@@ -59,23 +48,31 @@ func (f *GardenerFramework) GetSeed(ctx context.Context, seedName string) (*gard
 	managedSeed := &seedmanagementv1alpha1.ManagedSeed{}
 	if err := f.GardenClient.Client().Get(ctx, kubernetesutils.Key(v1beta1constants.GardenNamespace, seed.Name), managedSeed); err != nil {
 		if apierrors.IsNotFound(err) {
-			f.Logger.Info("Seed is not a ManagedSeed, checking seed.spec.secretRef")
+			f.Logger.Info("Seed is not a ManagedSeed, checking seed secret")
 
-			seedSecretRef := seed.Spec.SecretRef
-			if seedSecretRef == nil {
-				f.Logger.Info("Seed does not have secretRef set, skip constructing seed client")
-				return seed, nil, nil
+			// For tests, we expect the seed kubeconfig secret to be present in the garden namespace
+			seedSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "seed-" + seedName,
+					Namespace: "garden",
+				},
 			}
 
-			seedClient, err := kubernetes.NewClientFromSecret(ctx, f.GardenClient.Client(), seedSecretRef.Namespace, seedSecretRef.Name,
+			if err := f.GardenClient.Client().Get(ctx, client.ObjectKeyFromObject(seedSecret), seedSecret); err != nil {
+				return seed, nil, fmt.Errorf("seed is not a ManagedSeed also no seed kubeconfig secret present in the garden namespace, %s: %w", client.ObjectKeyFromObject(seed), err)
+			}
+
+			seedClient, err := kubernetes.NewClientFromSecret(ctx, f.GardenClient.Client(), seedSecret.Namespace, seedSecret.Name,
 				kubernetes.WithClientOptions(client.Options{Scheme: kubernetes.SeedScheme}),
 				kubernetes.WithDisabledCachedClient(),
 			)
 			if err != nil {
 				return nil, nil, fmt.Errorf("could not construct Seed client: %w", err)
 			}
+
 			return seed, seedClient, nil
 		}
+
 		return seed, nil, fmt.Errorf("failed to get ManagedSeed for Seed, %s: %w", client.ObjectKeyFromObject(seed), err)
 	}
 
@@ -88,8 +85,8 @@ func (f *GardenerFramework) GetSeed(ctx context.Context, seedName string) (*gard
 		return seed, nil, fmt.Errorf("failed to get Shoot %s for ManagedSeed, %s: %w", managedSeed.Spec.Shoot.Name, client.ObjectKeyFromObject(managedSeed), err)
 	}
 
-	const expirationSeconds = 6 * 3600 // 6h
-	kubeconfig, err := access.RequestAdminKubeconfigForShoot(ctx, f.GardenClient, shoot, pointer.Int64(expirationSeconds))
+	const expirationSeconds int64 = 6 * 3600 // 6h
+	kubeconfig, err := access.RequestAdminKubeconfigForShoot(ctx, f.GardenClient, shoot, ptr.To(expirationSeconds))
 	if err != nil {
 		return seed, nil, fmt.Errorf("failed to request AdminKubeConfig for Shoot %s: %w", client.ObjectKeyFromObject(shoot), err)
 	}
@@ -208,7 +205,7 @@ func (f *GardenerFramework) DeleteShootAndWaitForDeletion(ctx context.Context, s
 }
 
 // ForceDeleteShootAndWaitForDeletion forcefully deletes the test shoot and waits until it cannot be found anymore.
-func (f *GardenerFramework) ForceDeleteShootAndWaitForDeletion(ctx context.Context, shoot *gardencorev1beta1.Shoot) (rErr error) {
+func (f *GardenerFramework) ForceDeleteShootAndWaitForDeletion(ctx context.Context, shoot *gardencorev1beta1.Shoot, seedClient client.Client) (rErr error) {
 	log := f.Logger.WithValues("shoot", client.ObjectKeyFromObject(shoot))
 
 	if err := f.AnnotateShoot(ctx, shoot, map[string]string{v1beta1constants.ShootIgnore: "true"}); err != nil {
@@ -217,6 +214,16 @@ func (f *GardenerFramework) ForceDeleteShootAndWaitForDeletion(ctx context.Conte
 
 	if err := f.DeleteShoot(ctx, shoot); err != nil {
 		return err
+	}
+
+	// TODO(rfranzke): Remove this after v1.97 has been released.
+	{
+		if err := kubernetesutils.DeleteObjects(ctx, seedClient,
+			&networkingv1.Ingress{ObjectMeta: metav1.ObjectMeta{Name: "prometheus", Namespace: shoot.Status.TechnicalID}},
+			&networkingv1.Ingress{ObjectMeta: metav1.ObjectMeta{Name: "prometheus-shoot", Namespace: shoot.Status.TechnicalID}},
+		); err != nil {
+			return fmt.Errorf("error deleting Prometheus ingress: %w", err)
+		}
 	}
 
 	patch := client.MergeFrom(shoot.DeepCopy())
@@ -260,7 +267,7 @@ func (f *GardenerFramework) DeleteShoot(ctx context.Context, shoot *gardencorev1
 	err := retry.UntilTimeout(ctx, 20*time.Second, 5*time.Minute, func(ctx context.Context) (done bool, err error) {
 		// First we annotate the shoot to be deleted.
 		err = f.AnnotateShoot(ctx, shoot, map[string]string{
-			gardenerutils.ConfirmationDeletion: "true",
+			v1beta1constants.ConfirmationDeletion: "true",
 		})
 		if err != nil {
 			return retry.MinorError(err)
@@ -314,6 +321,32 @@ func (f *GardenerFramework) UpdateShoot(ctx context.Context, shoot *gardencorev1
 	return nil
 }
 
+func (f *GardenerFramework) updateBinding(ctx context.Context, shoot *gardencorev1beta1.Shoot, seedName string) error {
+	log := f.Logger.WithValues("shoot", client.ObjectKeyFromObject(shoot))
+
+	err := retry.UntilTimeout(ctx, 20*time.Second, 5*time.Minute, func(ctx context.Context) (done bool, err error) {
+		updatedShoot := &gardencorev1beta1.Shoot{}
+		if err := f.GardenClient.Client().Get(ctx, client.ObjectKeyFromObject(shoot), updatedShoot); err != nil {
+			return retry.MinorError(err)
+		}
+
+		updatedShoot.Spec.SeedName = ptr.To(seedName)
+		if err := f.GardenClient.Client().SubResource("binding").Update(ctx, updatedShoot); err != nil {
+			log.Error(err, "Unable to update binding")
+			return retry.MinorError(err)
+		}
+
+		*shoot = *updatedShoot
+		return retry.Ok()
+	})
+	if err != nil {
+		return fmt.Errorf("failed updating binding for shoot %q: %w", client.ObjectKeyFromObject(shoot), err)
+	}
+
+	log.Info("Shoot binding was successfully updated")
+	return nil
+}
+
 // HibernateShoot hibernates the test shoot
 func (f *GardenerFramework) HibernateShoot(ctx context.Context, shoot *gardencorev1beta1.Shoot) error {
 	log := f.Logger.WithValues("shoot", client.ObjectKeyFromObject(shoot))
@@ -339,11 +372,9 @@ func (f *GardenerFramework) HibernateShoot(ctx context.Context, shoot *gardencor
 		return err
 	}
 
-	if !v1beta1helper.IsWorkerless(shoot) {
-		// Verify no running pods after hibernation
-		if err := f.VerifyNoRunningPods(ctx, shoot); err != nil {
-			return fmt.Errorf("failed to verify no running pods after hibernation: %v", err)
-		}
+	// Verify no running pods after hibernation
+	if err := f.VerifyNoRunningPods(ctx, shoot); err != nil {
+		return fmt.Errorf("failed to verify no running pods after hibernation: %v", err)
 	}
 
 	log.Info("Shoot was hibernated successfully")
@@ -495,12 +526,11 @@ func (f *GardenerFramework) MigrateShoot(ctx context.Context, shoot *gardencorev
 		return err
 	}
 
-	shoot.Spec.SeedName = &seed.Name
-	if err := f.GardenClient.Client().SubResource("binding").Update(ctx, shoot); err != nil {
-		return fmt.Errorf("failed updating binding for shoot %q: %w", client.ObjectKeyFromObject(shoot), err)
+	if err := f.updateBinding(ctx, shoot, seed.Name); err != nil {
+		return err
 	}
 
-	return f.WaitForShootToBeCreated(ctx, shoot)
+	return f.WaitForShootToBeReconciled(ctx, shoot)
 }
 
 // GetCloudProfile returns the cloudprofile from gardener with the give name

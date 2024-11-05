@@ -1,16 +1,6 @@
-// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package webhook
 
@@ -67,7 +57,7 @@ type handlerShootClient struct {
 }
 
 func (h *handlerShootClient) Handle(ctx context.Context, req admission.Request) admission.Response {
-	var mut MutateFunc = func(ctx context.Context, new, old client.Object) error {
+	var mut actionFunc = func(ctx context.Context, new, old client.Object) error {
 		// TODO: replace this logic with a proper authentication mechanism
 		// see https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#authenticate-apiservers
 		// API servers should authenticate against webhooks servers using TLS client certs, from which the webhook

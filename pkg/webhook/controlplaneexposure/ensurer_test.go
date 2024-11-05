@@ -1,16 +1,6 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package controlplaneexposure
 
@@ -21,25 +11,14 @@ import (
 	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	"github.com/gardener/gardener/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/config"
-)
-
-const (
-	namespace    = "test"
-	testIP       = "1.1.1.1"
-	testHostname = "foo"
-)
-
-var (
-	ctx context.Context
 )
 
 func TestController(t *testing.T) {
@@ -50,8 +29,8 @@ func TestController(t *testing.T) {
 var _ = Describe("Ensurer", func() {
 	var (
 		etcdStorage = &config.ETCDStorage{
-			ClassName: pointer.StringPtr("gardener.cloud-fast"),
-			Capacity:  utils.QuantityPtr(resource.MustParse("25Gi")),
+			ClassName: ptr.To("gardener.cloud-fast"),
+			Capacity:  ptr.To(resource.MustParse("25Gi")),
 		}
 
 		ctrl         *gomock.Controller
@@ -60,7 +39,6 @@ var _ = Describe("Ensurer", func() {
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-		ctx = context.TODO()
 	})
 
 	AfterEach(func() {

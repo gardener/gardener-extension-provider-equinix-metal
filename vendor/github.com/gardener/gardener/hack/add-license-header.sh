@@ -1,35 +1,29 @@
 #!/usr/bin/env bash
-# Copyright 2023 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file.
+# SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 set -e
 
 echo "> Adding Apache License header to all go files where it is not present"
 
+# addlicence with a license file (parameter -f) expects no comments in the file.
+# LICENSE_BOILERPLATE.txt is however also used also when generating go code.
+# Therefore we remove '//' from LICENSE_BOILERPLATE.txt here before passing it to addlicense.
+
+temp_file=$(mktemp)
+trap "rm -f $temp_file" EXIT
+sed 's|^// *||' hack/LICENSE_BOILERPLATE.txt > $temp_file
+
 addlicense \
-  -c "SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file." \
-  -y "$(date +"%Y")" \
-  -l apache \
+  -f $temp_file \
   -ignore ".idea/**" \
   -ignore ".vscode/**" \
   -ignore "dev/**" \
-  -ignore "vendor/**" \
   -ignore "**/*.md" \
   -ignore "**/*.html" \
   -ignore "**/*.yaml" \
   -ignore "**/Dockerfile" \
-  -ignore "hack/tools/gomegacheck/**" \
-  -ignore "pkg/component/**/*.sh" \
+  -ignore "pkg/**/*.sh" \
   -ignore "third_party/gopkg.in/yaml.v2/**" \
   .

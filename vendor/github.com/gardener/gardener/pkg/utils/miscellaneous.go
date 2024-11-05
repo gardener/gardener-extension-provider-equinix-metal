@@ -1,20 +1,11 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -22,22 +13,8 @@ import (
 	"strings"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
-
-// ValueExists returns true or false, depending on whether the given string <value>
-// is part of the given []string list <list>.
-func ValueExists(value string, list []string) bool {
-	for _, v := range list {
-		if v == value {
-			return true
-		}
-	}
-	return false
-}
 
 // MergeMaps takes two maps <a>, <b> and merges them. If <b> defines a value with a key
 // already existing in the <a> map, the <a> value for that key will be overwritten.
@@ -114,6 +91,7 @@ func FindFreePort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
@@ -133,42 +111,6 @@ func IDForKeyWithOptionalValue(key string, value *string) string {
 		v = "=" + *value
 	}
 	return key + v
-}
-
-// QuantityPtr returns a Quantity pointer to its argument.
-func QuantityPtr(q resource.Quantity) *resource.Quantity {
-	return &q
-}
-
-// ProtocolPtr returns a corev1.Protocol pointer to its argument.
-func ProtocolPtr(protocol corev1.Protocol) *corev1.Protocol {
-	return &protocol
-}
-
-// TimePtr returns a time.Time pointer to its argument.
-func TimePtr(t time.Time) *time.Time {
-	return &t
-}
-
-// TimePtrDeref dereferences the time.Time ptr and returns it if not nil, or else
-// returns def.
-func TimePtrDeref(ptr *time.Time, def time.Time) time.Time {
-	if ptr != nil {
-		return *ptr
-	}
-	return def
-}
-
-// IntStrPtrFromInt32 returns an intstr.IntOrString pointer to its argument.
-func IntStrPtrFromInt32(port int32) *intstr.IntOrString {
-	v := intstr.FromInt32(port)
-	return &v
-}
-
-// IntStrPtrFromString returns an intstr.IntOrString pointer to its argument.
-func IntStrPtrFromString(port string) *intstr.IntOrString {
-	v := intstr.FromString(port)
-	return &v
 }
 
 // Indent indents the given string with the given number of spaces.
@@ -214,12 +156,25 @@ func FilterEntriesByPrefix(prefix string, entries []string) []string {
 	return result
 }
 
+// FilterEntriesByFilterFn returns a list of entries which passes the filter function.
+func FilterEntriesByFilterFn(entries []string, filterFn func(entry string) bool) []string {
+	var result []string
+	for _, entry := range entries {
+		if filterFn != nil && !filterFn(entry) {
+			continue
+		}
+
+		result = append(result, entry)
+	}
+	return result
+}
+
 // ComputeOffsetIP parses the provided <subnet> and offsets with the value of <offset>.
 // For example, <subnet> = 100.64.0.0/11 and <offset> = 10 the result would be 100.64.0.10
 // IPv6 and IPv4 is supported.
 func ComputeOffsetIP(subnet *net.IPNet, offset int64) (net.IP, error) {
 	if subnet == nil {
-		return nil, fmt.Errorf("subnet is nil")
+		return nil, errors.New("subnet is nil")
 	}
 
 	isIPv6 := false

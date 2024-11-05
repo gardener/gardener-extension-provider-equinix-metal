@@ -1,16 +1,6 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kubernetes
 
@@ -23,12 +13,26 @@ import (
 )
 
 var (
-	lowestSupportedKubernetesVersionMajorMinor = "1.24"
+	defaultPlugins = []gardencorev1beta1.AdmissionPlugin{
+		{Name: "Priority"},
+		{Name: "NamespaceLifecycle"},
+		{Name: "LimitRanger"},
+		{Name: "PodSecurity"},
+		{Name: "ServiceAccount"},
+		{Name: "NodeRestriction"},
+		{Name: "DefaultStorageClass"},
+		{Name: "DefaultTolerationSeconds"},
+		{Name: "ResourceQuota"},
+		{Name: "StorageObjectInUseProtection"},
+		{Name: "MutatingAdmissionWebhook"},
+		{Name: "ValidatingAdmissionWebhook"},
+	}
+
+	lowestSupportedKubernetesVersionMajorMinor = "1.25"
 	lowestSupportedKubernetesVersion, _        = semver.NewVersion(lowestSupportedKubernetesVersionMajorMinor)
 
 	admissionPlugins = map[string][]gardencorev1beta1.AdmissionPlugin{
-		"1.24": getDefaultPlugins("1.24"),
-		"1.25": getDefaultPlugins("1.25"),
+		"1.25": defaultPlugins,
 	}
 )
 
@@ -59,44 +63,6 @@ func getAdmissionPluginsForVersionInternal(v string) []gardencorev1beta1.Admissi
 	// to handle decrementing the major part at all, as if Gardener supports Kubernetes 2.X (independent of the fact
 	// that it's anyway unclear when/whether that will come) many parts have to be adapted anyway.
 	return GetAdmissionPluginsForVersion(formatMajorMinor(version.Major(), version.Minor()-1))
-}
-
-func getDefaultPlugins(version string) []gardencorev1beta1.AdmissionPlugin {
-	var admissionPlugins []gardencorev1beta1.AdmissionPlugin
-	switch version {
-	case "1.24":
-		admissionPlugins = append(admissionPlugins, []gardencorev1beta1.AdmissionPlugin{
-			{Name: "Priority"},
-			{Name: "NamespaceLifecycle"},
-			{Name: "LimitRanger"},
-			{Name: "PodSecurityPolicy"},
-			{Name: "PodSecurity"},
-			{Name: "ServiceAccount"},
-			{Name: "NodeRestriction"},
-			{Name: "DefaultStorageClass"},
-			{Name: "DefaultTolerationSeconds"},
-			{Name: "ResourceQuota"},
-			{Name: "StorageObjectInUseProtection"},
-			{Name: "MutatingAdmissionWebhook"},
-			{Name: "ValidatingAdmissionWebhook"},
-		}...)
-	case "1.25":
-		admissionPlugins = append(admissionPlugins, []gardencorev1beta1.AdmissionPlugin{
-			{Name: "Priority"},
-			{Name: "NamespaceLifecycle"},
-			{Name: "LimitRanger"},
-			{Name: "PodSecurity"},
-			{Name: "ServiceAccount"},
-			{Name: "NodeRestriction"},
-			{Name: "DefaultStorageClass"},
-			{Name: "DefaultTolerationSeconds"},
-			{Name: "ResourceQuota"},
-			{Name: "StorageObjectInUseProtection"},
-			{Name: "MutatingAdmissionWebhook"},
-			{Name: "ValidatingAdmissionWebhook"},
-		}...)
-	}
-	return admissionPlugins
 }
 
 func formatMajorMinor(major, minor uint64) string {

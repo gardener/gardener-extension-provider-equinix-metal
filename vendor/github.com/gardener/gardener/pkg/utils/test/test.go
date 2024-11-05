@@ -1,16 +1,6 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package test
 
@@ -28,8 +18,8 @@ import (
 	"k8s.io/component-base/featuregate"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
+	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 )
 
 // WithVar sets the given var to the src value and returns a function to revert to the original state.
@@ -231,7 +221,7 @@ func EXPECTPatchWithOptimisticLock(ctx interface{}, c *mockclient.MockClient, ex
 
 func expectPatch(ctx interface{}, c *mockclient.MockClient, expectedObj client.Object, expectedPatch client.Patch, rets ...interface{}) *gomock.Call {
 	expectedData, expectedErr := expectedPatch.Data(expectedObj)
-	Expect(expectedErr).To(BeNil())
+	Expect(expectedErr).NotTo(HaveOccurred())
 
 	if rets == nil {
 		rets = []interface{}{nil}
@@ -250,7 +240,7 @@ func expectPatch(ctx interface{}, c *mockclient.MockClient, expectedObj client.O
 
 			Expect(obj).To(DeepEqual(expectedObj))
 			data, err := patch.Data(obj)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(patch.Type()).To(Equal(expectedPatch.Type()))
 			Expect(string(data)).To(Equal(string(expectedData)))
 			return nil
@@ -260,7 +250,7 @@ func expectPatch(ctx interface{}, c *mockclient.MockClient, expectedObj client.O
 
 func expectStatusPatch(ctx interface{}, c *mockclient.MockStatusWriter, expectedObj client.Object, expectedPatch client.Patch, rets ...interface{}) *gomock.Call {
 	expectedData, expectedErr := expectedPatch.Data(expectedObj)
-	Expect(expectedErr).To(BeNil())
+	Expect(expectedErr).NotTo(HaveOccurred())
 
 	if rets == nil {
 		rets = []interface{}{nil}
@@ -279,7 +269,7 @@ func expectStatusPatch(ctx interface{}, c *mockclient.MockStatusWriter, expected
 
 			Expect(obj).To(DeepEqual(expectedObj))
 			data, err := patch.Data(obj)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(patch.Type()).To(Equal(expectedPatch.Type()))
 			Expect(string(data)).To(Equal(string(expectedData)))
 			return nil

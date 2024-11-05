@@ -1,9 +1,6 @@
 /*
 Metal API
 
-# Introduction Equinix Metal provides a RESTful HTTP API which can be reached at <https://api.equinix.com/metal/v1>. This document describes the API and how to use it.  The API allows you to programmatically interact with all of your Equinix Metal resources, including devices, networks, addresses, organizations, projects, and your user account. Every feature of the Equinix Metal web interface is accessible through the API.  The API docs are generated from the Equinix Metal OpenAPI specification and are officially hosted at <https://metal.equinix.com/developers/api>.  # Common Parameters  The Equinix Metal API uses a few methods to minimize network traffic and improve throughput. These parameters are not used in all API calls, but are used often enough to warrant their own section. Look for these parameters in the documentation for the API calls that support them.  ## Pagination  Pagination is used to limit the number of results returned in a single request. The API will return a maximum of 100 results per page. To retrieve additional results, you can use the `page` and `per_page` query parameters.  The `page` parameter is used to specify the page number. The first page is `1`. The `per_page` parameter is used to specify the number of results per page. The maximum number of results differs by resource type.  ## Sorting  Where offered, the API allows you to sort results by a specific field. To sort results use the `sort_by` query parameter with the root level field name as the value. The `sort_direction` parameter is used to specify the sort direction, either either `asc` (ascending) or `desc` (descending).  ## Filtering  Filtering is used to limit the results returned in a single request. The API supports filtering by certain fields in the response. To filter results, you can use the field as a query parameter.  For example, to filter the IP list to only return public IPv4 addresses, you can filter by the `type` field, as in the following request:  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/projects/id/ips?type=public_ipv4 ```  Only IP addresses with the `type` field set to `public_ipv4` will be returned.  ## Searching  Searching is used to find matching resources using multiple field comparissons. The API supports searching in resources that define this behavior. Currently the search parameter is only available on devices, ssh_keys, api_keys and memberships endpoints.  To search resources you can use the `search` query parameter.  ## Include and Exclude  For resources that contain references to other resources, sucha as a Device that refers to the Project it resides in, the Equinix Metal API will returns `href` values (API links) to the associated resource.  ```json {   ...   \"project\": {     \"href\": \"/metal/v1/projects/f3f131c8-f302-49ef-8c44-9405022dc6dd\"   } } ```  If you're going need the project details, you can avoid a second API request.  Specify the contained `href` resources and collections that you'd like to have included in the response using the `include` query parameter.  For example:  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=projects ```  The `include` parameter is generally accepted in `GET`, `POST`, `PUT`, and `PATCH` requests where `href` resources are presented.  To have multiple resources include, use a comma-separated list (e.g. `?include=emails,projects,memberships`).  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=emails,projects,memberships ```  You may also include nested associations up to three levels deep using dot notation (`?include=memberships.projects`):  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=memberships.projects ```  To exclude resources, and optimize response delivery, use the `exclude` query parameter. The `exclude` parameter is generally accepted in `GET`, `POST`, `PUT`, and `PATCH` requests for fields with nested object responses. When excluded, these fields will be replaced with an object that contains only an `href` field.
-
-API version: 1.0.0
 Contact: support@equinixmetal.com
 */
 
@@ -25,7 +22,7 @@ type InstancesBatchCreateInputBatchesInner struct {
 	Hostnames []string `json:"hostnames,omitempty"`
 	// The number of devices to create in this batch. The hostname may contain an `{{index}}` placeholder, which will be replaced with the index of the device in the batch. For example, if the hostname is `device-{{index}}`, the first device in the batch will have the hostname `device-01`, the second device will have the hostname `device-02`, and so on.
 	Quantity *int32 `json:"quantity,omitempty"`
-	// Metro code or ID of where the instance should be provisioned in. Either metro or facility must be provided.
+	// Metro code or ID of where the device should be provisioned in, or it can be instructed to create the device in the best available metro with `{ \"metro\": \"any\" }`. The special metro value of any means anywhere, any metro. When any is chosen in the request, the metro location is picked per our scheduling algorithms that favor the following factors: hardware reservation location (if requesting reserved hardware), ip reservations, spot instances, etc. The any keyword *does not* optimize for cost, this means that usage costs (instance, transfer, other features dependent on location) will vary. Please check metro value in response to see where the device was created. Either metro or facility must be provided.
 	Metro string `json:"metro"`
 	// When true, devices with a `custom_ipxe` OS will always boot to iPXE. The default setting of false ensures that iPXE will be used on only the first boot.
 	AlwaysPxe    *bool                          `json:"always_pxe,omitempty"`
@@ -36,13 +33,13 @@ type InstancesBatchCreateInputBatchesInner struct {
 	Description *string `json:"description,omitempty"`
 	// The features attribute allows you to optionally specify what features your server should have.  In the API shorthand syntax, all features listed are `required`:  ``` { \"features\": [\"tpm\"] } ```  Alternatively, if you do not require a certain feature, but would prefer to be assigned a server with that feature if there are any available, you may specify that feature with a `preferred` value. The request will not fail if we have no servers with that feature in our inventory. The API offers an alternative syntax for mixing preferred and required features:  ``` { \"features\": { \"tpm\": \"required\", \"raid\": \"preferred\" } } ```  The request will only fail if there are no available servers matching the required `tpm` criteria.
 	Features []string `json:"features,omitempty"`
-	// The Hardware Reservation UUID to provision. Alternatively, `next-available` can be specified to select from any of the available hardware reservations. An error will be returned if the requested reservation option is not available.  See [Reserved Hardware](https://metal.equinix.com/developers/docs/deploy/reserved/) for more details.
+	// The Hardware Reservation UUID to provision. Alternatively, `next-available` can be specified to select from any of the available hardware reservations. An error will be returned if the requested reservation option is not available.  See [Reserved Hardware](https://deploy.equinix.com/developers/docs/metal/deploy/reserved/) for more details.
 	HardwareReservationId *string `json:"hardware_reservation_id,omitempty"`
 	// The hostname to use within the operating system. The same hostname may be used on multiple devices within a project.
 	Hostname *string `json:"hostname,omitempty"`
 	// The `ip_addresses attribute will allow you to specify the addresses you want created with your device.  The default value configures public IPv4, public IPv6, and private IPv4.  Private IPv4 address is required. When specifying `ip_addresses`, one of the array items must enable private IPv4.  Some operating systems require public IPv4 address. In those cases you will receive an error message if public IPv4 is not enabled.  For example, to only configure your server with a private IPv4 address, you can send `{ \"ip_addresses\": [{ \"address_family\": 4, \"public\": false }] }`.  It is possible to request a subnet size larger than a `/30` by assigning addresses using the UUID(s) of ip_reservations in your project.  For example, `{ \"ip_addresses\": [..., {\"address_family\": 4, \"public\": true, \"ip_reservations\": [\"uuid1\", \"uuid2\"]}] }`  To access a server without public IPs, you can use our Out-of-Band console access (SOS) or proxy through another server in the project with public IPs enabled.
 	IpAddresses []IPAddress `json:"ip_addresses,omitempty"`
-	// When set, the device will chainload an iPXE Script at boot fetched from the supplied URL.  See [Custom iPXE](https://metal.equinix.com/developers/docs/operating-systems/custom-ipxe/) for more details.
+	// When set, the device will chainload an iPXE Script at boot fetched from the supplied URL.  See [Custom iPXE](https://deploy.equinix.com/developers/docs/metal/operating-systems/custom-ipxe/) for more details.
 	IpxeScriptUrl *string `json:"ipxe_script_url,omitempty"`
 	// Whether the device should be locked, preventing accidental deletion.
 	Locked *bool `json:"locked,omitempty"`
@@ -72,7 +69,7 @@ type InstancesBatchCreateInputBatchesInner struct {
 	TerminationTime *time.Time `json:"termination_time,omitempty"`
 	// A list of UUIDs identifying the users that should be authorized to access this device (typically via /root/.ssh/authorized_keys).  These keys will also appear in the device metadata.  The users must be members of the project or organization.  If no SSH keys are specified (`user_ssh_keys`, `project_ssh_keys`, and `ssh_keys` are all empty lists or omitted), all parent project keys, parent project members keys and organization members keys will be included. This behaviour can be changed with 'no_ssh_keys' option to omit any SSH key being added.
 	UserSshKeys []string `json:"user_ssh_keys,omitempty"`
-	// The userdata presented in the metadata service for this device.  Userdata is fetched and interpreted by the operating system installed on the device. Acceptable formats are determined by the operating system, with the exception of a special iPXE enabling syntax which is handled before the operating system starts.  See [Server User Data](https://metal.equinix.com/developers/docs/servers/user-data/) and [Provisioning with Custom iPXE](https://metal.equinix.com/developers/docs/operating-systems/custom-ipxe/#provisioning-with-custom-ipxe) for more details.
+	// The userdata presented in the metadata service for this device.  Userdata is fetched and interpreted by the operating system installed on the device. Acceptable formats are determined by the operating system, with the exception of a special iPXE enabling syntax which is handled before the operating system starts.  See [Server User Data](https://deploy.equinix.com/developers/docs/metal/server-metadata/user-data/) and [Provisioning with Custom iPXE](https://deploy.equinix.com/developers/docs/metal/operating-systems/custom-ipxe/#provisioning-with-custom-ipxe) for more details.
 	Userdata *string `json:"userdata,omitempty"`
 	// The datacenter where the device should be created.  Either metro or facility must be provided.  The API will accept either a single facility `{ \"facility\": \"f1\" }`, or it can be instructed to create the device in the best available datacenter `{ \"facility\": \"any\" }`.  Additionally it is possible to set a prioritized location selection. For example `{ \"facility\": [\"f3\", \"f2\", \"any\"] }` can be used to prioritize `f3` and then `f2` before accepting `any` facility. If none of the facilities provided have availability for the requested device the request will fail.
 	// Deprecated
@@ -99,10 +96,6 @@ func NewInstancesBatchCreateInputBatchesInner(metro string, operatingSystem stri
 	this.NoSshKeys = &noSshKeys
 	this.OperatingSystem = operatingSystem
 	this.Plan = plan
-	var privateIpv4SubnetSize int32 = 28
-	this.PrivateIpv4SubnetSize = &privateIpv4SubnetSize
-	var publicIpv4SubnetSize int32 = 31
-	this.PublicIpv4SubnetSize = &publicIpv4SubnetSize
 	this.Facility = facility
 	return &this
 }
@@ -120,10 +113,6 @@ func NewInstancesBatchCreateInputBatchesInnerWithDefaults() *InstancesBatchCreat
 	this.Locked = &locked
 	var noSshKeys bool = false
 	this.NoSshKeys = &noSshKeys
-	var privateIpv4SubnetSize int32 = 28
-	this.PrivateIpv4SubnetSize = &privateIpv4SubnetSize
-	var publicIpv4SubnetSize int32 = 31
-	this.PublicIpv4SubnetSize = &publicIpv4SubnetSize
 	return &this
 }
 

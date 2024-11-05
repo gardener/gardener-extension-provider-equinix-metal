@@ -1,16 +1,6 @@
-// Copyright 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package certificates
 
@@ -22,8 +12,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -57,8 +48,11 @@ type reloader struct {
 
 // AddToManager does an initial retrieval of an existing webhook server secret and then adds reloader to the given
 // manager in order to periodically reload the secret from the cluster.
-func (r *reloader) AddToManager(ctx context.Context, mgr manager.Manager) error {
+func (r *reloader) AddToManager(ctx context.Context, mgr manager.Manager, sourceCluster cluster.Cluster) error {
 	r.reader = mgr.GetClient()
+	if sourceCluster != nil {
+		r.reader = sourceCluster.GetClient()
+	}
 
 	webhookServer := mgr.GetWebhookServer()
 	defaultServer, ok := webhookServer.(*webhook.DefaultServer)
@@ -68,7 +62,12 @@ func (r *reloader) AddToManager(ctx context.Context, mgr manager.Manager) error 
 	r.certDir = defaultServer.Options.CertDir
 
 	// initial retrieval of server cert, needed in order for the webhook server to start successfully
-	found, _, serverCert, serverKey, err := r.getServerCert(ctx, mgr.GetAPIReader())
+	apiReader := mgr.GetAPIReader()
+	if sourceCluster != nil {
+		apiReader = sourceCluster.GetAPIReader()
+	}
+
+	found, _, serverCert, serverKey, err := r.getServerCert(ctx, apiReader)
 	if err != nil {
 		return err
 	}
@@ -86,7 +85,7 @@ func (r *reloader) AddToManager(ctx context.Context, mgr manager.Manager) error 
 	// add controller that reloads the server cert secret periodically
 	ctrl, err := controller.NewUnmanaged(certificateReloaderName, mgr, controller.Options{
 		Reconciler:   r,
-		RecoverPanic: pointer.Bool(true),
+		RecoverPanic: ptr.To(true),
 		// if going into exponential backoff, wait at most the configured sync period
 		RateLimiter: workqueue.NewWithMaxWaitRateLimiter(workqueue.DefaultControllerRateLimiter(), r.SyncPeriod),
 	})

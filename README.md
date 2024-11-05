@@ -1,6 +1,7 @@
 # [Gardener Extension for Equinix Metal provider](https://gardener.cloud)
 
-[![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job)
+[![REUSE status](https://api.reuse.software/badge/github.com/gardener/gardener-extension-provider-equinix-metal)](https://api.reuse.software/info/github.com/gardener/gardener-extension-provider-equinix-metal)
+[![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener-public/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener-public/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gardener/gardener-extension-provider-equinix-metal)](https://goreportcard.com/report/github.com/gardener/gardener-extension-provider-equinix-metal)
 
 Project Gardener implements the automated management and operation of [Kubernetes](https://kubernetes.io/) clusters as a service.
@@ -23,6 +24,7 @@ This extension controller supports the following Kubernetes versions:
 
 | Version         | Support     | Conformance test results |
 | --------------- | ----------- | ------------------------ |
+| Kubernetes 1.30 | untested    | N/A                      |
 | Kubernetes 1.29 | untested    | N/A                      |
 | Kubernetes 1.28 | untested    | N/A                      |
 | Kubernetes 1.27 | untested    | N/A                      |
@@ -38,6 +40,14 @@ Please take a look [here](https://github.com/gardener/gardener/blob/master/docs/
 You can run the controller locally on your machine by executing `make start`.
 
 Static code checks and tests can be executed by running `make verify`. We are using Go modules for Golang package dependency management and [Ginkgo](https://github.com/onsi/ginkgo)/[Gomega](https://github.com/onsi/gomega) for testing.
+
+## Caveats
+You can use all available disks on your Equinix instance, but only under 
+certain conditions:
+* You must use Flatcar
+* You must have a homogenous worker pool (all workers use the same OS and 
+  container engine)
+* You must set any value for `DataVolume`
 
 ## Feedback and Support
 

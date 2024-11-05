@@ -1,38 +1,25 @@
-// Copyright 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kubelet
 
 import (
 	"fmt"
 	"slices"
-	"time"
 
 	"github.com/Masterminds/semver/v3"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/extensions/operatingsystemconfig/original/components"
 	"github.com/gardener/gardener/pkg/component/extensions/operatingsystemconfig/original/components/containerd"
-	"github.com/gardener/gardener/pkg/utils/imagevector"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	versionutils "github.com/gardener/gardener/pkg/utils/version"
 )
 
 // CLIFlags returns a list of kubelet CLI flags based on the provided parameters and for the provided Kubernetes version.
-func CLIFlags(kubernetesVersion *semver.Version, nodeLabels map[string]string, criName extensionsv1alpha1.CRIName, image *imagevector.Image, cliFlags components.ConfigurableKubeletCLIFlags) []string {
+func CLIFlags(kubernetesVersion *semver.Version, nodeLabels map[string]string, criName extensionsv1alpha1.CRIName, cliFlags components.ConfigurableKubeletCLIFlags, preferIPv6 bool) []string {
 	setCLIFlagsDefaults(&cliFlags)
 
 	var flags []string
@@ -53,26 +40,18 @@ func CLIFlags(kubernetesVersion *semver.Version, nodeLabels map[string]string, c
 		if versionutils.ConstraintK8sLess127.Check(kubernetesVersion) {
 			flags = append(flags, "--container-runtime=remote")
 		}
-	} else if criName == extensionsv1alpha1.CRINameDocker {
-		flags = append(flags,
-			"--network-plugin=cni",
-			"--cni-bin-dir=/opt/cni/bin/",
-			"--cni-conf-dir=/etc/cni/net.d/",
-			fmt.Sprintf("--image-pull-progress-deadline=%s", cliFlags.ImagePullProgressDeadline.Duration.String()))
-		if image != nil {
-			flags = append(flags, "--pod-infra-container-image="+image.String())
-		}
 	}
 
 	flags = append(flags, "--v=2")
-
+	// This is needed to prefer the ipv6 address over the ipv4 address in case the node has two addresses.
+	// It's important for ipv6-only services with pods in the host network and for vpn, so that the ipv6 address of a node is used.
+	if preferIPv6 {
+		flags = append(flags, "--node-ip=\"::\"")
+	}
 	return flags
 }
 
-func setCLIFlagsDefaults(f *components.ConfigurableKubeletCLIFlags) {
-	if f.ImagePullProgressDeadline == nil {
-		f.ImagePullProgressDeadline = &metav1.Duration{Duration: time.Minute}
-	}
+func setCLIFlagsDefaults(_ *components.ConfigurableKubeletCLIFlags) {
 }
 
 func nodeLabelFlags(nodeLabels map[string]string) []string {

@@ -1,23 +1,13 @@
-// Copyright 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kubernetes
 
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
@@ -32,10 +22,10 @@ func GetReplicaCount(failureToleranceType *gardencorev1beta1.FailureToleranceTyp
 	if failureToleranceType != nil &&
 		*failureToleranceType == "" &&
 		componentType == resourcesv1alpha1.HighAvailabilityConfigTypeController {
-		return pointer.Int32(1)
+		return ptr.To[int32](1)
 	}
 
-	return pointer.Int32(2)
+	return ptr.To[int32](2)
 }
 
 // GetNodeSelectorRequirementForZones returns a node selector requirement to ensure all pods are scheduled only on
@@ -63,13 +53,14 @@ func GetTopologySpreadConstraints(
 	labelSelector metav1.LabelSelector,
 	numberOfZones int32,
 	failureToleranceType *gardencorev1beta1.FailureToleranceType,
+	enforceSpreadAcrossHosts bool,
 ) []corev1.TopologySpreadConstraint {
 	if replicas <= 1 {
 		return nil
 	}
 
 	whenUnsatisfiable := corev1.ScheduleAnyway
-	if failureToleranceType != nil && *failureToleranceType != "" {
+	if (failureToleranceType != nil && *failureToleranceType != "") || enforceSpreadAcrossHosts {
 		whenUnsatisfiable = corev1.DoNotSchedule
 	}
 
@@ -108,8 +99,8 @@ func minDomains(numberOfZones, maxReplicas int32) *int32 {
 	// the number of replicas because there is no benefit of enforcing a further zone spread for additional replicas,
 	// e.g. when a rolling update is performed.
 	if maxReplicas < numberOfZones {
-		return pointer.Int32(maxReplicas)
+		return ptr.To(maxReplicas)
 	}
 	// Return the number of zones otherwise because it's not possible to spread pods over more zones than there are available.
-	return pointer.Int32(numberOfZones)
+	return ptr.To(numberOfZones)
 }

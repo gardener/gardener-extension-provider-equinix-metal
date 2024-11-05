@@ -1,16 +1,6 @@
-// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kubernetes
 
@@ -22,6 +12,9 @@ import (
 	hvpav1alpha1 "github.com/gardener/hvpa-controller/api/v1alpha1"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	volumesnapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1alpha1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1alpha1"
+	monitoringv1beta1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1beta1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apiextensionsscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
@@ -46,6 +39,7 @@ import (
 	operationsinstall "github.com/gardener/gardener/pkg/apis/operations/install"
 	operatorv1alpha1 "github.com/gardener/gardener/pkg/apis/operator/v1alpha1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
+	securityinstall "github.com/gardener/gardener/pkg/apis/security/install"
 	seedmanagementinstall "github.com/gardener/gardener/pkg/apis/seedmanagement/install"
 	settingsinstall "github.com/gardener/gardener/pkg/apis/settings/install"
 	"github.com/gardener/gardener/pkg/chartrenderer"
@@ -101,6 +95,7 @@ var (
 		settingsinstall.AddToScheme,
 		operationsinstall.AddToScheme,
 		apiregistrationscheme.AddToScheme,
+		securityinstall.AddToScheme,
 	)
 
 	seedSchemeBuilder = runtime.NewSchemeBuilder(
@@ -116,6 +111,9 @@ var (
 		istionetworkingv1beta1.AddToScheme,
 		istionetworkingv1alpha3.AddToScheme,
 		fluentbitv1alpha2.AddToScheme,
+		monitoringv1.AddToScheme,
+		monitoringv1beta1.AddToScheme,
+		monitoringv1alpha1.AddToScheme,
 	)
 
 	shootSchemeBuilder = runtime.NewSchemeBuilder(

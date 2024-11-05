@@ -1,16 +1,6 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package worker
 
@@ -24,28 +14,11 @@ import (
 	genericworkeractuator "github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
-
-// MachineClassKind yields the name of the machine class.
-func (w *workerDelegate) MachineClassKind() string {
-	return "MachineClass"
-}
-
-// MachineClass yields a newly initialized machine class object.
-func (w *workerDelegate) MachineClass() client.Object {
-	return &machinev1alpha1.MachineClass{}
-}
-
-// MachineClassList yields a newly initialized MachineClassList object.
-func (w *workerDelegate) MachineClassList() client.ObjectList {
-	return &machinev1alpha1.MachineClassList{}
-}
 
 // DeployMachineClasses generates and creates the Equinix Metal specific machine classes.
 func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
@@ -114,6 +87,11 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			IPXEScriptURL: machineImage.IPXEScriptURL,
 		})
 
+		userData, err := worker.FetchUserData(ctx, w.client, w.worker.Namespace, pool)
+		if err != nil {
+			return err
+		}
+
 		machineClassSpec := map[string]interface{}{
 			"OS":            machineImage.ID,
 			"ipxeScriptUrl": machineImage.IPXEScriptURL,
@@ -127,7 +105,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 				"kubernetes.io/role/node",
 			},
 			"secret": map[string]interface{}{
-				"cloudConfig": string(pool.UserData),
+				"cloudConfig": string(userData),
 			},
 			"credentialsSecretRef": map[string]interface{}{
 				"name":      w.worker.Spec.SecretRef.Name,
@@ -168,7 +146,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 
 		machineClassSpec["name"] = className
 		machineClassSpec["labels"] = map[string]string{
-			v1beta1constants.GardenerPurpose: genericworkeractuator.GardenPurposeMachineClass,
+			v1beta1constants.GardenerPurpose: v1beta1constants.GardenPurposeMachineClass,
 		}
 
 		machineClasses = append(machineClasses, machineClassSpec)

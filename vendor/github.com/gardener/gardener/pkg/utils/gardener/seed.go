@@ -1,16 +1,6 @@
-// Copyright 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package gardener
 
@@ -23,7 +13,6 @@ import (
 
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,8 +21,6 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	operatorv1alpha1 "github.com/gardener/gardener/pkg/apis/operator/v1alpha1"
-	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 )
 
 const (
@@ -128,18 +115,6 @@ func GetWildcardCertificate(ctx context.Context, c client.Client) (*corev1.Secre
 	return nil, nil
 }
 
-// SeedIsGarden returns 'true' if the cluster is registered as a Garden cluster.
-func SeedIsGarden(ctx context.Context, seedClient client.Reader) (bool, error) {
-	seedIsGarden, err := kubernetesutils.ResourcesExist(ctx, seedClient, operatorv1alpha1.SchemeGroupVersion.WithKind("GardenList"))
-	if err != nil {
-		if !meta.IsNoMatchError(err) {
-			return false, err
-		}
-		seedIsGarden = false
-	}
-	return seedIsGarden, nil
-}
-
 // ComputeRequiredExtensionsForSeed computes the extension kind/type combinations that are required for the
 // seed reconciliation flow.
 func ComputeRequiredExtensionsForSeed(seed *gardencorev1beta1.Seed) sets.Set[string] {
@@ -190,4 +165,10 @@ func RequiredExtensionsReady(ctx context.Context, gardenClient client.Client, se
 	}
 
 	return nil
+}
+
+// GetIPStackForSeed returns the value for the AnnotationKeyIPStack annotation based on the given seed.
+// It falls back to IPv4 if no IP families are available.
+func GetIPStackForSeed(seed *gardencorev1beta1.Seed) string {
+	return getIPStackForFamilies(seed.Spec.Networks.IPFamilies)
 }

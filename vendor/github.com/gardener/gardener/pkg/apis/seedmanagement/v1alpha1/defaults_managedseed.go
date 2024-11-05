@@ -1,36 +1,20 @@
-// Copyright 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/apis/seedmanagement/encoding"
 	gardenletv1alpha1 "github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1"
 )
-
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	return RegisterDefaults(scheme)
-}
 
 // SetDefaults_ManagedSeed sets default values for ManagedSeed objects.
 func SetDefaults_ManagedSeed(obj *ManagedSeed) {
@@ -43,12 +27,12 @@ func SetDefaults_ManagedSeed(obj *ManagedSeed) {
 func SetDefaults_GardenletDeployment(obj *GardenletDeployment) {
 	// Set default replica count
 	if obj.ReplicaCount == nil {
-		obj.ReplicaCount = pointer.Int32(2)
+		obj.ReplicaCount = ptr.To[int32](2)
 	}
 
 	// Set default revision history limit
 	if obj.RevisionHistoryLimit == nil {
-		obj.RevisionHistoryLimit = pointer.Int32(2)
+		obj.RevisionHistoryLimit = ptr.To[int32](2)
 	}
 
 	// Set default image
@@ -58,7 +42,7 @@ func SetDefaults_GardenletDeployment(obj *GardenletDeployment) {
 
 	// Set default VPA
 	if obj.VPA == nil {
-		obj.VPA = pointer.Bool(true)
+		obj.VPA = ptr.To(true)
 	}
 }
 
@@ -72,6 +56,7 @@ func SetDefaults_Image(obj *Image) {
 		} else {
 			pullPolicy = corev1.PullIfNotPresent
 		}
+
 		obj.PullPolicy = &pullPolicy
 	}
 }
@@ -115,7 +100,7 @@ func setDefaultsGardenlet(obj *Gardenlet, name, namespace string) {
 
 	// Set default merge with parent
 	if obj.MergeWithParent == nil {
-		obj.MergeWithParent = pointer.Bool(true)
+		obj.MergeWithParent = ptr.To(true)
 	}
 }
 
@@ -134,7 +119,7 @@ func setDefaultsGardenletConfiguration(obj *gardenletv1alpha1.GardenletConfigura
 	}
 
 	// Set seed spec defaults
-	setDefaultsSeedSpec(&obj.SeedConfig.SeedTemplate.Spec, name, namespace, false)
+	setDefaultsSeedSpec(&obj.SeedConfig.SeedTemplate.Spec, name, namespace)
 }
 
 func setDefaultsResources(obj *gardenletv1alpha1.ResourcesConfiguration) {
@@ -146,16 +131,10 @@ func setDefaultsResources(obj *gardenletv1alpha1.ResourcesConfiguration) {
 	}
 }
 
-func setDefaultsSeedSpec(spec *gardencorev1beta1.SeedSpec, name, namespace string, withSecretRef bool) {
-	if spec.SecretRef == nil && withSecretRef {
-		spec.SecretRef = &corev1.SecretReference{
-			Name:      fmt.Sprintf("seed-%s", name),
-			Namespace: namespace,
-		}
-	}
+func setDefaultsSeedSpec(spec *gardencorev1beta1.SeedSpec, name, namespace string) {
 	if spec.Backup != nil && spec.Backup.SecretRef == (corev1.SecretReference{}) {
 		spec.Backup.SecretRef = corev1.SecretReference{
-			Name:      fmt.Sprintf("backup-%s", name),
+			Name:      "backup-" + name,
 			Namespace: namespace,
 		}
 	}

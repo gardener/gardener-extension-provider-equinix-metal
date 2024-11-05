@@ -1,16 +1,6 @@
-// Copyright 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package gardener
 
@@ -22,8 +12,11 @@ import (
 	"strings"
 
 	"k8s.io/component-base/version"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/utils"
 )
 
@@ -52,6 +45,7 @@ func DetermineIdentity() (*gardencorev1beta1.Gardener, error) {
 		reader := bufio.NewReader(cGroupFile)
 
 		var cgroupV1 string
+
 		for {
 			line, err := reader.ReadString('\n')
 			if err != nil {
@@ -107,4 +101,29 @@ func extractID(line string) string {
 	id = strings.TrimPrefix(id, "docker-")
 
 	return id
+}
+
+// MaintainSeedNameLabels maintains the seed.gardener.cloud/<name>=true labels on the given object.
+func MaintainSeedNameLabels(obj client.Object, names ...*string) {
+	labels := obj.GetLabels()
+
+	for k := range labels {
+		if strings.HasPrefix(k, v1beta1constants.LabelPrefixSeedName) {
+			delete(labels, k)
+		}
+	}
+
+	for _, name := range names {
+		if ptr.Deref(name, "") == "" {
+			continue
+		}
+
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+
+		labels[v1beta1constants.LabelPrefixSeedName+*name] = "true"
+	}
+
+	obj.SetLabels(labels)
 }

@@ -1,16 +1,6 @@
-// Copyright 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kubernetes
 
@@ -23,10 +13,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
 	"github.com/gardener/gardener/pkg/utils"
@@ -87,17 +78,54 @@ func DeleteObjectsFromListConditionally(ctx context.Context, c client.Client, li
 	return flow.Parallel(fns...)(ctx)
 }
 
-// ResourcesExist checks if there is at least one object of the given gvk. The kind in the gvk must be the list kind,
-// for example corev1.SchemeGroupVersion.WithKind("PodList").
-func ResourcesExist(ctx context.Context, reader client.Reader, gvk schema.GroupVersionKind, listOpts ...client.ListOption) (bool, error) {
-	objects := &metav1.PartialObjectMetadataList{}
-	objects.SetGroupVersionKind(gvk)
+// ResourcesExist checks if there is at least one object of the given objList.
+func ResourcesExist(ctx context.Context, reader client.Reader, objList client.ObjectList, scheme *runtime.Scheme, listOpts ...client.ListOption) (bool, error) {
+	objects := objList
+
+	// Use `PartialObjectMetadata` if no or metadata only field selectors are passed (informer's indexers only have access to metadata fields).
+	if hasNoOrMetadataOnlyFieldSelector(listOpts...) {
+		gvk, err := apiutil.GVKForObject(objList, scheme)
+		if err != nil {
+			return false, err
+		}
+
+		objects = &metav1.PartialObjectMetadataList{}
+		objects.(*metav1.PartialObjectMetadataList).SetGroupVersionKind(gvk)
+	}
 
 	if err := reader.List(ctx, objects, append(listOpts, client.Limit(1))...); err != nil {
 		return true, err
 	}
 
-	return len(objects.Items) > 0, nil
+	switch o := objects.(type) {
+	case *metav1.PartialObjectMetadataList:
+		return len(o.Items) > 0, nil
+	default:
+		items, err := meta.ExtractList(objList)
+		if err != nil {
+			return false, err
+		}
+		return len(items) > 0, err
+	}
+}
+
+func hasNoOrMetadataOnlyFieldSelector(listOpts ...client.ListOption) bool {
+	listOptions := &client.ListOptions{}
+	for _, opt := range listOpts {
+		opt.ApplyToList(listOptions)
+	}
+
+	if listOptions.FieldSelector == nil {
+		return true
+	}
+
+	for _, req := range listOptions.FieldSelector.Requirements() {
+		if !strings.HasPrefix(req.Field, "metadata") && req.Field != cache.NamespaceIndex {
+			return false
+		}
+	}
+
+	return true
 }
 
 // MakeUnique takes either a *corev1.ConfigMap or a *corev1.Secret object and makes it immutable, i.e., it sets
@@ -113,17 +141,29 @@ func MakeUnique(obj runtime.Object) error {
 			}
 			return "-"
 		}
+		mergeMaps = func(a map[string]string, b map[string][]byte) map[string][]byte {
+			out := make(map[string][]byte, len(a)+len(b))
+
+			for k, v := range a {
+				out[k] = []byte(v)
+			}
+			for k, v := range b {
+				out[k] = v
+			}
+
+			return out
+		}
 	)
 
 	switch o := obj.(type) {
 	case *corev1.Secret:
-		o.Immutable = pointer.Bool(true)
-		o.Name += prependHyphen(o.Name) + utils.ComputeSecretChecksum(o.Data)[:numberOfChecksumChars]
+		o.Immutable = ptr.To(true)
+		o.Name += prependHyphen(o.Name) + utils.ComputeSecretChecksum(mergeMaps(o.StringData, o.Data))[:numberOfChecksumChars]
 		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyGarbageCollectable, references.LabelValueGarbageCollectable)
 
 	case *corev1.ConfigMap:
-		o.Immutable = pointer.Bool(true)
-		o.Name += prependHyphen(o.Name) + utils.ComputeConfigMapChecksum(o.Data)[:numberOfChecksumChars]
+		o.Immutable = ptr.To(true)
+		o.Name += prependHyphen(o.Name) + utils.ComputeSecretChecksum(mergeMaps(o.Data, o.BinaryData))[:numberOfChecksumChars]
 		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyGarbageCollectable, references.LabelValueGarbageCollectable)
 
 	default:

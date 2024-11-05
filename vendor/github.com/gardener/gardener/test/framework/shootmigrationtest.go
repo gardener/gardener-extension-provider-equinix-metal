@@ -1,22 +1,14 @@
-// Copyright 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package framework
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"reflect"
 	"slices"
@@ -30,14 +22,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	"github.com/gardener/gardener/pkg/utils"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/gardener/gardener/test/utils/access"
 )
@@ -153,7 +144,7 @@ func (t *ShootMigrationTest) MigrateShoot(ctx context.Context) error {
 			shoot.Spec.Tolerations = appendToleration(shoot.Spec.Tolerations, gardencorev1beta1.SeedTaintProtected, nil)
 		}
 		if applyTestRunTaint, err := strconv.ParseBool(t.Config.AddTestRunTaint); applyTestRunTaint && err == nil {
-			shoot.Spec.Tolerations = appendToleration(shoot.Spec.Tolerations, SeedTaintTestRun, pointer.String(GetTestRunID()))
+			shoot.Spec.Tolerations = appendToleration(shoot.Spec.Tolerations, SeedTaintTestRun, ptr.To(GetTestRunID()))
 		}
 		return nil
 	})
@@ -321,7 +312,7 @@ func (t *ShootMigrationTest) compareElementsAfterMigration() error {
 		if !reflect.DeepEqual(secret.Data, t.ComparisonElementsAfterMigration.SecretsMap[name].Data) {
 			errorMsg += fmt.Sprintf("Secret %s/%s did not have it's data persisted.\n", secret.Namespace, secret.Name)
 		}
-		if !reflect.DeepEqual(secret.Labels, t.ComparisonElementsAfterMigration.SecretsMap[name].Labels) {
+		if !maps.Equal(secret.Labels, t.ComparisonElementsAfterMigration.SecretsMap[name].Labels) {
 			errorMsg += fmt.Sprintf("Secret %s/%s did not have it's labels persisted: labels before migration: %v, labels after migration: %v\n",
 				secret.Namespace,
 				secret.Name,
@@ -351,12 +342,12 @@ func (t *ShootMigrationTest) CheckObjectsTimestamp(ctx context.Context, mrExclud
 
 	for _, mr := range mrList.Items {
 		if mr.Spec.Class == nil || *mr.Spec.Class != "seed" {
-			if !utils.ValueExists(mr.GetName(), mrExcludeList) {
+			if !slices.Contains(mrExcludeList, mr.GetName()) {
 				log := t.GardenerFramework.Logger.WithValues("managedResource", client.ObjectKeyFromObject(&mr))
 				log.Info("Found ManagedResource")
 
 				for _, r := range mr.Status.Resources {
-					if len(r.Name) > 9 && utils.ValueExists(r.Name[:len(r.Name)-9], resourcesWithGeneratedName) {
+					if len(r.Name) > 9 && slices.Contains(resourcesWithGeneratedName, r.Name[:len(r.Name)-9]) {
 						continue
 					}
 
@@ -461,11 +452,11 @@ func (t ShootMigrationTest) CheckSecretAndServiceAccount(ctx context.Context) er
 // CleanUpSecretAndServiceAccount cleans up the test secret and service account
 func (t ShootMigrationTest) CleanUpSecretAndServiceAccount(ctx context.Context) error {
 	testSecret, testServiceAccount := constructTestSecretAndServiceAccount()
-	if err := t.ShootClient.Client().Delete(ctx, testSecret); err != nil {
-		return err
-	}
 
-	return t.ShootClient.Client().Delete(ctx, testServiceAccount)
+	return errors.Join(
+		t.ShootClient.Client().Delete(ctx, testSecret),
+		t.ShootClient.Client().Delete(ctx, testServiceAccount),
+	)
 }
 
 func constructTestSecretAndServiceAccount() (*corev1.Secret, *corev1.ServiceAccount) {

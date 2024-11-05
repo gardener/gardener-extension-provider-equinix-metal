@@ -1,21 +1,12 @@
-// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package test
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/onsi/gomega/types"
@@ -48,8 +39,7 @@ func (m *containElementWithPrefixContainingMatcher) Match(actual interface{}) (s
 		return false, nil
 	}
 	values := strings.Split(strings.TrimPrefix(items[i], m.prefix), m.sep)
-	j := extensionswebhook.StringIndex(values, m.value)
-	return j >= 0, nil
+	return slices.Index(values, m.value) >= 0, nil
 }
 
 func (m *containElementWithPrefixContainingMatcher) FailureMessage(actual interface{}) (message string) {

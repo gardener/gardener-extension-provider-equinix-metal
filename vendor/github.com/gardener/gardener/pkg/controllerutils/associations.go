@@ -1,16 +1,6 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package controllerutils
 
@@ -20,7 +10,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener/pkg/apis/core"
@@ -51,7 +41,7 @@ func DetermineShootsAssociatedTo(ctx context.Context, gardenClient client.Reader
 			}
 		case *gardencorev1beta1.SecretBinding:
 			binding := obj.(*gardencorev1beta1.SecretBinding)
-			if pointer.StringDeref(shoot.Spec.SecretBindingName, "") == binding.Name && shoot.Namespace == binding.Namespace {
+			if ptr.Deref(shoot.Spec.SecretBindingName, "") == binding.Name && shoot.Namespace == binding.Namespace {
 				associatedShoots = append(associatedShoots, fmt.Sprintf("%s/%s", shoot.Namespace, shoot.Name))
 			}
 		case *gardencorev1beta1.ExposureClass:

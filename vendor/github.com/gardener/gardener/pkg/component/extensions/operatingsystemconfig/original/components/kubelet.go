@@ -1,42 +1,24 @@
-// Copyright 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package components
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 )
 
 // ConfigurableKubeletCLIFlags is the set of configurable kubelet command line parameters.
-type ConfigurableKubeletCLIFlags struct {
-	ImagePullProgressDeadline *metav1.Duration
-}
+type ConfigurableKubeletCLIFlags struct{}
 
 // KubeletCLIFlagsFromCoreV1beta1KubeletConfig computes the ConfigurableKubeletCLIFlags based on the provided
 // gardencorev1beta1.KubeletConfig.
-func KubeletCLIFlagsFromCoreV1beta1KubeletConfig(kubeletConfig *gardencorev1beta1.KubeletConfig) ConfigurableKubeletCLIFlags {
-	var out ConfigurableKubeletCLIFlags
-
-	if kubeletConfig != nil {
-		out.ImagePullProgressDeadline = kubeletConfig.ImagePullProgressDeadline
-	}
-
-	return out
+func KubeletCLIFlagsFromCoreV1beta1KubeletConfig(_ *gardencorev1beta1.KubeletConfig) ConfigurableKubeletCLIFlags {
+	return ConfigurableKubeletCLIFlags{}
 }
 
 // ConfigurableKubeletConfigParameters is the set of configurable kubelet config parameters.
@@ -89,7 +71,7 @@ func KubeletConfigParametersFromCoreV1beta1KubeletConfig(kubeletConfig *gardenco
 	if kubeletConfig != nil {
 		out.ContainerLogMaxFiles = kubeletConfig.ContainerLogMaxFiles
 		if val := kubeletConfig.ContainerLogMaxSize; val != nil {
-			out.ContainerLogMaxSize = pointer.String(val.String())
+			out.ContainerLogMaxSize = ptr.To(val.String())
 		}
 		out.CpuCFSQuota = kubeletConfig.CPUCFSQuota
 		out.CpuManagerPolicy = kubeletConfig.CPUManagerPolicy

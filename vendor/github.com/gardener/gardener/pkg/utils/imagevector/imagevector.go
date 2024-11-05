@@ -1,16 +1,6 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package imagevector
 
@@ -83,6 +73,14 @@ func mergeImageSources(old, override *ImageSource) *ImageSource {
 		tag = old.Tag
 	}
 
+	version := override.Version
+	if version == nil {
+		version = old.Version
+	}
+	if version == nil && tag != nil {
+		version = old.Tag
+	}
+
 	runtimeVersion := override.RuntimeVersion
 	if runtimeVersion == nil {
 		runtimeVersion = old.RuntimeVersion
@@ -105,6 +103,7 @@ func mergeImageSources(old, override *ImageSource) *ImageSource {
 		Architectures:  architectures,
 		Repository:     override.Repository,
 		Tag:            tag,
+		Version:        version,
 	}
 }
 
@@ -255,7 +254,7 @@ func checkVersionConstraint(constraint, version *string) (score int, ok bool, er
 	return score, true, nil
 }
 
-func checkArchitectureConstraint(source []string, desired *string) (score int, ok bool, err error) {
+func checkArchitectureConstraint(source []string, desired *string) (score int, ok bool) {
 	// if image doesn't have a architecture tag it is considered as multi arch image
 	// and if worker pool machine doesn't have architecture tag it is by default considered amd64 machine.
 	var sourceArch, desiredArch = []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64}, v1beta1constants.ArchitectureAMD64
@@ -268,11 +267,11 @@ func checkArchitectureConstraint(source []string, desired *string) (score int, o
 	}
 
 	if len(sourceArch) > 1 && slices.Contains(sourceArch, desiredArch) {
-		return 1, true, nil
+		return 1, true
 	}
 	if len(sourceArch) == 1 && slices.Contains(sourceArch, desiredArch) {
 		// prioritize equal constraints
-		return 2, true, nil
+		return 2, true
 	}
 
 	return
@@ -295,9 +294,9 @@ func match(source *ImageSource, name string, opts *FindOptions) (score int, ok b
 	}
 	score += targetScore
 
-	archScore, ok, err := checkArchitectureConstraint(source.Architectures, opts.Architecture)
-	if err != nil || !ok {
-		return 0, false, err
+	archScore, ok := checkArchitectureConstraint(source.Architectures, opts.Architecture)
+	if !ok {
+		return 0, false, nil
 	}
 	score += archScore
 
@@ -369,10 +368,16 @@ func (i *ImageSource) ToImage(targetVersion *string) *Image {
 		tag = &version
 	}
 
+	version := i.Version
+	if version == nil && tag != nil {
+		version = tag
+	}
+
 	return &Image{
 		Name:       i.Name,
 		Repository: i.Repository,
 		Tag:        tag,
+		Version:    version,
 	}
 }
 

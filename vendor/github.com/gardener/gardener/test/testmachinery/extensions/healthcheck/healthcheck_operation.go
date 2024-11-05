@@ -1,16 +1,6 @@
-// Copyright 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package healthcheck
 
@@ -24,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
@@ -112,7 +102,7 @@ func TestHealthCheckWithManagedResource(ctx context.Context, timeout time.Durati
 	ctx, cancel = context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	resourceManagerDeploymentReplicasBeforeScaledown, err = operation.ScaleGardenerResourceManager(ctx, f.ShootSeedNamespace(), f.SeedClient.Client(), pointer.Int32(0))
+	resourceManagerDeploymentReplicasBeforeScaledown, err = operation.ScaleGardenerResourceManager(ctx, f.ShootSeedNamespace(), f.SeedClient.Client(), ptr.To[int32](0))
 	if err != nil {
 		return err
 	}
@@ -177,6 +167,7 @@ func deleteSeedDeploymentCheck(ctx context.Context, f *framework.ShootFramework,
 	if err := f.SeedClient.Client().Delete(ctx, &cloudControllerDeployment); err != nil {
 		return err
 	}
+
 	defer func() {
 		err = f.GardenerFramework.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			shoot.Annotations[v1beta1constants.GardenerOperation] = v1beta1constants.GardenerOperationReconcile

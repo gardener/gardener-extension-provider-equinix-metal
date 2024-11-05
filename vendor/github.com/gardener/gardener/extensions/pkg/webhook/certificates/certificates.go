@@ -1,16 +1,6 @@
-// Copyright 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package certificates
 
@@ -21,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener/extensions/pkg/webhook"
 	secretsutils "github.com/gardener/gardener/pkg/utils/secrets"
@@ -32,7 +22,7 @@ import (
 func GenerateUnmanagedCertificates(providerName, certDir, mode, url string) ([]byte, error) {
 	caConfig := getWebhookCAConfig(providerName)
 	// we want to use a long validity here, because we don't auto-renew certificates
-	caConfig.Validity = pointer.Duration(10 * 365 * 24 * time.Hour) // 10y
+	caConfig.Validity = ptr.To(10 * 365 * 24 * time.Hour) // 10y
 
 	caCert, err := caConfig.GenerateCertificate()
 	if err != nil {

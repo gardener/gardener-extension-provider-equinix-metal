@@ -1,16 +1,6 @@
-// Copyright 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package managedresources
 
@@ -25,7 +15,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -134,7 +124,28 @@ func CreateFromUnstructured(
 	if len(data) > 0 {
 		dataMap[name] = data
 	}
-	return Create(ctx, client, namespace, name, nil, secretNameWithPrefix, class, dataMap, &keepObjects, injectedLabels, pointer.Bool(false))
+	return Create(ctx, client, namespace, name, nil, secretNameWithPrefix, class, dataMap, &keepObjects, injectedLabels, ptr.To(false))
+}
+
+// Update updates a managed resource and its secret with the given name, class, key, and data in the given namespace.
+func Update(
+	ctx context.Context,
+	client client.Client,
+	namespace, name string,
+	labels map[string]string,
+	secretNameWithPrefix bool,
+	class string,
+	data map[string][]byte,
+	keepObjects *bool,
+	injectedLabels map[string]string,
+	forceOverwriteAnnotations *bool,
+) error {
+	var (
+		secretName, secret = NewSecret(client, namespace, name, data, secretNameWithPrefix)
+		managedResource    = New(client, namespace, name, class, keepObjects, labels, injectedLabels, forceOverwriteAnnotations).WithSecretRef(secretName).CreateIfNotExists(false)
+	)
+
+	return deployManagedResource(ctx, secret, managedResource)
 }
 
 // Create creates a managed resource and its secret with the given name, class, key, and data in the given namespace.
@@ -168,6 +179,17 @@ func CreateForSeed(ctx context.Context, client client.Client, namespace, name st
 	return deployManagedResource(ctx, secret, managedResource)
 }
 
+// CreateForSeedWithLabels deploys a ManagedResource CR for the seed's gardener-resource-manager and allows providing
+// additional labels.
+func CreateForSeedWithLabels(ctx context.Context, client client.Client, namespace, name string, keepObjects bool, labels map[string]string, data map[string][]byte) error {
+	var (
+		secretName, secret = NewSecret(client, namespace, name, data, true)
+		managedResource    = NewForSeed(client, namespace, name, keepObjects).WithSecretRef(secretName).WithLabels(labels)
+	)
+
+	return deployManagedResource(ctx, secret, managedResource)
+}
+
 // CreateForShoot deploys a ManagedResource CR for the shoot's gardener-resource-manager.
 // The origin is used to identify the creator of the managed resource. Gardener acts on resources
 // with "origin=gardener" label. External callers (extension controllers or other components)
@@ -176,6 +198,19 @@ func CreateForShoot(ctx context.Context, client client.Client, namespace, name, 
 	var (
 		secretName, secret = NewSecret(client, namespace, name, data, true)
 		managedResource    = NewForShoot(client, namespace, name, origin, keepObjects).WithSecretRef(secretName)
+	)
+
+	return deployManagedResource(ctx, secret, managedResource)
+}
+
+// CreateForShootWithLabels deploys a ManagedResource CR for the shoot's gardener-resource-manager. The origin is used
+// to identify the creator of the managed resource. Gardener acts on resources with "origin=gardener" label. External
+// callers (extension controllers or other components) of this function should provide their own unique origin value.
+// This function allows providing additional labels.
+func CreateForShootWithLabels(ctx context.Context, client client.Client, namespace, name, origin string, keepObjects bool, labels map[string]string, data map[string][]byte) error {
+	var (
+		secretName, secret = NewSecret(client, namespace, name, data, true)
+		managedResource    = NewForShoot(client, namespace, name, origin, keepObjects).WithSecretRef(secretName).WithLabels(labels)
 	)
 
 	return deployManagedResource(ctx, secret, managedResource)
@@ -364,7 +399,7 @@ func RenderChartAndCreate(ctx context.Context, namespace string, name string, se
 		injectedLabels = map[string]string{v1beta1constants.ShootNoCleanup: "true"}
 	}
 
-	return Create(ctx, client, namespace, name, nil, secretNameWithPrefix, "", map[string][]byte{chartName: data}, pointer.Bool(false), injectedLabels, &forceOverwriteAnnotations)
+	return Create(ctx, client, namespace, name, nil, secretNameWithPrefix, "", map[string][]byte{chartName: data}, ptr.To(false), injectedLabels, &forceOverwriteAnnotations)
 }
 
 // configurationProblemRegex is used to check if an error is caused by a bad managed resource configuration.
@@ -387,7 +422,7 @@ func CheckIfManagedResourcesExist(ctx context.Context, c client.Client, class *s
 	}
 
 	for _, managedResource := range managedResourceList.Items {
-		if pointer.StringEqual(managedResource.Spec.Class, class) {
+		if ptr.Equal(managedResource.Spec.Class, class) {
 			return true, nil
 		}
 	}

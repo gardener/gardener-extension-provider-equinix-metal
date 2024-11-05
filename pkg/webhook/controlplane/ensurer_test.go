@@ -1,16 +1,6 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package controlplane
 
@@ -27,10 +17,10 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
+	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -42,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -132,7 +122,7 @@ var _ = Describe("Ensurer", func() {
 
 			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
@@ -165,12 +155,100 @@ var _ = Describe("Ensurer", func() {
 
 			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
 
-			ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+		})
+
+		It("should keep the NODE_NETWORK env variable in the kube-apiserver deployment if its value does not change", func() {
+			var (
+				dep = &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "kube-apiserver",
+									},
+									{
+										Name: "vpn-seed",
+									},
+								},
+							},
+						},
+					},
+				}
+				oldDep            = dep.DeepCopy()
+				nodeNetworkEnvVar = corev1.EnvVar{
+					Name:  "NODE_NETWORK",
+					Value: "foobar",
+				}
+			)
+
+			oldDep.Spec.Template.Spec.Containers[1].Env = []corev1.EnvVar{nodeNetworkEnvVar}
+
+			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+
+			ensurer := NewEnsurer(c, logger)
+
+			// Call EnsureKubeAPIServerDeployment method and check the result
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
+			Expect(err).To(Not(HaveOccurred()))
+			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+
+			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
+			Expect(c).To(Not(BeNil()))
+			Expect(c.Env).To(ConsistOf(nodeNetworkEnvVar))
+		})
+
+		It("should not keep the NODE_NETWORK env variable in the kube-apiserver deployment if its value changes", func() {
+			var (
+				dep = &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "kube-apiserver",
+									},
+									{
+										Name: "vpn-seed",
+										Env: []corev1.EnvVar{{
+											Name:  "NODE_NETWORK",
+											Value: "foobar",
+										}},
+									},
+								},
+							},
+						},
+					},
+				}
+				oldDep   = dep.DeepCopy()
+				newValue = "barfoo"
+			)
+
+			dep.Spec.Template.Spec.Containers[1].Env[0].Value = newValue
+
+			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
+
+			ensurer := NewEnsurer(c, logger)
+
+			// Call EnsureKubeAPIServerDeployment method and check the result
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
+			Expect(err).To(Not(HaveOccurred()))
+			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+
+			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
+			Expect(c).To(Not(BeNil()))
+			Expect(c.Env).To(ConsistOf(corev1.EnvVar{
+				Name:  "NODE_NETWORK",
+				Value: newValue,
+			}))
 		})
 	})
 
@@ -193,7 +271,7 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
-			ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeControllerManagerDeployment method and check the result
 			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
@@ -222,7 +300,7 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
-			ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeControllerManagerDeployment method and check the result
 			err := ensurer.EnsureKubeControllerManagerDeployment(ctx, dummyContext, dep, nil)
@@ -260,7 +338,7 @@ var _ = Describe("Ensurer", func() {
 
 			c.EXPECT().Get(ctx, extObjectKey, &extensionsv1alpha1.Infrastructure{}).DoAndReturn(clientGet(infra))
 
-			ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureVPNSeedServerDeployment method and check the result
 			err := ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
@@ -311,7 +389,7 @@ var _ = Describe("Ensurer", func() {
 					return nil
 				})
 
-			ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
 			err := ensurer.EnsureVPNSeedServerDeployment(ctx, dummyContext, dep, oldDep)
@@ -348,7 +426,7 @@ var _ = Describe("Ensurer", func() {
 				}
 			)
 
-			ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeletServiceUnitOptions method and check the result
 			opts, err := ensurer.EnsureKubeletServiceUnitOptions(ctx, dummyContext, nil, oldUnitOptions, nil)
@@ -367,12 +445,12 @@ var _ = Describe("Ensurer", func() {
 				}
 				newKubeletConfig = &kubeletconfigv1beta1.KubeletConfiguration{
 					FeatureGates:                 map[string]bool{},
-					EnableControllerAttachDetach: pointer.Bool(true),
+					EnableControllerAttachDetach: ptr.To(true),
 				}
 			)
 			newKubeletConfig.FeatureGates["Foo"] = true
 
-			ensurer := NewEnsurer(c, logger, false)
+			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeletConfiguration method and check the result
 			kubeletConfig := *oldKubeletConfig
@@ -390,72 +468,56 @@ var _ = Describe("Ensurer", func() {
 
 		BeforeEach(func() {
 			deployment = &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Namespace: "foo"}}
+
+			ensurer = NewEnsurer(c, logger)
+			DeferCleanup(testutils.WithVar(&ImageVector, imagevector.ImageVector{{
+				Name:       "machine-controller-manager-provider-equinix-metal",
+				Repository: "foo",
+				Tag:        ptr.To("bar"),
+			}}))
 		})
 
-		Context("when gardenlet does not manage MCM", func() {
-			BeforeEach(func() {
-				ensurer = NewEnsurer(c, logger, false)
-			})
-
-			It("should do nothing", func() {
-				deploymentBefore := deployment.DeepCopy()
-				Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), nil, deployment, nil)).To(BeNil())
-				Expect(deployment).To(Equal(deploymentBefore))
-			})
-		})
-
-		Context("when gardenlet manages MCM", func() {
-			BeforeEach(func() {
-				ensurer = NewEnsurer(c, logger, true)
-				DeferCleanup(testutils.WithVar(&ImageVector, imagevector.ImageVector{{
-					Name:       "machine-controller-manager-provider-equinix-metal",
-					Repository: "foo",
-					Tag:        pointer.String("bar"),
-				}}))
-			})
-
-			It("should inject the sidecar container", func() {
-				Expect(deployment.Spec.Template.Spec.Containers).To(BeEmpty())
-				Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), nil, deployment, nil)).To(BeNil())
-				Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(corev1.Container{
-					Name:            "machine-controller-manager-provider-equinix-metal",
-					Image:           "foo:bar",
-					ImagePullPolicy: corev1.PullIfNotPresent,
-					Command: []string{
-						"./machine-controller",
-						"--control-kubeconfig=inClusterConfig",
-						"--machine-creation-timeout=20m",
-						"--machine-drain-timeout=2h",
-						"--machine-health-timeout=10m",
-						"--machine-safety-apiserver-statuscheck-timeout=30s",
-						"--machine-safety-apiserver-statuscheck-period=1m",
-						"--machine-safety-orphan-vms-period=30m",
-						"--namespace=" + deployment.Namespace,
-						"--port=10259",
-						"--target-kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig",
-						"--v=3",
-					},
-					LivenessProbe: &corev1.Probe{
-						ProbeHandler: corev1.ProbeHandler{
-							HTTPGet: &corev1.HTTPGetAction{
-								Path:   "/healthz",
-								Port:   intstr.FromInt(10259),
-								Scheme: "HTTP",
-							},
+		It("should inject the sidecar container", func() {
+			Expect(deployment.Spec.Template.Spec.Containers).To(BeEmpty())
+			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), nil, deployment, nil)).To(BeNil())
+			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(corev1.Container{
+				Name:            "machine-controller-manager-provider-equinix-metal",
+				Image:           "foo:bar",
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				Command: []string{
+					"./machine-controller",
+					"--control-kubeconfig=inClusterConfig",
+					"--machine-creation-timeout=20m",
+					"--machine-drain-timeout=2h",
+					"--machine-health-timeout=10m",
+					"--machine-safety-apiserver-statuscheck-timeout=30s",
+					"--machine-safety-apiserver-statuscheck-period=1m",
+					"--machine-safety-orphan-vms-period=30m",
+					"--namespace=" + deployment.Namespace,
+					"--port=10259",
+					"--target-kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig",
+					"--v=3",
+				},
+				LivenessProbe: &corev1.Probe{
+					ProbeHandler: corev1.ProbeHandler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path:   "/healthz",
+							Port:   intstr.FromInt(10259),
+							Scheme: "HTTP",
 						},
-						InitialDelaySeconds: 30,
-						TimeoutSeconds:      5,
-						PeriodSeconds:       10,
-						SuccessThreshold:    1,
-						FailureThreshold:    3,
 					},
-					VolumeMounts: []corev1.VolumeMount{{
-						Name:      "kubeconfig",
-						MountPath: "/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig",
-						ReadOnly:  true,
-					}},
-				}))
-			})
+					InitialDelaySeconds: 30,
+					TimeoutSeconds:      5,
+					PeriodSeconds:       10,
+					SuccessThreshold:    1,
+					FailureThreshold:    3,
+				},
+				VolumeMounts: []corev1.VolumeMount{{
+					Name:      "kubeconfig",
+					MountPath: "/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig",
+					ReadOnly:  true,
+				}},
+			}))
 		})
 	})
 
@@ -467,40 +529,23 @@ var _ = Describe("Ensurer", func() {
 
 		BeforeEach(func() {
 			vpa = &vpaautoscalingv1.VerticalPodAutoscaler{}
+			ensurer = NewEnsurer(c, logger)
 		})
 
-		Context("when gardenlet does not manage MCM", func() {
-			BeforeEach(func() {
-				ensurer = NewEnsurer(c, logger, false)
-			})
+		It("should inject the sidecar container policy", func() {
+			Expect(vpa.Spec.ResourcePolicy).To(BeNil())
+			Expect(ensurer.EnsureMachineControllerManagerVPA(context.TODO(), nil, vpa, nil)).To(BeNil())
 
-			It("should do nothing", func() {
-				vpaBefore := vpa.DeepCopy()
-				Expect(ensurer.EnsureMachineControllerManagerVPA(context.TODO(), nil, vpa, nil)).To(BeNil())
-				Expect(vpa).To(Equal(vpaBefore))
-			})
-		})
-
-		Context("when gardenlet manages MCM", func() {
-			BeforeEach(func() {
-				ensurer = NewEnsurer(c, logger, true)
-			})
-
-			It("should inject the sidecar container policy", func() {
-				Expect(vpa.Spec.ResourcePolicy).To(BeNil())
-				Expect(ensurer.EnsureMachineControllerManagerVPA(context.TODO(), nil, vpa, nil)).To(BeNil())
-
-				ccv := vpaautoscalingv1.ContainerControlledValuesRequestsOnly
-				Expect(vpa.Spec.ResourcePolicy.ContainerPolicies).To(ConsistOf(vpaautoscalingv1.ContainerResourcePolicy{
-					ContainerName:    "machine-controller-manager-provider-equinix-metal",
-					ControlledValues: &ccv,
-					MinAllowed:       corev1.ResourceList{},
-					MaxAllowed: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("2"),
-						corev1.ResourceMemory: resource.MustParse("5G"),
-					},
-				}))
-			})
+			ccv := vpaautoscalingv1.ContainerControlledValuesRequestsOnly
+			Expect(vpa.Spec.ResourcePolicy.ContainerPolicies).To(ConsistOf(vpaautoscalingv1.ContainerResourcePolicy{
+				ContainerName:    "machine-controller-manager-provider-equinix-metal",
+				ControlledValues: &ccv,
+				MinAllowed:       corev1.ResourceList{},
+				MaxAllowed: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("2"),
+					corev1.ResourceMemory: resource.MustParse("5G"),
+				},
+			}))
 		})
 	})
 })

@@ -1,9 +1,6 @@
 /*
 Metal API
 
-# Introduction Equinix Metal provides a RESTful HTTP API which can be reached at <https://api.equinix.com/metal/v1>. This document describes the API and how to use it.  The API allows you to programmatically interact with all of your Equinix Metal resources, including devices, networks, addresses, organizations, projects, and your user account. Every feature of the Equinix Metal web interface is accessible through the API.  The API docs are generated from the Equinix Metal OpenAPI specification and are officially hosted at <https://metal.equinix.com/developers/api>.  # Common Parameters  The Equinix Metal API uses a few methods to minimize network traffic and improve throughput. These parameters are not used in all API calls, but are used often enough to warrant their own section. Look for these parameters in the documentation for the API calls that support them.  ## Pagination  Pagination is used to limit the number of results returned in a single request. The API will return a maximum of 100 results per page. To retrieve additional results, you can use the `page` and `per_page` query parameters.  The `page` parameter is used to specify the page number. The first page is `1`. The `per_page` parameter is used to specify the number of results per page. The maximum number of results differs by resource type.  ## Sorting  Where offered, the API allows you to sort results by a specific field. To sort results use the `sort_by` query parameter with the root level field name as the value. The `sort_direction` parameter is used to specify the sort direction, either either `asc` (ascending) or `desc` (descending).  ## Filtering  Filtering is used to limit the results returned in a single request. The API supports filtering by certain fields in the response. To filter results, you can use the field as a query parameter.  For example, to filter the IP list to only return public IPv4 addresses, you can filter by the `type` field, as in the following request:  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/projects/id/ips?type=public_ipv4 ```  Only IP addresses with the `type` field set to `public_ipv4` will be returned.  ## Searching  Searching is used to find matching resources using multiple field comparissons. The API supports searching in resources that define this behavior. Currently the search parameter is only available on devices, ssh_keys, api_keys and memberships endpoints.  To search resources you can use the `search` query parameter.  ## Include and Exclude  For resources that contain references to other resources, sucha as a Device that refers to the Project it resides in, the Equinix Metal API will returns `href` values (API links) to the associated resource.  ```json {   ...   \"project\": {     \"href\": \"/metal/v1/projects/f3f131c8-f302-49ef-8c44-9405022dc6dd\"   } } ```  If you're going need the project details, you can avoid a second API request.  Specify the contained `href` resources and collections that you'd like to have included in the response using the `include` query parameter.  For example:  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=projects ```  The `include` parameter is generally accepted in `GET`, `POST`, `PUT`, and `PATCH` requests where `href` resources are presented.  To have multiple resources include, use a comma-separated list (e.g. `?include=emails,projects,memberships`).  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=emails,projects,memberships ```  You may also include nested associations up to three levels deep using dot notation (`?include=memberships.projects`):  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=memberships.projects ```  To exclude resources, and optimize response delivery, use the `exclude` query parameter. The `exclude` parameter is generally accepted in `GET`, `POST`, `PUT`, and `PATCH` requests for fields with nested object responses. When excluded, these fields will be replaced with an object that contains only an `href` field.
-
-API version: 1.0.0
 Contact: support@equinixmetal.com
 */
 
@@ -23,27 +20,31 @@ var _ MappedNullable = &Interconnection{}
 type Interconnection struct {
 	ContactEmail *string              `json:"contact_email,omitempty"`
 	Description  *string              `json:"description,omitempty"`
-	Facility     *Href                `json:"facility,omitempty"`
+	Facility     *Facility            `json:"facility,omitempty"`
 	Id           *string              `json:"id,omitempty"`
 	Metro        *Metro               `json:"metro,omitempty"`
 	Mode         *InterconnectionMode `json:"mode,omitempty"`
 	Name         *string              `json:"name,omitempty"`
-	Organization *Href                `json:"organization,omitempty"`
+	Organization *Organization        `json:"organization,omitempty"`
 	// For Fabric VCs, these represent Virtual Port(s) created for the interconnection. For dedicated interconnections, these represent the Dedicated Port(s).
 	Ports      []InterconnectionPort      `json:"ports,omitempty"`
+	Project    *Project                   `json:"project,omitempty"`
 	Redundancy *InterconnectionRedundancy `json:"redundancy,omitempty"`
 	// For Fabric VCs (Metal Billed), this will show details of the A-Side service tokens issued for the interconnection. For Fabric VCs (Fabric Billed), this will show the details of the Z-Side service tokens issued for the interconnection. Dedicated interconnections will not have any service tokens issued. There will be one per interconnection, so for redundant interconnections, there should be two service tokens issued.
 	ServiceTokens []FabricServiceToken `json:"service_tokens,omitempty"`
+	// For Fabric VCs (Metal Billed), this allows Fabric to connect the Metal network to any connection Fabric facilitates. Fabric uses this token to be able to give more detailed information about the Metal end of the network, when viewing resources from within Fabric.
+	AuthorizationCode *string `json:"authorization_code,omitempty"`
 	// For interconnections on Dedicated Ports and shared connections, this represents the interconnection's speed in bps. For Fabric VCs, this field refers to the maximum speed of the interconnection in bps. This value will default to 10Gbps for Fabric VCs (Fabric Billed).
 	Speed  *int64   `json:"speed,omitempty"`
 	Status *string  `json:"status,omitempty"`
 	Tags   []string `json:"tags,omitempty"`
 	// This token is used for shared interconnections to be used as the Fabric Token. This field is entirely deprecated.
-	Token                *string              `json:"token,omitempty"`
-	Type                 *InterconnectionType `json:"type,omitempty"`
-	CreatedAt            *time.Time           `json:"created_at,omitempty"`
-	UpdatedAt            *time.Time           `json:"updated_at,omitempty"`
-	RequestedBy          *Href                `json:"requested_by,omitempty"`
+	Token                *string                        `json:"token,omitempty"`
+	Type                 *InterconnectionType           `json:"type,omitempty"`
+	FabricProvider       *InterconnectionFabricProvider `json:"fabric_provider,omitempty"`
+	CreatedAt            *time.Time                     `json:"created_at,omitempty"`
+	UpdatedAt            *time.Time                     `json:"updated_at,omitempty"`
+	RequestedBy          *Href                          `json:"requested_by,omitempty"`
 	AdditionalProperties map[string]interface{}
 }
 
@@ -131,9 +132,9 @@ func (o *Interconnection) SetDescription(v string) {
 }
 
 // GetFacility returns the Facility field value if set, zero value otherwise.
-func (o *Interconnection) GetFacility() Href {
+func (o *Interconnection) GetFacility() Facility {
 	if o == nil || IsNil(o.Facility) {
-		var ret Href
+		var ret Facility
 		return ret
 	}
 	return *o.Facility
@@ -141,7 +142,7 @@ func (o *Interconnection) GetFacility() Href {
 
 // GetFacilityOk returns a tuple with the Facility field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *Interconnection) GetFacilityOk() (*Href, bool) {
+func (o *Interconnection) GetFacilityOk() (*Facility, bool) {
 	if o == nil || IsNil(o.Facility) {
 		return nil, false
 	}
@@ -157,8 +158,8 @@ func (o *Interconnection) HasFacility() bool {
 	return false
 }
 
-// SetFacility gets a reference to the given Href and assigns it to the Facility field.
-func (o *Interconnection) SetFacility(v Href) {
+// SetFacility gets a reference to the given Facility and assigns it to the Facility field.
+func (o *Interconnection) SetFacility(v Facility) {
 	o.Facility = &v
 }
 
@@ -291,9 +292,9 @@ func (o *Interconnection) SetName(v string) {
 }
 
 // GetOrganization returns the Organization field value if set, zero value otherwise.
-func (o *Interconnection) GetOrganization() Href {
+func (o *Interconnection) GetOrganization() Organization {
 	if o == nil || IsNil(o.Organization) {
-		var ret Href
+		var ret Organization
 		return ret
 	}
 	return *o.Organization
@@ -301,7 +302,7 @@ func (o *Interconnection) GetOrganization() Href {
 
 // GetOrganizationOk returns a tuple with the Organization field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *Interconnection) GetOrganizationOk() (*Href, bool) {
+func (o *Interconnection) GetOrganizationOk() (*Organization, bool) {
 	if o == nil || IsNil(o.Organization) {
 		return nil, false
 	}
@@ -317,8 +318,8 @@ func (o *Interconnection) HasOrganization() bool {
 	return false
 }
 
-// SetOrganization gets a reference to the given Href and assigns it to the Organization field.
-func (o *Interconnection) SetOrganization(v Href) {
+// SetOrganization gets a reference to the given Organization and assigns it to the Organization field.
+func (o *Interconnection) SetOrganization(v Organization) {
 	o.Organization = &v
 }
 
@@ -352,6 +353,38 @@ func (o *Interconnection) HasPorts() bool {
 // SetPorts gets a reference to the given []InterconnectionPort and assigns it to the Ports field.
 func (o *Interconnection) SetPorts(v []InterconnectionPort) {
 	o.Ports = v
+}
+
+// GetProject returns the Project field value if set, zero value otherwise.
+func (o *Interconnection) GetProject() Project {
+	if o == nil || IsNil(o.Project) {
+		var ret Project
+		return ret
+	}
+	return *o.Project
+}
+
+// GetProjectOk returns a tuple with the Project field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Interconnection) GetProjectOk() (*Project, bool) {
+	if o == nil || IsNil(o.Project) {
+		return nil, false
+	}
+	return o.Project, true
+}
+
+// HasProject returns a boolean if a field has been set.
+func (o *Interconnection) HasProject() bool {
+	if o != nil && !IsNil(o.Project) {
+		return true
+	}
+
+	return false
+}
+
+// SetProject gets a reference to the given Project and assigns it to the Project field.
+func (o *Interconnection) SetProject(v Project) {
+	o.Project = &v
 }
 
 // GetRedundancy returns the Redundancy field value if set, zero value otherwise.
@@ -416,6 +449,38 @@ func (o *Interconnection) HasServiceTokens() bool {
 // SetServiceTokens gets a reference to the given []FabricServiceToken and assigns it to the ServiceTokens field.
 func (o *Interconnection) SetServiceTokens(v []FabricServiceToken) {
 	o.ServiceTokens = v
+}
+
+// GetAuthorizationCode returns the AuthorizationCode field value if set, zero value otherwise.
+func (o *Interconnection) GetAuthorizationCode() string {
+	if o == nil || IsNil(o.AuthorizationCode) {
+		var ret string
+		return ret
+	}
+	return *o.AuthorizationCode
+}
+
+// GetAuthorizationCodeOk returns a tuple with the AuthorizationCode field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Interconnection) GetAuthorizationCodeOk() (*string, bool) {
+	if o == nil || IsNil(o.AuthorizationCode) {
+		return nil, false
+	}
+	return o.AuthorizationCode, true
+}
+
+// HasAuthorizationCode returns a boolean if a field has been set.
+func (o *Interconnection) HasAuthorizationCode() bool {
+	if o != nil && !IsNil(o.AuthorizationCode) {
+		return true
+	}
+
+	return false
+}
+
+// SetAuthorizationCode gets a reference to the given string and assigns it to the AuthorizationCode field.
+func (o *Interconnection) SetAuthorizationCode(v string) {
+	o.AuthorizationCode = &v
 }
 
 // GetSpeed returns the Speed field value if set, zero value otherwise.
@@ -578,6 +643,38 @@ func (o *Interconnection) SetType(v InterconnectionType) {
 	o.Type = &v
 }
 
+// GetFabricProvider returns the FabricProvider field value if set, zero value otherwise.
+func (o *Interconnection) GetFabricProvider() InterconnectionFabricProvider {
+	if o == nil || IsNil(o.FabricProvider) {
+		var ret InterconnectionFabricProvider
+		return ret
+	}
+	return *o.FabricProvider
+}
+
+// GetFabricProviderOk returns a tuple with the FabricProvider field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Interconnection) GetFabricProviderOk() (*InterconnectionFabricProvider, bool) {
+	if o == nil || IsNil(o.FabricProvider) {
+		return nil, false
+	}
+	return o.FabricProvider, true
+}
+
+// HasFabricProvider returns a boolean if a field has been set.
+func (o *Interconnection) HasFabricProvider() bool {
+	if o != nil && !IsNil(o.FabricProvider) {
+		return true
+	}
+
+	return false
+}
+
+// SetFabricProvider gets a reference to the given InterconnectionFabricProvider and assigns it to the FabricProvider field.
+func (o *Interconnection) SetFabricProvider(v InterconnectionFabricProvider) {
+	o.FabricProvider = &v
+}
+
 // GetCreatedAt returns the CreatedAt field value if set, zero value otherwise.
 func (o *Interconnection) GetCreatedAt() time.Time {
 	if o == nil || IsNil(o.CreatedAt) {
@@ -711,11 +808,17 @@ func (o Interconnection) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Ports) {
 		toSerialize["ports"] = o.Ports
 	}
+	if !IsNil(o.Project) {
+		toSerialize["project"] = o.Project
+	}
 	if !IsNil(o.Redundancy) {
 		toSerialize["redundancy"] = o.Redundancy
 	}
 	if !IsNil(o.ServiceTokens) {
 		toSerialize["service_tokens"] = o.ServiceTokens
+	}
+	if !IsNil(o.AuthorizationCode) {
+		toSerialize["authorization_code"] = o.AuthorizationCode
 	}
 	if !IsNil(o.Speed) {
 		toSerialize["speed"] = o.Speed
@@ -731,6 +834,9 @@ func (o Interconnection) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Type) {
 		toSerialize["type"] = o.Type
+	}
+	if !IsNil(o.FabricProvider) {
+		toSerialize["fabric_provider"] = o.FabricProvider
 	}
 	if !IsNil(o.CreatedAt) {
 		toSerialize["created_at"] = o.CreatedAt
@@ -772,13 +878,16 @@ func (o *Interconnection) UnmarshalJSON(data []byte) (err error) {
 		delete(additionalProperties, "name")
 		delete(additionalProperties, "organization")
 		delete(additionalProperties, "ports")
+		delete(additionalProperties, "project")
 		delete(additionalProperties, "redundancy")
 		delete(additionalProperties, "service_tokens")
+		delete(additionalProperties, "authorization_code")
 		delete(additionalProperties, "speed")
 		delete(additionalProperties, "status")
 		delete(additionalProperties, "tags")
 		delete(additionalProperties, "token")
 		delete(additionalProperties, "type")
+		delete(additionalProperties, "fabric_provider")
 		delete(additionalProperties, "created_at")
 		delete(additionalProperties, "updated_at")
 		delete(additionalProperties, "requested_by")

@@ -1,16 +1,6 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package secrets
 
@@ -45,7 +35,7 @@ const (
 	DataKeyCertificate = "tls.crt"
 	// DataKeyPrivateKey is the key in a secret data holding the private key.
 	DataKeyPrivateKey = "tls.key"
-	// DataKeyCertificateCA is the key in a secret data holding the CA certificate.
+	// DataKeyCertificateCA is the key in a secret data or config map data holding the CA certificate.
 	DataKeyCertificateCA = "ca.crt"
 	// DataKeyPrivateKeyCA is the key in a secret data holding the CA private key.
 	DataKeyPrivateKeyCA = "ca.key"
@@ -59,7 +49,7 @@ const (
 )
 
 // CertificateSecretConfig contains the specification a to-be-generated CA, server, or client certificate.
-// It always contains a 2048-bit RSA private key.
+// It always contains a 3072-bit RSA private key.
 type CertificateSecretConfig struct {
 	Name string
 
@@ -116,7 +106,7 @@ func (s *CertificateSecretConfig) GenerateCertificate() (*Certificate, error) {
 
 	// If no cert type is given then we only return a certificate object that contains the CA.
 	if s.CertType != "" {
-		privateKey, err := GenerateKey(rand.Reader, 2048)
+		privateKey, err := GenerateKey(rand.Reader, 3072)
 		if err != nil {
 			return nil, err
 		}

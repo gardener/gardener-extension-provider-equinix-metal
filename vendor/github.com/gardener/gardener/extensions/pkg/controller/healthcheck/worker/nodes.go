@@ -1,16 +1,6 @@
-// Copyright 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package worker
 
@@ -148,13 +138,6 @@ func (h *DefaultHealthChecker) Check(ctx context.Context, request types.Namespac
 		}
 	}
 
-	// First check if the MachineDeployments report failed machines. If false then check if the MachineDeployments are
-	// "available". If false then check if there is a regular scale-up happening or if there are machines with an erroneous
-	// phase. Only then check the other MachineDeployment conditions. As last check, check if there is a scale-down happening
-	// (e.g., in case of an rolling-update).
-
-	checkScaleUp := false
-
 	for _, deployment := range machineDeploymentList.Items {
 		for _, failedMachine := range deployment.Status.FailedMachines {
 			err := fmt.Errorf("machine %q failed: %s", failedMachine.Name, failedMachine.LastOperation.Description)
@@ -164,25 +147,6 @@ func (h *DefaultHealthChecker) Check(ctx context.Context, request types.Namespac
 				Detail: err.Error(),
 			}, nil
 		}
-
-		for _, condition := range deployment.Status.Conditions {
-			if condition.Type == machinev1alpha1.MachineDeploymentAvailable && condition.Status != machinev1alpha1.ConditionTrue {
-				checkScaleUp = true
-				break
-			}
-		}
-	}
-
-	if checkScaleUp {
-		// TODO(rfranzke): Remove this flag when the MachineControllerManagerDeployment feature gate is promoted to GA.
-		if status, err := checkNodesScalingUp(machineList, readyNodes, desiredMachines); status != gardencorev1beta1.ConditionTrue {
-			h.logger.Error(err, "Health check failed")
-			return &healthcheck.SingleCheckResult{
-				Status:               status,
-				Detail:               err.Error(),
-				ProgressingThreshold: h.scaleUpProgressingThreshold,
-			}, nil
-		}
 	}
 
 	if isHealthy, err := checkMachineDeploymentsHealthy(machineDeploymentList.Items); !isHealthy {
@@ -190,16 +154,6 @@ func (h *DefaultHealthChecker) Check(ctx context.Context, request types.Namespac
 		return &healthcheck.SingleCheckResult{
 			Status: gardencorev1beta1.ConditionFalse,
 			Detail: err.Error(),
-		}, nil
-	}
-
-	// TODO(rfranzke): Remove this flag when the MachineControllerManagerDeployment feature gate is promoted to GA.
-	if status, err := checkNodesScalingDown(machineList, nodeList, registeredNodes, desiredMachines); status != gardencorev1beta1.ConditionTrue {
-		h.logger.Error(err, "Health check failed")
-		return &healthcheck.SingleCheckResult{
-			Status:               status,
-			Detail:               err.Error(),
-			ProgressingThreshold: h.scaleDownProgressingThreshold,
 		}, nil
 	}
 

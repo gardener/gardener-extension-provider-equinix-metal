@@ -1,16 +1,6 @@
-// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package builder
 
@@ -18,9 +8,10 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -31,7 +22,8 @@ import (
 
 // Secret is a structure for managing a secret.
 type Secret struct {
-	client client.Client
+	client            client.Client
+	createIfNotExists bool
 
 	keyValues map[string]string
 	secret    *corev1.Secret
@@ -40,10 +32,18 @@ type Secret struct {
 // NewSecret creates a new builder for a secret.
 func NewSecret(client client.Client) *Secret {
 	return &Secret{
-		client:    client,
-		keyValues: make(map[string]string),
-		secret:    &corev1.Secret{},
+		client:            client,
+		createIfNotExists: true,
+		keyValues:         make(map[string]string),
+		secret:            &corev1.Secret{},
 	}
+}
+
+// CreateIfNotExists determines if the secret should be created if it does not exist.
+// Immutable secrets are always created, regardless of this configuration.
+func (s *Secret) CreateIfNotExists(createIfNotExists bool) *Secret {
+	s.createIfNotExists = createIfNotExists
+	return s
 }
 
 // WithNamespacedName sets the namespace and name.
@@ -61,7 +61,7 @@ func (s *Secret) WithLabels(labels map[string]string) *Secret {
 		return s
 	}
 	_, ok := s.secret.Labels[references.LabelKeyGarbageCollectable]
-	if ok && pointer.BoolDeref(s.secret.Immutable, false) {
+	if ok && ptr.Deref(s.secret.Immutable, false) {
 		s.secret.Labels = map[string]string{
 			references.LabelKeyGarbageCollectable: references.LabelValueGarbageCollectable,
 		}
@@ -106,13 +106,35 @@ func (s *Secret) Reconcile(ctx context.Context) error {
 		ObjectMeta: metav1.ObjectMeta{Name: s.secret.Name, Namespace: s.secret.Namespace},
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, s.client, secret, func() error {
+	mutate := func() error {
 		secret.Labels = s.secret.Labels
 		secret.Annotations = s.secret.Annotations
 		secret.Type = corev1.SecretTypeOpaque
 		secret.Data = s.secret.Data
 		secret.Immutable = s.secret.Immutable
 		return nil
-	})
-	return err
+	}
+
+	if s.createIfNotExists || ptr.Deref(s.secret.Immutable, false) {
+		_, err := controllerutil.CreateOrUpdate(ctx, s.client, secret, mutate)
+		return err
+	}
+	return updateSecret(ctx, s.client, secret, mutate)
+}
+
+func updateSecret(ctx context.Context, cl client.Client, secret *corev1.Secret, mutate func() error) error {
+	if err := cl.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
+		return err
+	}
+
+	existingSecret := secret.DeepCopy()
+	if err := mutate(); err != nil {
+		return err
+	}
+
+	if equality.Semantic.DeepEqual(existingSecret, secret) {
+		return nil
+	}
+
+	return cl.Update(ctx, secret)
 }

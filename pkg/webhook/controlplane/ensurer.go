@@ -1,16 +1,6 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package controlplane
 
@@ -26,7 +16,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/component/machinecontrollermanager"
+	"github.com/gardener/gardener/pkg/component/nodemanagement/machinecontrollermanager"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -34,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/imagevector"
@@ -43,19 +33,17 @@ import (
 )
 
 // NewEnsurer creates a new controlplane ensurer.
-func NewEnsurer(client client.Client, logger logr.Logger, gardenletManagesMCM bool) genericmutator.Ensurer {
+func NewEnsurer(client client.Client, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
-		logger:              logger.WithName("equinix-metal-controlplane-ensurer"),
-		client:              client,
-		gardenletManagesMCM: gardenletManagesMCM,
+		logger: logger.WithName("equinix-metal-controlplane-ensurer"),
+		client: client,
 	}
 }
 
 type ensurer struct {
 	genericmutator.NoopEnsurer
-	client              client.Client
-	logger              logr.Logger
-	gardenletManagesMCM bool
+	client client.Client
+	logger logr.Logger
 }
 
 // ImageVector is exposed for testing.
@@ -63,10 +51,6 @@ var ImageVector = imagevector.ImageVector()
 
 // EnsureMachineControllerManagerDeployment ensures that the machine-controller-manager deployment conforms to the provider requirements.
 func (e *ensurer) EnsureMachineControllerManagerDeployment(_ context.Context, _ gcontext.GardenContext, newObj, _ *appsv1.Deployment) error {
-	if !e.gardenletManagesMCM {
-		return nil
-	}
-
 	image, err := ImageVector.FindImage(equinixmetal.MachineControllerManagerEquinixMetalImageName)
 	if err != nil {
 		return err
@@ -81,10 +65,6 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(_ context.Context, _ 
 
 // EnsureMachineControllerManagerVPA ensures that the machine-controller-manager VPA conforms to the provider requirements.
 func (e *ensurer) EnsureMachineControllerManagerVPA(_ context.Context, _ gcontext.GardenContext, newObj, _ *vpaautoscalingv1.VerticalPodAutoscaler) error {
-	if !e.gardenletManagesMCM {
-		return nil
-	}
-
 	var (
 		minAllowed = corev1.ResourceList{}
 		maxAllowed = corev1.ResourceList{
@@ -106,13 +86,9 @@ func (e *ensurer) EnsureMachineControllerManagerVPA(_ context.Context, _ gcontex
 
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the provider requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gcontext.GardenContext, new, old *appsv1.Deployment) error {
-	cluster, err := gctx.GetCluster(ctx)
-	if err != nil {
-		return err
-	}
 	ps := &new.Spec.Template.Spec
 	if c := extensionswebhook.ContainerWithName(ps.Containers, "kube-apiserver"); c != nil {
-		if err := ensureKubeAPIServerCommandLineArgs(c, cluster.Shoot.Spec.Kubernetes.Version); err != nil {
+		if err := ensureKubeAPIServerCommandLineArgs(c); err != nil {
 			return err
 		}
 	}
@@ -150,12 +126,161 @@ func (e *ensurer) EnsureVPNSeedServerDeployment(ctx context.Context, gCtx gconte
 		eqxcontrolplane.ParseJoinedNetwork(*infra.Status.NodesCIDR))
 }
 
+// EnsureAdditionalProvisionUnits ensures that additional required system units are added, that are required during provisioning.
+func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
+
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Define LVM setup unit
+	var lvmSetup = `
+[Unit]
+        Description=LVM Setup
+        ConditionFirstBoot=yes
+        DefaultDependencies=no
+        Before=local-fs-pre.target
+        [Service]
+        Type=oneshot
+        Restart=on-failure
+        RemainAfterExit=yes
+        ExecStart=/opt/bin/lvm.sh
+        [Install]
+        WantedBy=multi-user.target
+`
+	// Define LVM mount unit
+	var lvmMountContainerd = `
+[Unit]
+        Description=Mount LVM to containerd dir
+        After=lvm-setup.service
+        Before=containerd.service
+        [Mount]
+        What=/dev/vg-containerd/vol_containerd
+        Where=/var/lib/containerd
+        Type=ext4
+        Options=defaults
+        [Install]
+        WantedBy=local-fs.target
+`
+	operatingsystems := make(map[string]int)
+	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+		if worker.DataVolumes != nil {
+			// fail if multiple OSes are used
+			operatingsystems[worker.Machine.Image.Name]++
+			if len(operatingsystems) > 1 {
+				return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
+			}
+			switch worker.Machine.Image.Name {
+			case "flatcar":
+				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+					Name:    "lvm-setup.service",
+					Enable:  ptr.To(true),
+					Command: ptr.To(extensionsv1alpha1.CommandStart),
+					Content: ptr.To(lvmSetup),
+				})
+
+				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+					Name:    "var-lib-containerd.mount",
+					Enable:  ptr.To(true),
+					Command: ptr.To(extensionsv1alpha1.CommandStart),
+					Content: ptr.To(lvmMountContainerd),
+				})
+
+				return nil
+			}
+
+		}
+	}
+	return nil
+}
+
+// EnsureAdditionalProvisionFiles ensures that additional required system files are added, that are required during provisioning.
+func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+
+	operatingsystems := make(map[string]int)
+	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+		// if any worker is having any value set for `DataVolume`
+		// this script creates a lvm from all remaining non-boot disks.
+		if worker.DataVolumes != nil {
+			// fail if multiple OSes are used
+			operatingsystems[worker.Machine.Image.Name]++
+			if len(operatingsystems) > 1 {
+				return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
+			}
+
+			switch worker.Machine.Image.Name {
+			case "flatcar":
+
+				var (
+					permissions       int32 = 0755
+					customFileContent       = `#!/bin/bash
+          set -euo pipefail
+
+
+          # Function to find all disks
+          find_volumes(){
+            lsblk -d -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}'
+          }
+
+          create_pvs() {
+            disks=$(find_volumes)
+            usable_disks=""
+
+            for disk in $disks; do
+              if pvcreate -y $disk 2>&1 | grep -q "successfully created"; then
+                usable_disks="$usable_disks $disk"
+              fi
+            done
+
+            echo $usable_disks
+          }
+
+          # Get the list of usable disks
+          usable_disks=$(create_pvs)
+
+          # Create Physical Volumes
+          pvcreate ${usable_disks}
+
+          # Create Volume Group
+          vgcreate vg-containerd ${usable_disks}
+
+          # Create Logical Volume for data
+          lvcreate -n vol_containerd -l 100%FREE vg-containerd
+
+          # Format the data volume with ext4 filesystem
+          mkfs.ext4 /dev/vg-containerd/vol_containerd
+`
+				)
+
+				appendUniqueFile(new, extensionsv1alpha1.File{
+					Path:        "/opt/bin/lvm.sh",
+					Permissions: &permissions,
+					Content: extensionsv1alpha1.FileContent{
+						Inline: &extensionsv1alpha1.FileContentInline{
+							Encoding: "",
+							Data:     customFileContent,
+						},
+					},
+				})
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
 // EnsureAdditionalUnits ensures that additional required system units are added.
-func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
-	var (
-		command      = "start"
-		trueVar      = true
-		bgpRouteUnit = `[Unit]
+func (e *ensurer) EnsureAdditionalUnits(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
+	extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+		Name:    "bgp-peer-route.service",
+		Enable:  ptr.To(true),
+		Command: ptr.To(extensionsv1alpha1.CommandStart),
+		Content: ptr.To(`[Unit]
 Description=Routes to BGP peers
 After=network.target
 Wants=network.target
@@ -165,20 +290,13 @@ WantedBy=kubelet.service
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/opt/bin/bgp-peer.sh
-`
-	)
-
-	extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
-		Name:    "bgp-peer-route.service",
-		Enable:  &trueVar,
-		Command: &command,
-		Content: &bgpRouteUnit,
+`),
 	})
 	return nil
 }
 
 // EnsureAdditionalFiles ensures that additional required system files are added.
-func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
+func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
 	var (
 		permissions       int32 = 0755
 		customFileContent       = `#!/bin/sh
@@ -215,7 +333,7 @@ func appendUniqueFile(files *[]extensionsv1alpha1.File, file extensionsv1alpha1.
 	*files = append(resFiles, file)
 }
 
-func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion string) error {
+func ensureKubeAPIServerCommandLineArgs(c *corev1.Container) error {
 	// Ensure CSI-related admission plugins
 	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--enable-admission-plugins=",
 		"PersistentVolumeLabel", ",")
@@ -255,7 +373,7 @@ func ensureKubeletCommandLineArgs(command []string) []string {
 
 // EnsureKubeletConfiguration ensures that the kubelet configuration conforms to the provider requirements.
 func (e *ensurer) EnsureKubeletConfiguration(_ context.Context, _ gcontext.GardenContext, _ *semver.Version, new, _ *kubeletconfigv1beta1.KubeletConfiguration) error {
-	new.EnableControllerAttachDetach = pointer.Bool(true)
+	new.EnableControllerAttachDetach = ptr.To(true)
 
 	return nil
 }

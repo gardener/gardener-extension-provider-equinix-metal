@@ -1,9 +1,6 @@
 /*
 Metal API
 
-# Introduction Equinix Metal provides a RESTful HTTP API which can be reached at <https://api.equinix.com/metal/v1>. This document describes the API and how to use it.  The API allows you to programmatically interact with all of your Equinix Metal resources, including devices, networks, addresses, organizations, projects, and your user account. Every feature of the Equinix Metal web interface is accessible through the API.  The API docs are generated from the Equinix Metal OpenAPI specification and are officially hosted at <https://metal.equinix.com/developers/api>.  # Common Parameters  The Equinix Metal API uses a few methods to minimize network traffic and improve throughput. These parameters are not used in all API calls, but are used often enough to warrant their own section. Look for these parameters in the documentation for the API calls that support them.  ## Pagination  Pagination is used to limit the number of results returned in a single request. The API will return a maximum of 100 results per page. To retrieve additional results, you can use the `page` and `per_page` query parameters.  The `page` parameter is used to specify the page number. The first page is `1`. The `per_page` parameter is used to specify the number of results per page. The maximum number of results differs by resource type.  ## Sorting  Where offered, the API allows you to sort results by a specific field. To sort results use the `sort_by` query parameter with the root level field name as the value. The `sort_direction` parameter is used to specify the sort direction, either either `asc` (ascending) or `desc` (descending).  ## Filtering  Filtering is used to limit the results returned in a single request. The API supports filtering by certain fields in the response. To filter results, you can use the field as a query parameter.  For example, to filter the IP list to only return public IPv4 addresses, you can filter by the `type` field, as in the following request:  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/projects/id/ips?type=public_ipv4 ```  Only IP addresses with the `type` field set to `public_ipv4` will be returned.  ## Searching  Searching is used to find matching resources using multiple field comparissons. The API supports searching in resources that define this behavior. Currently the search parameter is only available on devices, ssh_keys, api_keys and memberships endpoints.  To search resources you can use the `search` query parameter.  ## Include and Exclude  For resources that contain references to other resources, sucha as a Device that refers to the Project it resides in, the Equinix Metal API will returns `href` values (API links) to the associated resource.  ```json {   ...   \"project\": {     \"href\": \"/metal/v1/projects/f3f131c8-f302-49ef-8c44-9405022dc6dd\"   } } ```  If you're going need the project details, you can avoid a second API request.  Specify the contained `href` resources and collections that you'd like to have included in the response using the `include` query parameter.  For example:  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=projects ```  The `include` parameter is generally accepted in `GET`, `POST`, `PUT`, and `PATCH` requests where `href` resources are presented.  To have multiple resources include, use a comma-separated list (e.g. `?include=emails,projects,memberships`).  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=emails,projects,memberships ```  You may also include nested associations up to three levels deep using dot notation (`?include=memberships.projects`):  ```sh curl -H 'X-Auth-Token: my_authentication_token' \\   https://api.equinix.com/metal/v1/user?include=memberships.projects ```  To exclude resources, and optimize response delivery, use the `exclude` query parameter. The `exclude` parameter is generally accepted in `GET`, `POST`, `PUT`, and `PATCH` requests for fields with nested object responses. When excluded, these fields will be replaced with an object that contains only an `href` field.
-
-API version: 1.0.0
 Contact: support@equinixmetal.com
 */
 
@@ -21,7 +18,7 @@ var _ MappedNullable = &VirtualNetwork{}
 
 // VirtualNetwork struct for VirtualNetwork
 type VirtualNetwork struct {
-	AssignedTo *Href `json:"assigned_to,omitempty"`
+	AssignedTo *Project `json:"assigned_to,omitempty"`
 	// True if the virtual network is attached to a virtual circuit. False if not.
 	AssignedToVirtualCircuit *bool      `json:"assigned_to_virtual_circuit,omitempty"`
 	Description              *string    `json:"description,omitempty"`
@@ -30,10 +27,10 @@ type VirtualNetwork struct {
 	CreatedAt                *time.Time `json:"created_at,omitempty"`
 	Id                       *string    `json:"id,omitempty"`
 	// A list of instances with ports currently associated to this Virtual Network.
-	Instances []Href `json:"instances,omitempty"`
+	Instances []Device `json:"instances,omitempty"`
 	// A list of metal gateways currently associated to this Virtual Network.
 	MetalGateways []MetalGatewayLite `json:"metal_gateways,omitempty"`
-	Metro         *Href              `json:"metro,omitempty"`
+	Metro         *Metro             `json:"metro,omitempty"`
 	// The Metro code of the metro in which this Virtual Network is defined.
 	MetroCode            *string  `json:"metro_code,omitempty"`
 	Vxlan                *int32   `json:"vxlan,omitempty"`
@@ -61,9 +58,9 @@ func NewVirtualNetworkWithDefaults() *VirtualNetwork {
 }
 
 // GetAssignedTo returns the AssignedTo field value if set, zero value otherwise.
-func (o *VirtualNetwork) GetAssignedTo() Href {
+func (o *VirtualNetwork) GetAssignedTo() Project {
 	if o == nil || IsNil(o.AssignedTo) {
-		var ret Href
+		var ret Project
 		return ret
 	}
 	return *o.AssignedTo
@@ -71,7 +68,7 @@ func (o *VirtualNetwork) GetAssignedTo() Href {
 
 // GetAssignedToOk returns a tuple with the AssignedTo field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *VirtualNetwork) GetAssignedToOk() (*Href, bool) {
+func (o *VirtualNetwork) GetAssignedToOk() (*Project, bool) {
 	if o == nil || IsNil(o.AssignedTo) {
 		return nil, false
 	}
@@ -87,8 +84,8 @@ func (o *VirtualNetwork) HasAssignedTo() bool {
 	return false
 }
 
-// SetAssignedTo gets a reference to the given Href and assigns it to the AssignedTo field.
-func (o *VirtualNetwork) SetAssignedTo(v Href) {
+// SetAssignedTo gets a reference to the given Project and assigns it to the AssignedTo field.
+func (o *VirtualNetwork) SetAssignedTo(v Project) {
 	o.AssignedTo = &v
 }
 
@@ -285,9 +282,9 @@ func (o *VirtualNetwork) SetId(v string) {
 }
 
 // GetInstances returns the Instances field value if set, zero value otherwise.
-func (o *VirtualNetwork) GetInstances() []Href {
+func (o *VirtualNetwork) GetInstances() []Device {
 	if o == nil || IsNil(o.Instances) {
-		var ret []Href
+		var ret []Device
 		return ret
 	}
 	return o.Instances
@@ -295,7 +292,7 @@ func (o *VirtualNetwork) GetInstances() []Href {
 
 // GetInstancesOk returns a tuple with the Instances field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *VirtualNetwork) GetInstancesOk() ([]Href, bool) {
+func (o *VirtualNetwork) GetInstancesOk() ([]Device, bool) {
 	if o == nil || IsNil(o.Instances) {
 		return nil, false
 	}
@@ -311,8 +308,8 @@ func (o *VirtualNetwork) HasInstances() bool {
 	return false
 }
 
-// SetInstances gets a reference to the given []Href and assigns it to the Instances field.
-func (o *VirtualNetwork) SetInstances(v []Href) {
+// SetInstances gets a reference to the given []Device and assigns it to the Instances field.
+func (o *VirtualNetwork) SetInstances(v []Device) {
 	o.Instances = v
 }
 
@@ -349,9 +346,9 @@ func (o *VirtualNetwork) SetMetalGateways(v []MetalGatewayLite) {
 }
 
 // GetMetro returns the Metro field value if set, zero value otherwise.
-func (o *VirtualNetwork) GetMetro() Href {
+func (o *VirtualNetwork) GetMetro() Metro {
 	if o == nil || IsNil(o.Metro) {
-		var ret Href
+		var ret Metro
 		return ret
 	}
 	return *o.Metro
@@ -359,7 +356,7 @@ func (o *VirtualNetwork) GetMetro() Href {
 
 // GetMetroOk returns a tuple with the Metro field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *VirtualNetwork) GetMetroOk() (*Href, bool) {
+func (o *VirtualNetwork) GetMetroOk() (*Metro, bool) {
 	if o == nil || IsNil(o.Metro) {
 		return nil, false
 	}
@@ -375,8 +372,8 @@ func (o *VirtualNetwork) HasMetro() bool {
 	return false
 }
 
-// SetMetro gets a reference to the given Href and assigns it to the Metro field.
-func (o *VirtualNetwork) SetMetro(v Href) {
+// SetMetro gets a reference to the given Metro and assigns it to the Metro field.
+func (o *VirtualNetwork) SetMetro(v Metro) {
 	o.Metro = &v
 }
 

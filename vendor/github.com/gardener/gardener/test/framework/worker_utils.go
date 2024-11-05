@@ -1,16 +1,6 @@
-// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file.
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package framework
 
@@ -80,7 +70,7 @@ func AddWorker(shoot *gardencorev1beta1.Shoot, cloudProfile *gardencorev1beta1.C
 
 	machineType := cloudProfile.Spec.MachineTypes[0]
 
-	//select first machine type of CPU architecture amd64
+	// select first machine type of CPU architecture amd64
 	for _, machine := range cloudProfile.Spec.MachineTypes {
 		if *machine.Architecture == v1beta1constants.ArchitectureAMD64 {
 			machineType = machine
@@ -98,14 +88,16 @@ func AddWorker(shoot *gardencorev1beta1.Shoot, cloudProfile *gardencorev1beta1.C
 		return fmt.Errorf("no MachineImage that supports architecture amd64 configured in the Cloudprofile '%s'", cloudProfile.Name)
 	}
 
-	qualifyingVersionFound, shootMachineImage, err := helper.GetLatestQualifyingShootMachineImage(*machineImage)
+	qualifyingVersionFound, latestImageVersion, err := helper.GetLatestQualifyingVersion(helper.ToExpirableVersions(machineImage.Versions))
 	if err != nil {
-		return err
+		return fmt.Errorf("an error occurred while determining the latest Shoot machine image for machine image %q: %w", machineImage.Name, err)
 	}
 
 	if !qualifyingVersionFound {
 		return fmt.Errorf("could not add worker. No latest qualifying Shoot machine image could be determined for machine image %q. Make sure the machine image in the CloudProfile has at least one version that is not expired and not in preview", machineImage.Name)
 	}
+
+	shootMachineImage := &gardencorev1beta1.ShootMachineImage{Name: machineImage.Name, Version: &latestImageVersion.Version}
 
 	workerName, err := generateRandomWorkerName(fmt.Sprintf("%s-", shootMachineImage.Name))
 	if err != nil {

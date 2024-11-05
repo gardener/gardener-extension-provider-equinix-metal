@@ -1,16 +1,6 @@
-// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kubernetes
 
@@ -38,7 +28,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	clientcmdv1 "k8s.io/client-go/tools/clientcmd/api/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -143,8 +133,8 @@ func ObjectKeyFromSecretRef(ref corev1.SecretReference) client.ObjectKey {
 	}
 }
 
-// WaitUntilResourceDeleted deletes the given resource and then waits until it has been deleted. It respects the
-// given interval and timeout.
+// WaitUntilResourceDeleted waits until it has been deleted. It respects the given interval. Timeout must be provided
+// via the context.
 func WaitUntilResourceDeleted(ctx context.Context, c client.Client, obj client.Object, interval time.Duration) error {
 	key := client.ObjectKeyFromObject(obj)
 	return retry.Until(ctx, interval, func(ctx context.Context) (done bool, err error) {
@@ -297,6 +287,7 @@ func MapStringBoolToCommandLineParameter(m map[string]bool, param string) string
 	for k := range m {
 		keys = append(keys, k)
 	}
+
 	slices.Sort(keys)
 
 	out := param
@@ -690,7 +681,7 @@ func ClientCertificateFromRESTConfig(restConfig *rest.Config) (*tls.Certificate,
 	}
 
 	if len(cert.Certificate) < 1 {
-		return nil, fmt.Errorf("the X509 certificate is invalid, no cert/key data found")
+		return nil, errors.New("the X509 certificate is invalid, no cert/key data found")
 	}
 
 	certs, err := x509.ParseCertificates(cert.Certificate[0])
@@ -699,7 +690,7 @@ func ClientCertificateFromRESTConfig(restConfig *rest.Config) (*tls.Certificate,
 	}
 
 	if len(certs) < 1 {
-		return nil, fmt.Errorf("the X509 certificate bundle does not contain exactly one certificate")
+		return nil, errors.New("the X509 certificate bundle does not contain exactly one certificate")
 	}
 
 	cert.Leaf = certs[0]
@@ -740,7 +731,7 @@ func (c *ComparableTolerations) Transform(toleration corev1.Toleration) corev1.T
 
 	tolerationSeconds := *toleration.TolerationSeconds
 	if _, ok := c.tolerationSeconds[tolerationSeconds]; !ok {
-		c.tolerationSeconds[tolerationSeconds] = pointer.Int64(tolerationSeconds)
+		c.tolerationSeconds[tolerationSeconds] = ptr.To(tolerationSeconds)
 	}
 
 	toleration.TolerationSeconds = c.tolerationSeconds[tolerationSeconds]

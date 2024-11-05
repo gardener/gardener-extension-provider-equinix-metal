@@ -1,16 +1,6 @@
-// Copyright 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package utils
 
@@ -179,11 +169,14 @@ func getFromValues(values interface{}, keys ...interface{}) (interface{}, error)
 	if len(keys) == 0 {
 		return values, nil
 	}
+
 	var ok bool
+
 	switch keys[0].(type) {
 	case string:
 		key := keys[0].(string)
 		var m map[string]interface{}
+
 		if m, ok = values.(map[string]interface{}); !ok {
 			return nil, fmt.Errorf("cannot use key '%s' with a non-map value", key)
 		}
@@ -192,8 +185,11 @@ func getFromValues(values interface{}, keys ...interface{}) (interface{}, error)
 		}
 		return getFromValues(m[key], keys[1:]...)
 	case int:
-		index := keys[0].(int)
-		var s []interface{}
+		var (
+			index = keys[0].(int)
+			s     []interface{}
+		)
+
 		if s, ok = values.([]interface{}); !ok {
 			return nil, fmt.Errorf("cannot use index '%d' with a non-slice value", index)
 		}
@@ -216,13 +212,17 @@ func setToValues(values interface{}, v interface{}, keys ...interface{}) (interf
 	if len(keys) == 0 {
 		return values, nil
 	}
+
 	var ok bool
+
 	switch keys[0].(type) {
 	case string:
 		key := keys[0].(string)
+
 		if values == nil {
 			values = map[string]interface{}{}
 		}
+
 		var m map[string]interface{}
 		if m, ok = values.(map[string]interface{}); !ok {
 			return values, fmt.Errorf("cannot use key '%s' with a non-map value", key)
@@ -239,10 +239,13 @@ func setToValues(values interface{}, v interface{}, keys ...interface{}) (interf
 		return m, nil
 	case int:
 		index := keys[0].(int)
+
 		if values == nil {
 			values = []interface{}{}
 		}
+
 		var s []interface{}
+
 		if s, ok = values.([]interface{}); !ok {
 			return values, fmt.Errorf("cannot use index '%d' with a non-slice value", index)
 		}
@@ -264,6 +267,7 @@ func setToValues(values interface{}, v interface{}, keys ...interface{}) (interf
 				if err != nil {
 					return s, err
 				}
+
 				s = append(s, x)
 			}
 		} else {
@@ -287,11 +291,14 @@ func deleteFromValues(values interface{}, keys ...interface{}) (interface{}, err
 	if len(keys) == 0 {
 		return values, nil
 	}
+
 	var ok bool
+
 	switch keys[0].(type) {
 	case string:
 		key := keys[0].(string)
 		var m map[string]interface{}
+
 		if m, ok = values.(map[string]interface{}); !ok {
 			return values, fmt.Errorf("cannot use key '%s' with a non-map value", key)
 		}
@@ -310,6 +317,7 @@ func deleteFromValues(values interface{}, keys ...interface{}) (interface{}, err
 	case int:
 		index := keys[0].(int)
 		var s []interface{}
+
 		if s, ok = values.([]interface{}); !ok {
 			return values, fmt.Errorf("cannot use index '%d' with a non-slice value", index)
 		}

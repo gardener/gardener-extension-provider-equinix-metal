@@ -1,16 +1,6 @@
-// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
@@ -27,6 +17,19 @@ var _ Object = (*Worker)(nil)
 
 // WorkerResource is a constant for the name of the Worker resource.
 const WorkerResource = "Worker"
+
+const (
+	// ScaleDownUtilizationThresholdAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.ScaleDownUtilizationThreshold of cluster-autoscaler
+	ScaleDownUtilizationThresholdAnnotation = "autoscaler.gardener.cloud/scale-down-utilization-threshold"
+	// ScaleDownGpuUtilizationThresholdAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.ScaleDownGpuUtilizationThreshold of cluster-autoscaler
+	ScaleDownGpuUtilizationThresholdAnnotation = "autoscaler.gardener.cloud/scale-down-gpu-utilization-threshold"
+	// ScaleDownUnneededTimeAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.ScaleDownUnneededTime of cluster-autoscaler
+	ScaleDownUnneededTimeAnnotation = "autoscaler.gardener.cloud/scale-down-unneeded-time"
+	// ScaleDownUnreadyTimeAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.ScaleDownUnreadyTime of cluster-autoscaler
+	ScaleDownUnreadyTimeAnnotation = "autoscaler.gardener.cloud/scale-down-unready-time"
+	// MaxNodeProvisionTimeAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.MaxNodeProvisionTime of cluster-autoscaler
+	MaxNodeProvisionTimeAnnotation = "autoscaler.gardener.cloud/max-node-provision-time"
+)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -129,7 +132,16 @@ type WorkerPool struct {
 	ProviderConfig *runtime.RawExtension `json:"providerConfig,omitempty"`
 	// UserData is a base64-encoded string that contains the data that is sent to the provider's APIs
 	// when a new machine/VM that is part of this worker pool shall be spawned.
-	UserData []byte `json:"userData"`
+	// Either this or UserDataSecretRef must be provided.
+	// Deprecated: This field will be removed in future release.
+	// TODO(rfranzke): Remove this field after v1.100 has been released.
+	// +optional
+	UserData []byte `json:"userData,omitempty"`
+	// UserDataSecretRef references a Secret and a data key containing the data that is sent to the provider's APIs when
+	// a new machine/VM that is part of this worker pool shall be spawned.
+	// Either this or UserData must be provided.
+	// +optional
+	UserDataSecretRef *corev1.SecretKeySelector `json:"userDataSecretRef,omitempty"`
 	// Volume contains information about the root disks that should be used for this worker pool.
 	// +optional
 	Volume *Volume `json:"volume,omitempty"`
@@ -154,6 +166,28 @@ type WorkerPool struct {
 	// Architecture is the CPU architecture of the worker pool machines and machine image.
 	// +optional
 	Architecture *string `json:"architecture,omitempty"`
+	// ClusterAutoscaler contains the cluster autoscaler configurations for the worker pool.
+	// +optional
+	ClusterAutoscaler *ClusterAutoscalerOptions `json:"clusterAutoscaler,omitempty"`
+}
+
+// ClusterAutoscalerOptions contains the cluster autoscaler configurations for a worker pool.
+type ClusterAutoscalerOptions struct {
+	// ScaleDownUtilizationThreshold defines the threshold in fraction (0.0 - 1.0) under which a node is being removed.
+	// +optional
+	ScaleDownUtilizationThreshold *string `json:"scaleDownUtilizationThreshold,omitempty"`
+	// ScaleDownGpuUtilizationThreshold defines the threshold in fraction (0.0 - 1.0) of gpu resources under which a node is being removed.
+	// +optional
+	ScaleDownGpuUtilizationThreshold *string `json:"scaleDownGpuUtilizationThreshold,omitempty"`
+	// ScaleDownUnneededTime defines how long a node should be unneeded before it is eligible for scale down.
+	// +optional
+	ScaleDownUnneededTime *metav1.Duration `json:"scaleDownUnneededTime,omitempty"`
+	// ScaleDownUnreadyTime defines how long an unready node should be unneeded before it is eligible for scale down.
+	// +optional
+	ScaleDownUnreadyTime *metav1.Duration `json:"scaleDownUnreadyTime,omitempty"`
+	// MaxNodeProvisionTime defines how long cluster autoscaler should wait for a node to be provisioned.
+	// +optional
+	MaxNodeProvisionTime *metav1.Duration `json:"maxNodeProvisionTime,omitempty"`
 }
 
 // NodeTemplate contains information about the expected node properties.
