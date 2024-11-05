@@ -7,13 +7,13 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/coreos/go-systemd/v22 v22.5.0
+	github.com/equinix/equinix-sdk-go v0.46.0
 	github.com/gardener/etcd-druid v0.22.0
 	github.com/gardener/gardener v1.95.1
 	github.com/gardener/machine-controller-manager v0.53.0
 	github.com/go-logr/logr v1.4.1
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.33.0
-	github.com/equinix/equinix-sdk-go v0.46.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2
 	github.com/spf13/cobra v1.8.0
