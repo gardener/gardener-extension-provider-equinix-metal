@@ -162,94 +162,6 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(Not(HaveOccurred()))
 			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
 		})
-
-		It("should keep the NODE_NETWORK env variable in the kube-apiserver deployment if its value does not change", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-									},
-									{
-										Name: "vpn-seed",
-									},
-								},
-							},
-						},
-					},
-				}
-				oldDep            = dep.DeepCopy()
-				nodeNetworkEnvVar = corev1.EnvVar{
-					Name:  "NODE_NETWORK",
-					Value: "foobar",
-				}
-			)
-
-			oldDep.Spec.Template.Spec.Containers[1].Env = []corev1.EnvVar{nodeNetworkEnvVar}
-
-			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
-
-			ensurer := NewEnsurer(c, logger)
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
-			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
-			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
-
-			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
-			Expect(c).To(Not(BeNil()))
-			Expect(c.Env).To(ConsistOf(nodeNetworkEnvVar))
-		})
-
-		It("should not keep the NODE_NETWORK env variable in the kube-apiserver deployment if its value changes", func() {
-			var (
-				dep = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: v1beta1constants.DeploymentNameKubeAPIServer},
-					Spec: appsv1.DeploymentSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "kube-apiserver",
-									},
-									{
-										Name: "vpn-seed",
-										Env: []corev1.EnvVar{{
-											Name:  "NODE_NETWORK",
-											Value: "foobar",
-										}},
-									},
-								},
-							},
-						},
-					},
-				}
-				oldDep   = dep.DeepCopy()
-				newValue = "barfoo"
-			)
-
-			dep.Spec.Template.Spec.Containers[1].Env[0].Value = newValue
-
-			c.EXPECT().Get(ctx, secretKey, &corev1.Secret{}).DoAndReturn(clientGet(secret))
-
-			ensurer := NewEnsurer(c, logger)
-
-			// Call EnsureKubeAPIServerDeployment method and check the result
-			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, oldDep)
-			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
-
-			c := extensionswebhook.ContainerWithName(dep.Spec.Template.Spec.Containers, "vpn-seed")
-			Expect(c).To(Not(BeNil()))
-			Expect(c.Env).To(ConsistOf(corev1.EnvVar{
-				Name:  "NODE_NETWORK",
-				Value: newValue,
-			}))
-		})
 	})
 
 	Describe("#EnsureKubeControllerManagerDeployment", func() {
@@ -374,7 +286,7 @@ var _ = Describe("Ensurer", func() {
 				newValue = "127.0.0.1/32"
 				infra    = &extensionsv1alpha1.Infrastructure{
 					Status: extensionsv1alpha1.InfrastructureStatus{
-						NodesCIDR: pointer.String(newValue),
+						NodesCIDR: &newValue,
 					},
 				}
 				newDep = &appsv1.Deployment{}

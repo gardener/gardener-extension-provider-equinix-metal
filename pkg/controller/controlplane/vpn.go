@@ -41,7 +41,6 @@ func EnsureNodeNetworkOfVpnSeed(
 	if err := shootClient.Get(ctx, kutil.Key(namespace, v1beta1constants.DeploymentNameVPNSeedServer), deploy); err != nil {
 		return err
 	}
-	fmt.Printf("%v", deploy)
 
 	var (
 		envVarExists  bool
@@ -74,6 +73,8 @@ func EnsureNodeNetworkOfVpnSeed(
 			envVarChanged = true
 		}
 	}
+
+	fmt.Printf("bbb %v\n", deploy.Spec.Template.Spec.Containers)
 
 	if !envVarChanged {
 		return nil
