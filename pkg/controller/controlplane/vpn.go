@@ -2,7 +2,6 @@ package controlplane
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -73,8 +72,6 @@ func EnsureNodeNetworkOfVpnSeed(
 			envVarChanged = true
 		}
 	}
-
-	fmt.Printf("bbb %v\n", deploy.Spec.Template.Spec.Containers)
 
 	if !envVarChanged {
 		return nil
