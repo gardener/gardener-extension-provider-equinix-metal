@@ -5,37 +5,55 @@
 package client
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/packethost/packngo"
+	"github.com/equinix/equinix-sdk-go/services/metalv1"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/version"
 )
 
 type eqxmClient struct {
-	client *packngo.Client
+	client *metalv1.APIClient
 }
 
 // NewClient creates a new Client for the given Equinix Metal credentials
-func NewClient(apiKey string) ClientInterface {
+func NewClient(apiKey string) (ClientInterface, error) {
 	token := strings.TrimSpace(apiKey)
 
-	if token != "" {
-		client := packngo.NewClientWithAuth("gardener", token, nil)
-		client.UserAgent = fmt.Sprintf("gardener-extension-provider-equinix-metal/%s %s", version.Version, client.UserAgent)
-		return &eqxmClient{client}
+	if token == "" {
+		return nil, errors.New("Equinix Metal api token required")
 	}
 
-	return nil
+	config := metalv1.NewConfiguration()
+	config.Debug = false
+	config.AddDefaultHeader("X-Auth-Token", token)
+	config.UserAgent = fmt.Sprintf("gardener-extension-provider-equinix-metal/%s %s", version.Version, config.UserAgent)
+	client := metalv1.NewAPIClient(config)
+
+	return &eqxmClient{client}, nil
 }
 
-func (p *eqxmClient) DeviceGet(id string) (device *packngo.Device, err error) {
-	device, _, err = p.client.Devices.Get(id, &packngo.GetOptions{Includes: []string{"ip_addresses.parent_block,parent_block"}})
+func (p *eqxmClient) GetDevice(
+	ctx context.Context,
+	deviceID string,
+) (*metalv1.Device, error) {
+	device, _, err := p.client.DevicesApi.
+		FindDeviceById(ctx, deviceID).
+		Include([]string{"ip_addresses.parent_block,parent_block"}).
+		Execute()
 	return device, err
 }
 
-func (p *eqxmClient) NetworkGet(id string) (addr *packngo.IPAddressReservation, err error) {
-	addr, _, err = p.client.ProjectIPs.Get(id, &packngo.GetOptions{Includes: []string{"parent_block"}})
+func (p *eqxmClient) GetNetwork(
+	ctx context.Context,
+	projectID string,
+) (*metalv1.IPReservationList, error) {
+	addr, _, err := p.client.IPAddressesApi.
+		FindIPReservations(ctx, projectID).
+		Include([]string{"parent_block"}).
+		Execute()
 	return addr, err
 }
