@@ -486,7 +486,7 @@ visible Git diff).
 
 #### Retrying operations
 
-If shoot creation operations fail, you can restart them. See [here](https://github.com/gardener/gardener/blob/master/docs/usage/shoot_operations.md). For example, to retry a failed shoot creation:
+If shoot creation operations fail, you can restart them. See [here](https://github.com/gardener/gardener/blob/master/docs/usage/shoot-operations/shoot_operations.md). For example, to retry a failed shoot creation:
 
 ```
 $ kubectl -n garden-em annotate shoot em-test gardener.cloud/operation=retry
