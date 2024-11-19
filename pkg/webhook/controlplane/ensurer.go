@@ -138,7 +138,6 @@ func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcont
 	var lvmSetup = `
 [Unit]
         Description=LVM Setup
-        ConditionFirstBoot=yes
         DefaultDependencies=no
         Before=local-fs-pre.target
         [Service]
@@ -165,7 +164,7 @@ func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcont
 `
 	operatingsystems := make(map[string]int)
 	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-		if worker.DataVolumes != nil {
+		if worker.Volume != nil {
 			// fail if multiple OSes are used
 			operatingsystems[worker.Machine.Image.Name]++
 			if len(operatingsystems) > 1 {
@@ -204,9 +203,9 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
 
 	operatingsystems := make(map[string]int)
 	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-		// if any worker is having any value set for `DataVolume`
+		// if any worker is having any value set for `Volume`
 		// this script creates a lvm from all remaining non-boot disks.
-		if worker.DataVolumes != nil {
+		if worker.Volume != nil {
 			// fail if multiple OSes are used
 			operatingsystems[worker.Machine.Image.Name]++
 			if len(operatingsystems) > 1 {
