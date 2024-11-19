@@ -373,6 +373,7 @@ func (e *ensurer) EnsureKubeletServiceUnitOptions(ctx context.Context, gctx gcon
 			// here we also need to tell the kubelet to use it
 			if worker.Volume != nil {
 				command = ensureKubeletRootDirCommandLineArg(command)
+				break
 			}
 		}
 		opt.Value = extensionswebhook.SerializeCommandLine(command, 1, " \\\n    ")
