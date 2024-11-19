@@ -357,13 +357,31 @@ func ensureKubeControllerManagerCommandLineArgs(c *corev1.Container) {
 }
 
 // EnsureKubeletServiceUnitOptions ensures that the kubelet.service unit options conform to the provider requirements.
-func (e *ensurer) EnsureKubeletServiceUnitOptions(_ context.Context, _ gcontext.GardenContext, _ *semver.Version, new, _ []*unit.UnitOption) ([]*unit.UnitOption, error) {
+func (e *ensurer) EnsureKubeletServiceUnitOptions(ctx context.Context, gctx gcontext.GardenContext, _ *semver.Version, new, _ []*unit.UnitOption) ([]*unit.UnitOption, error) {
 	if opt := extensionswebhook.UnitOptionWithSectionAndName(new, "Service", "ExecStart"); opt != nil {
 		command := extensionswebhook.DeserializeCommandLine(opt.Value)
 		command = ensureKubeletCommandLineArgs(command)
+
+		cluster, err := gctx.GetCluster(ctx)
+		if err != nil {
+			return new, err
+		}
+
+		for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+			// if any worker is having any value set for `Volume`
+			// we set create a PV group in EnsureAdditionalProvisionFiles
+			// here we also need to tell the kubelet to use it
+			if worker.Volume != nil {
+				command = ensureKubeletRootDirCommandLineArg(command)
+			}
+		}
 		opt.Value = extensionswebhook.SerializeCommandLine(command, 1, " \\\n    ")
 	}
 	return new, nil
+}
+
+func ensureKubeletRootDirCommandLineArg(command []string) []string {
+	return extensionswebhook.EnsureStringWithPrefix(command, "--root-dir", "/var/lib/containerd")
 }
 
 func ensureKubeletCommandLineArgs(command []string) []string {
