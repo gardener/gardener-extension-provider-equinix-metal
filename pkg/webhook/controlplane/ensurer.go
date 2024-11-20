@@ -7,7 +7,6 @@ package controlplane
 import (
 	"context"
 	"fmt"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -129,11 +128,6 @@ func (e *ensurer) EnsureVPNSeedServerDeployment(ctx context.Context, gCtx gconte
 // EnsureAdditionalProvisionUnits ensures that additional required system units are added, that are required during provisioning.
 func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
 
-	cluster, err := gctx.GetCluster(ctx)
-	if err != nil {
-		return err
-	}
-
 	// Define LVM setup unit
 	var lvmSetup = `
 [Unit]
@@ -162,62 +156,64 @@ func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcont
         [Install]
         WantedBy=local-fs.target
 `
-	operatingsystems := make(map[string]int)
-	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-		if worker.Volume != nil {
-			// fail if multiple OSes are used
-			operatingsystems[worker.Machine.Image.Name]++
-			if len(operatingsystems) > 1 {
-				return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
-			}
-			switch worker.Machine.Image.Name {
-			case "flatcar":
-				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
-					Name:    "lvm-setup.service",
-					Enable:  ptr.To(true),
-					Command: ptr.To(extensionsv1alpha1.CommandStart),
-					Content: ptr.To(lvmSetup),
-				})
-
-				extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
-					Name:    "var-lib-containerd.mount",
-					Enable:  ptr.To(true),
-					Command: ptr.To(extensionsv1alpha1.CommandStart),
-					Content: ptr.To(lvmMountContainerd),
-				})
-
-				return nil
-			}
-
-		}
+	volume, err := hasVolume(ctx, gctx)
+	if err != nil {
+		return err
 	}
+	if volume {
+		operatingsystems, err := getOperatingSystems(ctx, gctx)
+		if err != nil {
+			return err
+		}
+		if len(operatingsystems) > 1 {
+			return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
+		}
+
+		switch operatingsystems[0] {
+		case "flatcar":
+			extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+				Name:    "lvm-setup.service",
+				Enable:  ptr.To(true),
+				Command: ptr.To(extensionsv1alpha1.CommandStart),
+				Content: ptr.To(lvmSetup),
+			})
+
+			extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+				Name:    "var-lib-containerd.mount",
+				Enable:  ptr.To(true),
+				Command: ptr.To(extensionsv1alpha1.CommandStart),
+				Content: ptr.To(lvmMountContainerd),
+			})
+
+			return nil
+		}
+
+	}
+
 	return nil
 }
 
 // EnsureAdditionalProvisionFiles ensures that additional required system files are added, that are required during provisioning.
 func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
-	cluster, err := gctx.GetCluster(ctx)
+	volume, err := hasVolume(ctx, gctx)
 	if err != nil {
 		return err
 	}
+	if volume {
+		operatingsystems, err := getOperatingSystems(ctx, gctx)
+		if err != nil {
+			return err
+		}
+		if len(operatingsystems) > 1 {
+			return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
+		}
 
-	operatingsystems := make(map[string]int)
-	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-		// if any worker is having any value set for `Volume`
-		// this script creates a lvm from all remaining non-boot disks.
-		if worker.Volume != nil {
-			// fail if multiple OSes are used
-			operatingsystems[worker.Machine.Image.Name]++
-			if len(operatingsystems) > 1 {
-				return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
-			}
+		switch operatingsystems[0] {
+		case "flatcar":
 
-			switch worker.Machine.Image.Name {
-			case "flatcar":
-
-				var (
-					permissions       int32 = 0755
-					customFileContent       = `#!/bin/bash
+			var (
+				permissions       int32 = 0755
+				customFileContent       = `#!/bin/bash
           set -euo pipefail
 
 
@@ -254,20 +250,19 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
           # Format the data volume with ext4 filesystem
           mkfs.ext4 /dev/vg-containerd/vol_containerd
 `
-				)
+			)
 
-				appendUniqueFile(new, extensionsv1alpha1.File{
-					Path:        "/opt/bin/lvm.sh",
-					Permissions: &permissions,
-					Content: extensionsv1alpha1.FileContent{
-						Inline: &extensionsv1alpha1.FileContentInline{
-							Encoding: "",
-							Data:     customFileContent,
-						},
+			appendUniqueFile(new, extensionsv1alpha1.File{
+				Path:        "/opt/bin/lvm.sh",
+				Permissions: &permissions,
+				Content: extensionsv1alpha1.FileContent{
+					Inline: &extensionsv1alpha1.FileContentInline{
+						Encoding: "",
+						Data:     customFileContent,
 					},
-				})
-				return nil
-			}
+				},
+			})
+			return nil
 		}
 	}
 	return nil
@@ -362,23 +357,54 @@ func (e *ensurer) EnsureKubeletServiceUnitOptions(ctx context.Context, gctx gcon
 		command := extensionswebhook.DeserializeCommandLine(opt.Value)
 		command = ensureKubeletCommandLineArgs(command)
 
-		cluster, err := gctx.GetCluster(ctx)
+		volume, err := hasVolume(ctx, gctx)
 		if err != nil {
 			return new, err
 		}
-
-		for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-			// If any worker is having any value set for `Volume`
-			// we create a PV group in EnsureAdditionalProvisionFiles.
-			// Here we also need to tell the kubelet to use it.
-			if worker.Volume != nil {
-				command = ensureKubeletRootDirCommandLineArg(command)
-				break
-			}
+		if volume {
+			command = ensureKubeletRootDirCommandLineArg(command)
 		}
 		opt.Value = extensionswebhook.SerializeCommandLine(command, 1, " \\\n    ")
 	}
 	return new, nil
+}
+
+// getOperatingSystems returns an array of all operatingsytems used in the given cluster
+func getOperatingSystems(ctx context.Context, gctx gcontext.GardenContext) ([]string, error) {
+	operatingsystems := make(map[string]int)
+
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return []string{}, err
+	}
+
+	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+		operatingsystems[worker.Machine.Image.Name]++
+	}
+	return getMapKeys(operatingsystems), nil
+}
+
+// getMapKeys takes a map[string](int) and returns the keys as []string
+func getMapKeys(inputMap map[string]int) []string {
+	var output []string
+	for k := range inputMap {
+		output = append(output, k)
+	}
+	return output
+}
+
+// hasVolume checks if any worker has set a value for `Volume`
+func hasVolume(ctx context.Context, gctx gcontext.GardenContext) (bool, error) {
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+		if worker.Volume != nil {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func ensureKubeletRootDirCommandLineArg(command []string) []string {
