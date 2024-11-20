@@ -368,9 +368,9 @@ func (e *ensurer) EnsureKubeletServiceUnitOptions(ctx context.Context, gctx gcon
 		}
 
 		for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-			// if any worker is having any value set for `Volume`
-			// we set create a PV group in EnsureAdditionalProvisionFiles
-			// here we also need to tell the kubelet to use it
+			// If any worker is having any value set for `Volume`
+			// we create a PV group in EnsureAdditionalProvisionFiles.
+			// Here we also need to tell the kubelet to use it.
 			if worker.Volume != nil {
 				command = ensureKubeletRootDirCommandLineArg(command)
 				break
