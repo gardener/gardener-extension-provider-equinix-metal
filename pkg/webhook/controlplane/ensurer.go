@@ -161,34 +161,34 @@ func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcont
 	if err != nil {
 		return err
 	}
-	if volume {
-		operatingsystems, err := getOperatingSystems(ctx, gctx)
-		if err != nil {
-			return err
-		}
-		if len(operatingsystems) > 1 {
-			return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
-		}
+	if !volume {
+		return nil
+	}
+	operatingsystems, err := getOperatingSystems(ctx, gctx)
+	if err != nil {
+		return err
+	}
+	if len(operatingsystems) > 1 {
+		return fmt.Errorf("multiple operatingsystems used: %v; Only one allowed", operatingsystems)
+	}
 
-		switch operatingsystems[0] {
-		case "flatcar":
-			extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
-				Name:    "lvm-setup.service",
-				Enable:  ptr.To(true),
-				Command: ptr.To(extensionsv1alpha1.CommandStart),
-				Content: ptr.To(lvmSetup),
-			})
+	switch operatingsystems[0] {
+	case "flatcar":
+		extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+			Name:    "lvm-setup.service",
+			Enable:  ptr.To(true),
+			Command: ptr.To(extensionsv1alpha1.CommandStart),
+			Content: ptr.To(lvmSetup),
+		})
 
-			extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
-				Name:    "var-lib-containerd.mount",
-				Enable:  ptr.To(true),
-				Command: ptr.To(extensionsv1alpha1.CommandStart),
-				Content: ptr.To(lvmMountContainerd),
-			})
+		extensionswebhook.AppendUniqueUnit(new, extensionsv1alpha1.Unit{
+			Name:    "var-lib-containerd.mount",
+			Enable:  ptr.To(true),
+			Command: ptr.To(extensionsv1alpha1.CommandStart),
+			Content: ptr.To(lvmMountContainerd),
+		})
 
-			return nil
-		}
-
+		return nil
 	}
 
 	return nil
@@ -408,6 +408,7 @@ func hasVolume(ctx context.Context, gctx gcontext.GardenContext) (bool, error) {
 	return false, nil
 }
 
+// ensureKubeletRootDirCommandLineArg adds a flag to the kubelet to use /var/lib/containerd which is what where we also mount the created LVM if `volume` is set in the worker config
 func ensureKubeletRootDirCommandLineArg(command []string) []string {
 	return extensionswebhook.EnsureStringWithPrefix(command, "--root-dir", "/var/lib/containerd")
 }
