@@ -471,11 +471,6 @@ func checkKubeAPIServerDeployment(dep *appsv1.Deployment, k8sVersion string, ann
 	Expect(c.Command).To(Not(test.ContainElementWithPrefixContaining("--enable-admission-plugins=", "PersistentVolumeLabel", ",")))
 	Expect(c.Command).To(test.ContainElementWithPrefixContaining("--disable-admission-plugins=", "PersistentVolumeLabel", ","))
 
-	Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "VolumeSnapshotDataSource=true", ","))
-
-	Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "CSINodeInfo=true", ","))
-	Expect(c.Command).ToNot(test.ContainElementWithPrefixContaining("--feature-gates=", "CSIDriverRegistry=true", ","))
-
 	// Check that the Pod template contains all needed checksum annotations
 	Expect(dep.Spec.Template.Annotations).To(Equal(annotations))
 }

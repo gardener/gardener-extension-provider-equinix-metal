@@ -335,16 +335,6 @@ func ensureKubeAPIServerCommandLineArgs(c *corev1.Container) error {
 	c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--disable-admission-plugins=",
 		"PersistentVolumeLabel", ",")
 
-	// Ensure CSI-related feature gates
-	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
-		"VolumeSnapshotDataSource=false", ",")
-	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
-		"CSINodeInfo=false", ",")
-	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
-		"CSIDriverRegistry=false", ",")
-	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
-		"KubeletPluginsWatcher=false", ",")
-
 	return nil
 }
 
