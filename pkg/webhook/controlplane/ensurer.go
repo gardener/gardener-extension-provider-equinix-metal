@@ -279,7 +279,7 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
 `
 			)
 
-			appendUniqueFile(new, extensionsv1alpha1.File{
+			*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
 				Path:        "/opt/bin/lvm.sh",
 				Permissions: &permissions,
 				Content: extensionsv1alpha1.FileContent{
@@ -328,7 +328,7 @@ ip route add 169.254.255.2 via ${GATEWAY} dev bond0
 `
 	)
 
-	appendUniqueFile(new, extensionsv1alpha1.File{
+	*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
 		Path:        "/opt/bin/bgp-peer.sh",
 		Permissions: &permissions,
 		Content: extensionsv1alpha1.FileContent{
@@ -338,20 +338,8 @@ ip route add 169.254.255.2 via ${GATEWAY} dev bond0
 			},
 		},
 	})
+
 	return nil
-}
-
-// appendUniqueFile appends a unit file only if it does not exist, otherwise overwrite content of previous files
-func appendUniqueFile(files *[]extensionsv1alpha1.File, file extensionsv1alpha1.File) {
-	resFiles := make([]extensionsv1alpha1.File, 0, len(*files))
-
-	for _, f := range *files {
-		if f.Path != file.Path {
-			resFiles = append(resFiles, f)
-		}
-	}
-
-	*files = append(resFiles, file)
 }
 
 func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion *semver.Version) error {
