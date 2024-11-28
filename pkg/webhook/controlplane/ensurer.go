@@ -410,7 +410,7 @@ func hasVolume(ctx context.Context, gctx gcontext.GardenContext) (bool, error) {
 
 // ensureKubeletRootDirCommandLineArg adds a flag to the kubelet to use /var/lib/containerd which is what where we also mount the created LVM if `volume` is set in the worker config
 func ensureKubeletRootDirCommandLineArg(command []string) []string {
-	return extensionswebhook.EnsureStringWithPrefix(command, "--root-dir", "/var/lib/containerd")
+	return extensionswebhook.EnsureStringWithPrefix(command, "--root-dir=", "/var/lib/containerd")
 }
 
 func ensureKubeletCommandLineArgs(command []string) []string {
