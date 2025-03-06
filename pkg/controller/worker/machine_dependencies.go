@@ -93,7 +93,7 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 		controlplane.ParseJoinedNetwork(*infra.Status.NodesCIDR).Equal(targetCIDRs) {
 
 		var (
-			patch         = client.StrategicMergeFrom(infra.DeepCopy())
+			patch         = client.MergeFrom(infra.DeepCopy())
 			joinedNetwork = controlplane.JoinedNetworksCidr(targetCIDRs)
 		)
 
