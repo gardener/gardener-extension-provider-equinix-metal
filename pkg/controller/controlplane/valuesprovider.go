@@ -6,7 +6,6 @@ package controlplane
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
@@ -22,7 +21,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -111,16 +109,9 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 	map[string]interface{},
 	error,
 ) {
-	// TODO(rfranzke): Delete this after August 2024.
-	gep19Monitoring := vp.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: cp.Namespace}, &appsv1.StatefulSet{}) == nil
-	if gep19Monitoring {
-		if err := kutil.DeleteObject(ctx, vp.client, &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cloud-controller-manager-observability-config", Namespace: cp.Namespace}}); err != nil {
-			return nil, fmt.Errorf("failed deleting cloud-controller-manager-observability-config ConfigMap: %w", err)
-		}
-	}
 
 	// Get control plane chart values
-	return getControlPlaneChartValues(cp, cluster, checksums, scaledDown, gep19Monitoring)
+	return getControlPlaneChartValues(cp, cluster, checksums, scaledDown)
 }
 
 // GetControlPlaneShootChartValues returns the values for the control plane shoot chart applied by the generic actuator.
@@ -156,7 +147,6 @@ func getControlPlaneChartValues(
 	cluster *extensionscontroller.Cluster,
 	checksums map[string]string,
 	scaledDown bool,
-	gep19Monitoring bool,
 ) (
 	map[string]interface{},
 	error,
@@ -172,8 +162,7 @@ func getControlPlaneChartValues(
 			"podAnnotations": map[string]interface{}{
 				"checksum/secret-cloudprovider": checksums[v1beta1constants.SecretNameCloudProvider],
 			},
-			"metro":           cluster.Shoot.Spec.Region,
-			"gep19Monitoring": gep19Monitoring,
+			"metro": cluster.Shoot.Spec.Region,
 		},
 		"metallb": map[string]interface{}{},
 	}
