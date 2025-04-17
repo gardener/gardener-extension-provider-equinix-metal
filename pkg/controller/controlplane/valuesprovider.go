@@ -48,7 +48,6 @@ var controlPlaneChart = &chart.Chart{
 			Objects: []*chart.Object{
 				{Type: &corev1.Service{}, Name: "cloud-controller-manager"},
 				{Type: &appsv1.Deployment{}, Name: "cloud-controller-manager"},
-				{Type: &corev1.ConfigMap{}, Name: "cloud-controller-manager-observability-config"},
 				{Type: &monitoringv1.ServiceMonitor{}, Name: "shoot-cloud-controller-manager"},
 				{Type: &monitoringv1.PrometheusRule{}, Name: "shoot-cloud-controller-manager"},
 			},
