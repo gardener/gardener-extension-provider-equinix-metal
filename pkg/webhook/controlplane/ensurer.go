@@ -17,12 +17,9 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/nodemanagement/machinecontrollermanager"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"k8s.io/utils/ptr"
@@ -32,20 +29,6 @@ import (
 	eqxcontrolplane "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/controller/controlplane"
 	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/equinixmetal"
 )
-
-var (
-	// constraintK8sLess131 is a version constraint for versions < 1.31.
-	//
-	// TODO(ialidzhikov): Replace with versionutils.ConstraintK8sLess131 when vendoring a gardener/gardener version
-	// that contains https://github.com/gardener/gardener/pull/10472.
-	constraintK8sLess131 *semver.Constraints
-)
-
-func init() {
-	var err error
-	constraintK8sLess131, err = semver.NewConstraint("< 1.31-0")
-	utilruntime.Must(err)
-}
 
 // NewEnsurer creates a new controlplane ensurer.
 func NewEnsurer(client client.Client, logger logr.Logger) genericmutator.Ensurer {
@@ -80,13 +63,6 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(_ context.Context, _ 
 
 // EnsureMachineControllerManagerVPA ensures that the machine-controller-manager VPA conforms to the provider requirements.
 func (e *ensurer) EnsureMachineControllerManagerVPA(_ context.Context, _ gcontext.GardenContext, newObj, _ *vpaautoscalingv1.VerticalPodAutoscaler) error {
-	var (
-		minAllowed = corev1.ResourceList{}
-		maxAllowed = corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("2"),
-			corev1.ResourceMemory: resource.MustParse("5G"),
-		}
-	)
 
 	if newObj.Spec.ResourcePolicy == nil {
 		newObj.Spec.ResourcePolicy = &vpaautoscalingv1.PodResourcePolicy{}
@@ -94,7 +70,7 @@ func (e *ensurer) EnsureMachineControllerManagerVPA(_ context.Context, _ gcontex
 
 	newObj.Spec.ResourcePolicy.ContainerPolicies = extensionswebhook.EnsureVPAContainerResourcePolicyWithName(
 		newObj.Spec.ResourcePolicy.ContainerPolicies,
-		machinecontrollermanager.ProviderSidecarVPAContainerPolicy(equinixmetal.Name, minAllowed, maxAllowed),
+		machinecontrollermanager.ProviderSidecarVPAContainerPolicy(equinixmetal.Name),
 	)
 	return nil
 }
@@ -102,19 +78,8 @@ func (e *ensurer) EnsureMachineControllerManagerVPA(_ context.Context, _ gcontex
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the provider requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, gctx gcontext.GardenContext, new, old *appsv1.Deployment) error {
 	ps := &new.Spec.Template.Spec
-
-	cluster, err := gctx.GetCluster(ctx)
-	if err != nil {
-		return err
-	}
-
-	k8sVersion, err := semver.NewVersion(cluster.Shoot.Spec.Kubernetes.Version)
-	if err != nil {
-		return err
-	}
-
 	if c := extensionswebhook.ContainerWithName(ps.Containers, "kube-apiserver"); c != nil {
-		if err := ensureKubeAPIServerCommandLineArgs(c, k8sVersion); err != nil {
+		if err := ensureKubeAPIServerCommandLineArgs(c); err != nil {
 			return err
 		}
 	}
@@ -138,7 +103,8 @@ func (e *ensurer) EnsureVPNSeedServerDeployment(ctx context.Context, gCtx gconte
 		return err
 	}
 	infra := &extensionsv1alpha1.Infrastructure{}
-	if err := e.client.Get(ctx, kutil.Key(new.Namespace, cluster.Shoot.Name), infra); err != nil {
+	if err := e.client.Get(ctx, client.ObjectKey{Namespace: new.Namespace,
+		Name: cluster.Shoot.Name}, infra); err != nil {
 		return fmt.Errorf("failed to get %s infrastructure: %v", cluster.Shoot.Name, err)
 	}
 	if infra.Status.NodesCIDR == nil {
@@ -279,7 +245,7 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
 `
 			)
 
-			*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
+			appendUniqueFile(new, extensionsv1alpha1.File{
 				Path:        "/opt/bin/lvm.sh",
 				Permissions: &permissions,
 				Content: extensionsv1alpha1.FileContent{
@@ -328,7 +294,7 @@ ip route add 169.254.255.2 via ${GATEWAY} dev bond0
 `
 	)
 
-	*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
+	appendUniqueFile(new, extensionsv1alpha1.File{
 		Path:        "/opt/bin/bgp-peer.sh",
 		Permissions: &permissions,
 		Content: extensionsv1alpha1.FileContent{
@@ -338,18 +304,38 @@ ip route add 169.254.255.2 via ${GATEWAY} dev bond0
 			},
 		},
 	})
-
 	return nil
 }
 
-func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion *semver.Version) error {
-	// Ensure CSI-related admission plugins
-	if constraintK8sLess131.Check(k8sVersion) {
-		c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--enable-admission-plugins=",
-			"PersistentVolumeLabel", ",")
-		c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--disable-admission-plugins=",
-			"PersistentVolumeLabel", ",")
+// appendUniqueFile appends a unit file only if it does not exist, otherwise overwrite content of previous files
+func appendUniqueFile(files *[]extensionsv1alpha1.File, file extensionsv1alpha1.File) {
+	resFiles := make([]extensionsv1alpha1.File, 0, len(*files))
+
+	for _, f := range *files {
+		if f.Path != file.Path {
+			resFiles = append(resFiles, f)
+		}
 	}
+
+	*files = append(resFiles, file)
+}
+
+func ensureKubeAPIServerCommandLineArgs(c *corev1.Container) error {
+	// Ensure CSI-related admission plugins
+	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--enable-admission-plugins=",
+		"PersistentVolumeLabel", ",")
+	c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--disable-admission-plugins=",
+		"PersistentVolumeLabel", ",")
+
+	// Ensure CSI-related feature gates
+	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
+		"VolumeSnapshotDataSource=false", ",")
+	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
+		"CSINodeInfo=false", ",")
+	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
+		"CSIDriverRegistry=false", ",")
+	c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--feature-gates=",
+		"KubeletPluginsWatcher=false", ",")
 
 	return nil
 }

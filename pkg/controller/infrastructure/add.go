@@ -6,6 +6,7 @@ package infrastructure
 
 import (
 	"context"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -28,6 +29,8 @@ type AddOptions struct {
 	// DisableProjectedTokenMount specifies whether the projected token mount shall be disabled for the terraformer.
 	// Used for testing only.
 	DisableProjectedTokenMount bool
+	// ExtensionClass defines the extension class this extension is responsible for.
+	ExtensionClass extensionsv1alpha1.ExtensionClass
 }
 
 // AddToManagerWithOptions adds a controller with the given Options to the given manager.
@@ -38,6 +41,7 @@ func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddO
 		ControllerOptions: opts.Controller,
 		Predicates:        infrastructure.DefaultPredicates(ctx, mgr, opts.IgnoreOperationAnnotation),
 		Type:              equinixmetal.Type,
+		ExtensionClass:    opts.ExtensionClass,
 	})
 }
 

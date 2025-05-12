@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -37,7 +36,7 @@ func EnsureNodeNetworkOfVpnSeed(
 		deploy               = &appsv1.Deployment{}
 	)
 
-	if err := shootClient.Get(ctx, kutil.Key(namespace, v1beta1constants.DeploymentNameVPNSeedServer), deploy); err != nil {
+	if err := shootClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer}, deploy); err != nil {
 		return err
 	}
 

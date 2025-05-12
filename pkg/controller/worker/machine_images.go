@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/pkg/errors"
 
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
@@ -46,7 +45,8 @@ func (w *workerDelegate) findMachineImage(name, version string) (*api.MachineIma
 	if providerStatus := w.worker.Status.ProviderStatus; providerStatus != nil {
 		workerStatus := &api.WorkerStatus{}
 		if _, _, err := w.decoder.Decode(providerStatus.Raw, nil, workerStatus); err != nil {
-			return nil, errors.Wrapf(err, "could not decode worker status of worker '%s'", kutil.ObjectName(w.worker))
+			return nil, errors.Wrapf(err,
+				"could not decode worker status of worker '%s'", w.worker.Name)
 		}
 
 		machineImage, err := helper.FindMachineImage(workerStatus.MachineImages, name, version)

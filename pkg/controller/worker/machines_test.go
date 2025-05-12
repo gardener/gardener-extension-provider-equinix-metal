@@ -225,7 +225,7 @@ var _ = Describe("Machines", func() {
 									Name:    machineImageName,
 									Version: machineImageVersion,
 								},
-								UserDataSecretRef: &corev1.SecretKeySelector{
+								UserDataSecretRef: corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{Name: userDataSecretName},
 									Key:                  userDataSecretDataKey,
 								},
@@ -245,16 +245,18 @@ var _ = Describe("Machines", func() {
 									Name:    machineImageName,
 									Version: machineImageVersion,
 								},
-								// TODO: Use UserDataSecretRef like in first pool once this field got removed from the
-								//  API.
-								UserData: userData,
+
+								UserDataSecretRef: corev1.SecretKeySelector{
+									LocalObjectReference: corev1.LocalObjectReference{Name: userDataSecretName},
+									Key:                  userDataSecretDataKey,
+								},
 							},
 						},
 					},
 				}
 
-				workerPoolHash1, _ = worker.WorkerPoolHash(w.Spec.Pools[0], cluster)
-				workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1], cluster)
+				workerPoolHash1, _ = worker.WorkerPoolHash(w.Spec.Pools[0], cluster, []string{}, []string{})
+				workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1], cluster, []string{}, []string{})
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages)
 			})
@@ -389,7 +391,7 @@ var _ = Describe("Machines", func() {
 						ReservedDevicesOnly: &reservedDevicesOnly,
 					})}
 
-					newHash, err := worker.WorkerPoolHash(w.Spec.Pools[1], cluster)
+					newHash, err := worker.WorkerPoolHash(w.Spec.Pools[1], cluster, []string{}, []string{})
 					Expect(err).NotTo(HaveOccurred())
 
 					var (

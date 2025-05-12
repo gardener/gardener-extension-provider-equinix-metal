@@ -168,9 +168,9 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			healthCheckCtrlOpts.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
 			heartbeatCtrlOpts.Completed().Apply(&heartbeat.DefaultAddOptions)
 			infraCtrlOpts.Completed().Apply(&eqxminfrastructure.DefaultAddOptions.Controller)
-			reconcileOpts.Completed().Apply(&eqxminfrastructure.DefaultAddOptions.IgnoreOperationAnnotation)
-			reconcileOpts.Completed().Apply(&eqxmcontrolplane.DefaultAddOptions.IgnoreOperationAnnotation)
-			reconcileOpts.Completed().Apply(&eqxmworker.DefaultAddOptions.IgnoreOperationAnnotation)
+			reconcileOpts.Completed().Apply(&eqxminfrastructure.DefaultAddOptions.IgnoreOperationAnnotation, &eqxminfrastructure.DefaultAddOptions.ExtensionClass)
+			reconcileOpts.Completed().Apply(&eqxmcontrolplane.DefaultAddOptions.IgnoreOperationAnnotation, &eqxmcontrolplane.DefaultAddOptions.ExtensionClass)
+			reconcileOpts.Completed().Apply(&eqxmworker.DefaultAddOptions.IgnoreOperationAnnotation, &eqxmworker.DefaultAddOptions.ExtensionClass)
 			workerCtrlOpts.Completed().Apply(&eqxmworker.DefaultAddOptions.Controller)
 			eqxmworker.DefaultAddOptions.GardenCluster = gardenCluster
 

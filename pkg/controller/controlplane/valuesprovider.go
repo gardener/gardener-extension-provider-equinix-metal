@@ -14,7 +14,6 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/pkg/errors"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -131,11 +130,13 @@ func (vp *valuesProvider) getCredentials(
 ) (*equinixmetal.Credentials, error) {
 	secret, err := extensionscontroller.GetSecretByReference(ctx, vp.client, &cp.Spec.SecretRef)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not get secret by reference for controlplane '%s'", kutil.ObjectName(cp))
+		return nil, errors.Wrapf(err,
+			"could not get secret by reference for controlplane '%s'", cp.Name)
 	}
 	credentials, err := equinixmetal.ReadCredentialsSecret(secret)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not read credentials from secret '%s'", kutil.ObjectName(secret))
+		return nil, errors.Wrapf(err,
+			"could not read credentials from secret '%s'", secret.Name)
 	}
 	return credentials, nil
 }
@@ -186,7 +187,7 @@ func (vp *valuesProvider) decodeControlPlaneConfig(cp *extensionsv1alpha1.Contro
 	}
 
 	if _, _, err := vp.decoder.Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig); err != nil {
-		return nil, errors.Wrapf(err, "decoding '%s'", kutil.ObjectName(cp))
+		return nil, errors.Wrapf(err, "decoding '%s'", cp.Name)
 	}
 
 	return cpConfig, nil
