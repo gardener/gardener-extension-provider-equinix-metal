@@ -86,7 +86,7 @@ var _ = Describe("ValuesProvider", func() {
 			"cloud-provider-equinix-metal": map[string]interface{}{
 				"replicas":    1,
 				"clusterName": namespace,
-				"podNetwork":  cidr,
+				"podNetwork":  []string{cidr},
 				"podAnnotations": map[string]interface{}{
 					"checksum/secret-cloudprovider": "8bafb35ff1ac60275d62e1cbd495aceb511fb354f74a20f7d06ecb48b3a68432",
 				},
