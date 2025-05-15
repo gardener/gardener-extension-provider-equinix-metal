@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.4
+    controller-gen.kubebuilder.io/version: v0.16.5
   name: workers.extensions.gardener.cloud
 spec:
   group: extensions.gardener.cloud
@@ -125,7 +125,7 @@ spec:
                               be encrypted.
                             type: boolean
                           name:
-                            description: Name of the volume to make it referencable.
+                            description: Name of the volume to make it referenceable.
                             type: string
                           size:
                             description: Size is the of the root volume.
@@ -249,6 +249,11 @@ spec:
                       required:
                       - capacity
                       type: object
+                    priority:
+                      description: Priority (or weight) is the importance by which
+                        this worker pool will be scaled by cluster autoscaling.
+                      format: int32
+                      type: integer
                     providerConfig:
                       description: ProviderConfig is a provider specific configuration
                         for the worker pool.
@@ -322,7 +327,7 @@ spec:
                             encrypted.
                           type: boolean
                         name:
-                          description: Name of the volume to make it referencable.
+                          description: Name of the volume to make it referenceable.
                           type: string
                         size:
                           description: Size is the of the root volume.
@@ -509,6 +514,11 @@ spec:
                     name:
                       description: Name is the name of the `MachineDeployment` resource.
                       type: string
+                    priority:
+                      description: Priority (or weight) is the importance by which
+                        this machine deployment will be scaled by cluster autoscaling.
+                      format: int32
+                      type: integer
                   required:
                   - maximum
                   - minimum

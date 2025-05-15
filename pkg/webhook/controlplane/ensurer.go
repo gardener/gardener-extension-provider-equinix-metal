@@ -205,8 +205,8 @@ func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcont
 		case "flatcar":
 
 			var (
-				permissions       int32 = 0755
-				customFileContent       = `#!/bin/bash
+				permissions       uint32 = 0755
+				customFileContent        = `#!/bin/bash
           set -euo pipefail
 
 
@@ -285,8 +285,8 @@ ExecStart=/opt/bin/bgp-peer.sh
 // EnsureAdditionalFiles ensures that additional required system files are added.
 func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
 	var (
-		permissions       int32 = 0755
-		customFileContent       = `#!/bin/sh
+		permissions       uint32 = 0755
+		customFileContent        = `#!/bin/sh
 # get my private IP
 GATEWAY="$(curl https://metadata.platformequinix.com/metadata | jq -r '.network.addresses[] | select( .address_family == 4 and .public == false ) | .gateway')"
 ip route add 169.254.255.1 via ${GATEWAY} dev bond0

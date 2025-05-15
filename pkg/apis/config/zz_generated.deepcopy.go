@@ -10,7 +10,7 @@
 package config
 
 import (
-	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
+	v1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	componentbaseconfig "k8s.io/component-base/config"
 )
@@ -27,7 +27,7 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 	in.ETCD.DeepCopyInto(&out.ETCD)
 	if in.HealthCheckConfig != nil {
 		in, out := &in.HealthCheckConfig, &out.HealthCheckConfig
-		*out = new(apisconfig.HealthCheckConfig)
+		*out = new(v1alpha1.HealthCheckConfig)
 		(*in).DeepCopyInto(*out)
 	}
 	return
