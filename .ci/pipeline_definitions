@@ -14,6 +14,9 @@ gardener-extension-provider-equinix-metal:
   template: 'default'
   base_definition:
     repo: ~
+    steps:
+      verify:
+        image: 'golang:1.24.2'
     traits:
       version:
         preprocess: 'inject-commit-hash'
