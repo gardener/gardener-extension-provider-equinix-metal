@@ -7,6 +7,7 @@ package controlplane
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
@@ -158,7 +159,7 @@ func getControlPlaneChartValues(
 		"cloud-provider-equinix-metal": map[string]interface{}{
 			"replicas":    extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 			"clusterName": cp.Namespace,
-			"podNetwork":  extensionscontroller.GetPodNetwork(cluster),
+			"podNetwork":  strings.Join(extensionscontroller.GetPodNetwork(cluster), ","),
 			"podAnnotations": map[string]interface{}{
 				"checksum/secret-cloudprovider": checksums[v1beta1constants.SecretNameCloudProvider],
 			},
