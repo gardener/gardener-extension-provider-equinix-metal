@@ -25,7 +25,7 @@ func init() {
 	imageVector, err = imagevector.Read([]byte(ImagesYAML))
 	runtime.Must(err)
 
-	imageVector, err = imagevector.WithEnvOverride(imageVector)
+	imageVector, err = imagevector.WithEnvOverride(imageVector, "IMAGEVECTOR_OVERWRITE")
 	runtime.Must(err)
 }
 

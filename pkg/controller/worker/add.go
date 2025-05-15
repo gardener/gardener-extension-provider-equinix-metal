@@ -31,6 +31,8 @@ type AddOptions struct {
 	IgnoreOperationAnnotation bool
 	// GardenCluster is the garden cluster object.
 	GardenCluster cluster.Cluster
+	// ExtensionClass defines the extension class this extension is responsible for.
+	ExtensionClass extensionsv1alpha1.ExtensionClass
 }
 
 // AddToManagerWithOptions adds a controller with the given Options to the given manager.
@@ -47,11 +49,12 @@ func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddO
 		return err
 	}
 
-	return worker.Add(ctx, mgr, worker.AddArgs{
+	return worker.Add(mgr, worker.AddArgs{
 		Actuator:          NewActuator(mgr, opts.GardenCluster),
 		ControllerOptions: opts.Controller,
 		Predicates:        worker.DefaultPredicates(ctx, mgr, opts.IgnoreOperationAnnotation),
 		Type:              equinixmetal.Type,
+		ExtensionClass:    opts.ExtensionClass,
 	})
 }
 

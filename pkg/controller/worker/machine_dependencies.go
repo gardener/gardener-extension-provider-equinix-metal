@@ -9,10 +9,9 @@ import (
 	"fmt"
 	"strings"
 
-	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
+	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,7 +84,8 @@ func (w *workerDelegate) PostReconcileHook(ctx context.Context) error {
 	}
 
 	infra := &extensionsv1alpha1.Infrastructure{}
-	if err := w.client.Get(ctx, kutil.Key(w.worker.Namespace, w.worker.Name), infra); err != nil {
+	if err := w.client.Get(ctx, client.ObjectKey{Namespace: w.worker.Namespace,
+		Name: w.worker.Name}, infra); err != nil {
 		return fmt.Errorf("failed to get %s infrastructure: %v", w.worker.Name, err)
 	}
 
