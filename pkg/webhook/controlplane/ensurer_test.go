@@ -25,7 +25,6 @@ import (
 	"go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -396,8 +395,7 @@ var _ = Describe("Ensurer", func() {
 				Name:            "machine-controller-manager-provider-equinix-metal",
 				Image:           "foo:bar",
 				ImagePullPolicy: corev1.PullIfNotPresent,
-				Command: []string{
-					"./machine-controller",
+				Args: []string{
 					"--control-kubeconfig=inClusterConfig",
 					"--machine-creation-timeout=20m",
 					"--machine-drain-timeout=2h",
@@ -414,7 +412,7 @@ var _ = Describe("Ensurer", func() {
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
 							Path:   "/healthz",
-							Port:   intstr.FromInt(10259),
+							Port:   intstr.FromInt32(10259),
 							Scheme: "HTTP",
 						},
 					},
@@ -424,6 +422,11 @@ var _ = Describe("Ensurer", func() {
 					SuccessThreshold:    1,
 					FailureThreshold:    3,
 				},
+				Ports: []corev1.ContainerPort{{
+					Name:          "providermetrics",
+					ContainerPort: 10259,
+					Protocol:      corev1.ProtocolTCP,
+				}},
 				VolumeMounts: []corev1.VolumeMount{{
 					Name:      "kubeconfig",
 					MountPath: "/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig",
@@ -452,11 +455,6 @@ var _ = Describe("Ensurer", func() {
 			Expect(vpa.Spec.ResourcePolicy.ContainerPolicies).To(ConsistOf(vpaautoscalingv1.ContainerResourcePolicy{
 				ContainerName:    "machine-controller-manager-provider-equinix-metal",
 				ControlledValues: &ccv,
-				MinAllowed:       corev1.ResourceList{},
-				MaxAllowed: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("2"),
-					corev1.ResourceMemory: resource.MustParse("5G"),
-				},
 			}))
 		})
 	})
