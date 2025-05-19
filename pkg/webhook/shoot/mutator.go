@@ -6,12 +6,11 @@ package shoot
 
 import (
 	"context"
+	"fmt"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -27,26 +26,16 @@ func NewMutator() extensionswebhook.Mutator {
 	}
 }
 
-func (m *mutator) Mutate(ctx context.Context, new, old client.Object) error {
-	acc, err := meta.Accessor(new)
-	if err != nil {
-		return errors.Wrapf(err, "could not create accessor during webhook")
+func (m *mutator) Mutate(ctx context.Context, new, _ client.Object) error {
+	deployment, ok := new.(*appsv1.Deployment)
+	if !ok {
+		return fmt.Errorf("wrong object type %T", new)
 	}
-	// If the object does have a deletion timestamp then we don't want to mutate anything.
-	if acc.GetDeletionTimestamp() != nil {
+
+	if deployment.GetDeletionTimestamp() != nil {
 		return nil
 	}
 
-	switch x := new.(type) {
-	case *appsv1.Deployment:
-		switch x.Name {
-		case "metrics-server":
-			extensionswebhook.LogMutation(logger, x.Kind, x.Namespace, x.Name)
-			return m.mutateMetricsServerDeployment(ctx, x)
-		case "vpn-shoot":
-			extensionswebhook.LogMutation(logger, x.Kind, x.Namespace, x.Name)
-			return m.mutateVPNShootDeployment(ctx, x)
-		}
-	}
-	return nil
+	extensionswebhook.LogMutation(logger, deployment.Kind, deployment.Namespace, deployment.Name)
+	return m.mutateVPNShootDeployment(ctx, deployment)
 }
