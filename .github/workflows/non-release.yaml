@@ -1,0 +1,19 @@
+name: Build
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yaml
+    with:
+      mode: snapshot
+
+  component-descriptor:
+    uses: gardener/cc-utils/.github/workflows/post-build.yaml@master
+    needs:
+      - build
+    permissions:
+      id-token: write
+      contents: write
