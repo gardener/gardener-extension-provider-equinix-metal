@@ -17,6 +17,10 @@ jobs:
     with:
       mode: ${{ inputs.mode }}
       version-commit-callback-action-path: .github/actions/prepare-release
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
   oci-images:
     name: Build OCI-Images
