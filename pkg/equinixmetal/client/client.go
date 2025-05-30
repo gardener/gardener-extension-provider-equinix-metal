@@ -24,7 +24,7 @@ func NewClient(apiKey string) (ClientInterface, error) {
 	token := strings.TrimSpace(apiKey)
 
 	if token == "" {
-		return nil, errors.New("Equinix Metal api token required")
+		return nil, errors.New("equinix metal api token required")
 	}
 
 	config := metalv1.NewConfiguration()

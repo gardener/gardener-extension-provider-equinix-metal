@@ -325,8 +325,6 @@ var _ = Describe("Machines", func() {
 							SecretName:           machineClassWithHashPool1,
 							Minimum:              minPool1,
 							Maximum:              maxPool1,
-							MaxSurge:             maxSurgePool1,
-							MaxUnavailable:       maxUnavailablePool1,
 							MachineConfiguration: machineConfiguration,
 						},
 						{
@@ -335,8 +333,6 @@ var _ = Describe("Machines", func() {
 							SecretName:           machineClassWithHashPool2,
 							Minimum:              minPool2,
 							Maximum:              maxPool2,
-							MaxSurge:             maxSurgePool2,
-							MaxUnavailable:       maxUnavailablePool2,
 							MachineConfiguration: machineConfiguration,
 						},
 					}
