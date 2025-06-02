@@ -8,7 +8,6 @@ require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/equinix/equinix-sdk-go v0.51.1
-	github.com/gardener/etcd-druid v0.26.1
 	github.com/gardener/etcd-druid/api v0.29.1
 	github.com/gardener/gardener v1.119.0
 	github.com/gardener/machine-controller-manager v0.58.0
