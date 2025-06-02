@@ -256,9 +256,9 @@ var _ = Describe("Machines", func() {
 				}
 
 				workerPoolHash1, _ = worker.WorkerPoolHash(w.Spec.Pools[0],
-					cluster, nil, nil)
+					cluster, nil, nil, nil)
 				workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1],
-					cluster, nil, nil)
+					cluster, nil, nil, nil)
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages)
 			})
@@ -389,7 +389,7 @@ var _ = Describe("Machines", func() {
 						ReservedDevicesOnly: &reservedDevicesOnly,
 					})}
 
-					newHash, err := worker.WorkerPoolHash(w.Spec.Pools[1], cluster, []string{}, []string{})
+					newHash, err := worker.WorkerPoolHash(w.Spec.Pools[1], cluster, []string{}, []string{}, nil)
 					Expect(err).NotTo(HaveOccurred())
 
 					var (
