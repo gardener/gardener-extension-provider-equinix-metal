@@ -44,9 +44,10 @@ rules:
   - leases
   resourceNames:
   - provider-equinix-metal-leader-election
-  - gardener-extension-heartbeat 
+  - gardener-extension-heartbeat
   verbs:
   - get
+  - patch
   - update
 - apiGroups:
   - ""
