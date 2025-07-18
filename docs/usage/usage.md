@@ -138,7 +138,7 @@ spec:
   networking:
     type: calico
   kubernetes:
-    version: 1.27.2
+    version: 1.31.0
   maintenance:
     autoUpdate:
       kubernetesVersion: true
