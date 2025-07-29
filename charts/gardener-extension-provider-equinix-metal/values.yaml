@@ -1,5 +1,5 @@
 image:
-  repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/provider-equinix-metal
+  repository: europe-docker.pkg.dev/gardener-project/releases/extensions/provider-equinix-metal
   tag: latest
   pullPolicy: IfNotPresent
 
