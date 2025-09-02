@@ -13,7 +13,11 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
 	genericworkeractuator "github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
+	extensionsv1alpha1helper "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1/helper"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
+	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
 	api "github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal"
@@ -57,7 +61,6 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	credentials, err := equinixmetal.ReadCredentialsSecret(secret)
 	if err != nil {
 		return err
@@ -130,16 +133,45 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			className      = fmt.Sprintf("%s-%s", deploymentName, workerPoolHash)
 		)
 
+		updateConfiguration := machinev1alpha1.UpdateConfiguration{
+			MaxUnavailable: ptr.To(pool.MaxUnavailable),
+			MaxSurge:       ptr.To(pool.MaxSurge),
+		}
+
+		machineDeploymentStrategy := machinev1alpha1.MachineDeploymentStrategy{
+			Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
+			RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
+				UpdateConfiguration: updateConfiguration,
+			},
+		}
+
+		if gardencorev1beta1helper.IsUpdateStrategyInPlace(pool.UpdateStrategy) {
+			machineDeploymentStrategy = machinev1alpha1.MachineDeploymentStrategy{
+				Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
+				InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
+					UpdateConfiguration: updateConfiguration,
+					OrchestrationType:   machinev1alpha1.OrchestrationTypeAuto,
+				},
+			}
+
+			if gardencorev1beta1helper.IsUpdateStrategyManualInPlace(pool.UpdateStrategy) {
+				machineDeploymentStrategy.InPlaceUpdate.OrchestrationType = machinev1alpha1.OrchestrationTypeManual
+			}
+		}
+
 		machineDeployments = append(machineDeployments, worker.MachineDeployment{
-			Name:                 deploymentName,
-			ClassName:            className,
-			SecretName:           className,
-			Minimum:              pool.Minimum,
-			Maximum:              pool.Maximum,
-			Labels:               pool.Labels,
-			Annotations:          pool.Annotations,
-			Taints:               pool.Taints,
-			MachineConfiguration: genericworkeractuator.ReadMachineConfiguration(pool),
+			Name:                         deploymentName,
+			ClassName:                    className,
+			SecretName:                   className,
+			Minimum:                      pool.Minimum,
+			Maximum:                      pool.Maximum,
+			Strategy:                     machineDeploymentStrategy,
+			Priority:                     pool.Priority,
+			Labels:                       pool.Labels,
+			Annotations:                  pool.Annotations,
+			Taints:                       pool.Taints,
+			MachineConfiguration:         genericworkeractuator.ReadMachineConfiguration(pool),
+			ClusterAutoscalerAnnotations: extensionsv1alpha1helper.GetMachineDeploymentClusterAutoscalerAnnotations(pool.ClusterAutoscaler),
 		})
 
 		machineClassSpec["name"] = className

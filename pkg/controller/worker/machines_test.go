@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-provider-equinix-metal/charts"
@@ -320,19 +321,37 @@ var _ = Describe("Machines", func() {
 
 					machineDeployments = worker.MachineDeployments{
 						{
-							Name:                 machineClassNamePool1,
-							ClassName:            machineClassWithHashPool1,
-							SecretName:           machineClassWithHashPool1,
-							Minimum:              minPool1,
-							Maximum:              maxPool1,
+							Name:       machineClassNamePool1,
+							ClassName:  machineClassWithHashPool1,
+							SecretName: machineClassWithHashPool1,
+							Minimum:    minPool1,
+							Maximum:    maxPool1,
+							Strategy: machinev1alpha1.MachineDeploymentStrategy{
+								Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
+								RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
+									UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
+										MaxUnavailable: ptr.To(maxUnavailablePool1),
+										MaxSurge:       ptr.To(maxSurgePool1),
+									},
+								},
+							},
 							MachineConfiguration: machineConfiguration,
 						},
 						{
-							Name:                 machineClassNamePool2,
-							ClassName:            machineClassWithHashPool2,
-							SecretName:           machineClassWithHashPool2,
-							Minimum:              minPool2,
-							Maximum:              maxPool2,
+							Name:       machineClassNamePool2,
+							ClassName:  machineClassWithHashPool2,
+							SecretName: machineClassWithHashPool2,
+							Minimum:    minPool2,
+							Maximum:    maxPool2,
+							Strategy: machinev1alpha1.MachineDeploymentStrategy{
+								Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
+								RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
+									UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
+										MaxUnavailable: ptr.To(maxUnavailablePool2),
+										MaxSurge:       ptr.To(maxSurgePool2),
+									},
+								},
+							},
 							MachineConfiguration: machineConfiguration,
 						},
 					}
@@ -345,7 +364,6 @@ var _ = Describe("Machines", func() {
 					expectGetUserDataSecretCallToWork()
 
 					// Test workerDelegate.DeployMachineClasses()
-
 					chartApplier.
 						EXPECT().
 						ApplyFromEmbeddedFS(
@@ -372,7 +390,6 @@ var _ = Describe("Machines", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// Test workerDelegate.GenerateMachineDeployments()
-
 					result, err := workerDelegate.GenerateMachineDeployments(ctx)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(result).To(Equal(machineDeployments))
