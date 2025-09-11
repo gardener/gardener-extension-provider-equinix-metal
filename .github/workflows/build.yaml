@@ -19,8 +19,7 @@ jobs:
       version-commit-callback-action-path: .github/actions/prepare-release
     permissions:
       contents: read
-      packages: write
-      id-token: write
+      pull-requests: write
 
   oci-images:
     name: Build OCI-Images
@@ -30,6 +29,8 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      pull-requests: write
+    secrets: inherit  
     uses: gardener/cc-utils/.github/workflows/oci-ocm.yaml@master
     with:
       name: gardener-extension-provider-equinix-metal
@@ -48,6 +49,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      pull-requests: write
     uses: gardener/cc-utils/.github/workflows/helmchart-ocm.yaml@master
     strategy:
       matrix:
@@ -67,6 +69,9 @@ jobs:
       ocm-mappings: ${{ toJSON(matrix.args.mappings) }}
 
   verify:
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
