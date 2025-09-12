@@ -118,6 +118,28 @@ func (e *ensurer) EnsureVPNSeedServerDeployment(ctx context.Context, gCtx gconte
 		eqxcontrolplane.ParseJoinedNetwork(*infra.Status.NodesCIDR))
 }
 
+// EnsureVPNSeedServerStatefulset ensures that the vpn-seed-server statefulset conforms to the provider requirements.
+func (e *ensurer) EnsureVPNSeedServerStatefulSet(ctx context.Context, gCtx gcontext.GardenContext, new, old *appsv1.StatefulSet) error {
+	cluster, err := gCtx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+	infra := &extensionsv1alpha1.Infrastructure{}
+	if err := e.client.Get(ctx, client.ObjectKey{Namespace: new.Namespace,
+		Name: cluster.Shoot.Name}, infra); err != nil {
+		return fmt.Errorf("failed to get %s infrastructure: %v", cluster.Shoot.Name, err)
+	}
+	if infra.Status.NodesCIDR == nil {
+		e.logger.V(2).Info("node cidr not defined")
+		return nil
+	}
+	return eqxcontrolplane.EnsureNodeNetworkOfVpnSeed(
+		ctx,
+		e.client,
+		new.Namespace,
+		eqxcontrolplane.ParseJoinedNetwork(*infra.Status.NodesCIDR))
+}
+
 // EnsureAdditionalProvisionUnits ensures that additional required system units are added, that are required during provisioning.
 func (e *ensurer) EnsureAdditionalProvisionUnits(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
 
