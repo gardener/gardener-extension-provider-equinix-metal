@@ -29,15 +29,58 @@ func EnsureNodeNetworkOfVpnSeed(
 	targetCIDRs sets.Set[string],
 ) error {
 	// Check if the `vpn-seed-server` deployment exists. If yes then the ReversedVPN feature gate is enabled in
-	// gardenlet and we have to configure the `vpn-seed` container here. Otherwise, the ReversedVPN feature gate is
+	// gardenlet, and we have to configure the `vpn-seed` container here. Otherwise, the ReversedVPN feature gate is
 	// disabled and the `vpn-seed` container resides in the `kube-apiserver` deployment.
 	var (
 		vpnSeedContainerName = "vpn-seed-server"
 		deploy               = &appsv1.Deployment{}
+		stateful             = &appsv1.StatefulSet{}
 	)
 
-	if err := shootClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer}, deploy); err != nil {
-		return err
+	err := shootClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer}, deploy)
+	if err != nil {
+		// adjust to use statefulset naming constant once available in gardener core
+		err = shootClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer}, stateful)
+		if err != nil {
+			return err
+		}
+		var (
+			envVarExists  bool
+			envVarChanged bool
+
+			patch                  = client.StrategicMergeFrom(stateful.DeepCopy())
+			nodeNetworkEnvVarValue = JoinedNetworksCidr(targetCIDRs)
+		)
+
+		for i, ctr := range stateful.Spec.Template.Spec.Containers {
+			if ctr.Name != vpnSeedContainerName {
+				continue
+			}
+
+			for j, env := range ctr.Env {
+				if env.Name != nodeNetworkEnvVarKey {
+					continue
+				}
+
+				envVarExists = true
+
+				if env.Value != nodeNetworkEnvVarValue {
+					stateful.Spec.Template.Spec.Containers[i].Env[j].Value = nodeNetworkEnvVarValue
+					envVarChanged = true
+				}
+			}
+
+			if !envVarExists {
+				stateful.Spec.Template.Spec.Containers[i].Env = append(ctr.Env, corev1.EnvVar{Name: nodeNetworkEnvVarKey, Value: nodeNetworkEnvVarValue})
+				envVarChanged = true
+			}
+		}
+
+		if !envVarChanged {
+			return nil
+		}
+
+		return shootClient.Patch(ctx, stateful, patch)
 	}
 
 	var (
