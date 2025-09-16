@@ -6,6 +6,7 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/coreos/go-systemd/v22/unit"
@@ -291,6 +292,7 @@ var _ = Describe("Ensurer", func() {
 			)
 
 			c.EXPECT().Get(ctx, extObjectKey, &extensionsv1alpha1.Infrastructure{}).DoAndReturn(clientGet(infra))
+			c.EXPECT().Get(ctx, depKey, &appsv1.StatefulSet{}).Return(fmt.Errorf("dummy"))
 			c.EXPECT().Get(ctx, depKey, &appsv1.Deployment{}).DoAndReturn(clientGet(dep))
 			c.EXPECT().
 				Patch(ctx, gomock.Any(), gomock.Any()).
