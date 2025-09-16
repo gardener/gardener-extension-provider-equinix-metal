@@ -36,7 +36,13 @@ func EnsureNodeNetworkOfVpnSeed(
 		deploy               = &appsv1.Deployment{}
 	)
 
-	if err := shootClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer}, deploy); err != nil {
+	// TODO: adjust this to properly check after https://github.com/gardener/gardener/pull/12949 is release
+	err := shootClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer}, &appsv1.StatefulSet{})
+	if err == nil {
+		return nil
+	}
+
+	if err = shootClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: v1beta1constants.DeploymentNameVPNSeedServer}, deploy); err != nil {
 		return err
 	}
 
