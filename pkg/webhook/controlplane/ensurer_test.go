@@ -7,6 +7,7 @@ package controlplane
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/coreos/go-systemd/v22/unit"
