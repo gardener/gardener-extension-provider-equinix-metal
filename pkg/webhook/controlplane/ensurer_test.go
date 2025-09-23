@@ -6,9 +6,11 @@ package controlplane
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/coreos/go-systemd/v22/unit"
+	"github.com/gardener/gardener-extension-provider-equinix-metal/pkg/apis/equinixmetal/v1alpha1"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -49,8 +51,11 @@ func TestController(t *testing.T) {
 
 var _ = Describe("Ensurer", func() {
 	var (
-		ctrl *gomock.Controller
-		c    *mockclient.MockClient
+		ctrl           *gomock.Controller
+		c              *mockclient.MockClient
+		eContextK8s131 gcontext.GardenContext
+		shoot131       *gardencorev1beta1.Shoot
+		infraConfig    *v1alpha1.InfrastructureConfig
 
 		dummyContext = gcontext.NewInternalGardenContext(
 			&extensionscontroller.Cluster{
@@ -93,6 +98,35 @@ var _ = Describe("Ensurer", func() {
 		ctrl = gomock.NewController(GinkgoT())
 		c = mockclient.NewMockClient(ctrl)
 		ctx = context.TODO()
+		infraConfig = &v1alpha1.InfrastructureConfig{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				Kind:       "InfrastructureConfig",
+			},
+		}
+
+		shoot131 = &gardencorev1beta1.Shoot{
+			Spec: gardencorev1beta1.ShootSpec{
+				Kubernetes: gardencorev1beta1.Kubernetes{
+					Version: "1.31.1",
+				},
+				Provider: gardencorev1beta1.Provider{
+					InfrastructureConfig: &runtime.RawExtension{
+						Raw: encode(infraConfig),
+					},
+				},
+			},
+		}
+
+		eContextK8s131 = gcontext.NewInternalGardenContext(
+			&extensionscontroller.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "shoot--project--foo",
+				},
+				Shoot: shoot131,
+			},
+		)
+
 	})
 
 	AfterEach(func() {
@@ -390,8 +424,8 @@ var _ = Describe("Ensurer", func() {
 
 		It("should inject the sidecar container", func() {
 			Expect(deployment.Spec.Template.Spec.Containers).To(BeEmpty())
-			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), nil, deployment, nil)).To(BeNil())
-			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(deployment.Namespace, "provider-equinix-metal", "foo:bar")
+			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), eContextK8s131, deployment, nil)).To(BeNil())
+			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(shoot131, deployment.Namespace, "provider-equinix-metal", "foo:bar")
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
 	})
@@ -460,4 +494,9 @@ func clientGet(result runtime.Object) interface{} {
 		}
 		return nil
 	}
+}
+
+func encode(obj runtime.Object) []byte {
+	data, _ := json.Marshal(obj)
+	return data
 }
