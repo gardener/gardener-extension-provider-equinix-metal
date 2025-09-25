@@ -74,7 +74,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			}
 		}
 
-		workerPoolHash, err := worker.WorkerPoolHash(pool, w.cluster, []string{}, []string{})
+		workerPoolHash, err := worker.WorkerPoolHash(pool, w.cluster, []string{}, []string{}, []string{})
 		if err != nil {
 			return err
 		}
