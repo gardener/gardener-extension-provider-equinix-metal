@@ -257,9 +257,9 @@ var _ = Describe("Machines", func() {
 				}
 
 				workerPoolHash1, _ = worker.WorkerPoolHash(w.Spec.Pools[0],
-					cluster, nil, nil)
+					cluster, nil, nil, nil)
 				workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1],
-					cluster, nil, nil)
+					cluster, nil, nil, nil)
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages)
 			})
@@ -309,6 +309,14 @@ var _ = Describe("Machines", func() {
 						machineClassWithHashPool2 = fmt.Sprintf("%s-%s", machineClassNamePool2, workerPoolHash2)
 					)
 
+					emptyClusterAutoscalerAnnotations := map[string]string{
+						"autoscaler.gardener.cloud/max-node-provision-time":              "",
+						"autoscaler.gardener.cloud/scale-down-gpu-utilization-threshold": "",
+						"autoscaler.gardener.cloud/scale-down-unneeded-time":             "",
+						"autoscaler.gardener.cloud/scale-down-unready-time":              "",
+						"autoscaler.gardener.cloud/scale-down-utilization-threshold":     "",
+					}
+
 					addNameAndSecretToMachineClass(machineClassPool1, machineClassWithHashPool1, w.Spec.SecretRef)
 					addNameAndSecretToMachineClass(machineClassPool2, machineClassWithHashPool2, w.Spec.SecretRef)
 
@@ -335,7 +343,8 @@ var _ = Describe("Machines", func() {
 									},
 								},
 							},
-							MachineConfiguration: machineConfiguration,
+							MachineConfiguration:         machineConfiguration,
+							ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
 						},
 						{
 							Name:       machineClassNamePool2,
@@ -352,7 +361,8 @@ var _ = Describe("Machines", func() {
 									},
 								},
 							},
-							MachineConfiguration: machineConfiguration,
+							MachineConfiguration:         machineConfiguration,
+							ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
 						},
 					}
 				})
@@ -406,7 +416,7 @@ var _ = Describe("Machines", func() {
 						ReservedDevicesOnly: &reservedDevicesOnly,
 					})}
 
-					newHash, err := worker.WorkerPoolHash(w.Spec.Pools[1], cluster, []string{}, []string{})
+					newHash, err := worker.WorkerPoolHash(w.Spec.Pools[1], cluster, []string{}, []string{}, []string{})
 					Expect(err).NotTo(HaveOccurred())
 
 					var (

@@ -42,11 +42,16 @@ type AddOptions struct {
 // AddToManagerWithOptions adds a controller with the given Options to the given manager.
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddOptions) error {
-	actuator, err := genericactuator.NewActuator(mgr, equinixmetal.Name,
-		nil, shootAccessSecretsFunc, nil, nil,
-		nil, controlPlaneChart, controlPlaneShootChart, nil, storageClassChart, nil,
-		NewValuesProvider(mgr), extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
-		imagevector.ImageVector(), "", opts.ShootWebhookConfig, opts.WebhookServerNamespace)
+	actuator, err := genericactuator.NewActuator(mgr,
+		equinixmetal.Name,
+		nil, shootAccessSecretsFunc,
+		nil, controlPlaneChart, controlPlaneShootChart, nil, storageClassChart,
+		NewValuesProvider(mgr),
+		extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
+		imagevector.ImageVector(),
+		"",
+		opts.ShootWebhookConfig,
+		opts.WebhookServerNamespace)
 	if err != nil {
 		return err
 	}

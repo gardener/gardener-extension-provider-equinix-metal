@@ -48,15 +48,20 @@ type ensurer struct {
 var ImageVector = imagevector.ImageVector()
 
 // EnsureMachineControllerManagerDeployment ensures that the machine-controller-manager deployment conforms to the provider requirements.
-func (e *ensurer) EnsureMachineControllerManagerDeployment(_ context.Context, _ gcontext.GardenContext, newObj, _ *appsv1.Deployment) error {
+func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, gctx gcontext.GardenContext, newObj, _ *appsv1.Deployment) error {
 	image, err := ImageVector.FindImage(equinixmetal.MachineControllerManagerEquinixMetalImageName)
 	if err != nil {
 		return err
 	}
 
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return fmt.Errorf("failed reading Cluster: %w", err)
+	}
+
 	newObj.Spec.Template.Spec.Containers = extensionswebhook.EnsureContainerWithName(
 		newObj.Spec.Template.Spec.Containers,
-		machinecontrollermanager.ProviderSidecarContainer(newObj.Namespace, equinixmetal.Name, image.String()),
+		machinecontrollermanager.ProviderSidecarContainer(cluster.Shoot, newObj.Namespace, equinixmetal.Name, image.String()),
 	)
 	return nil
 }
@@ -98,6 +103,28 @@ func (e *ensurer) EnsureKubeControllerManagerDeployment(ctx context.Context, gct
 
 // EnsureVPNSeedServerDeployment ensures that the vpn-seed-server deployment conforms to the provider requirements.
 func (e *ensurer) EnsureVPNSeedServerDeployment(ctx context.Context, gCtx gcontext.GardenContext, new, old *appsv1.Deployment) error {
+	cluster, err := gCtx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+	infra := &extensionsv1alpha1.Infrastructure{}
+	if err := e.client.Get(ctx, client.ObjectKey{Namespace: new.Namespace,
+		Name: cluster.Shoot.Name}, infra); err != nil {
+		return fmt.Errorf("failed to get %s infrastructure: %v", cluster.Shoot.Name, err)
+	}
+	if infra.Status.NodesCIDR == nil {
+		e.logger.V(2).Info("node cidr not defined")
+		return nil
+	}
+	return eqxcontrolplane.EnsureNodeNetworkOfVpnSeed(
+		ctx,
+		e.client,
+		new.Namespace,
+		eqxcontrolplane.ParseJoinedNetwork(*infra.Status.NodesCIDR))
+}
+
+// EnsureVPNSeedServerStatefulset ensures that the vpn-seed-server statefulset conforms to the provider requirements.
+func (e *ensurer) EnsureVPNSeedServerStatefulSet(ctx context.Context, gCtx gcontext.GardenContext, new, old *appsv1.StatefulSet) error {
 	cluster, err := gCtx.GetCluster(ctx)
 	if err != nil {
 		return err
