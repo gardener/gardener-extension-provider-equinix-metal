@@ -11,7 +11,7 @@ resources: {}
 vpa:
   enabled: true
   updatePolicy:
-    updateMode: "Auto"
+    updateMode: "Recreate"
 
 metricsPort: 8080
 healthPort: 8081
