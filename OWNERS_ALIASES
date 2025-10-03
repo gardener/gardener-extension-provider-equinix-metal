@@ -1,0 +1,13 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  gardener-extension-provider-equinix-metal-reviewers:
+  - jonas-zipprick
+  - nautilux
+  - rfranzke
+  - schrodit
+  gardener-extension-provider-equinix-metal-approvers:
+  - jonas-zipprick
+  - nautilux
+  - rfranzke
+  - schrodit
