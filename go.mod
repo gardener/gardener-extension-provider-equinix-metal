@@ -10,7 +10,7 @@ require (
 	github.com/equinix/equinix-sdk-go v0.51.1
 	github.com/gardener/etcd-druid/api v0.32.0
 	github.com/gardener/gardener v1.128.2
-	github.com/gardener/machine-controller-manager v0.60.0
+	github.com/gardener/machine-controller-manager v0.60.1
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.25.0
 	github.com/onsi/gomega v1.38.0
