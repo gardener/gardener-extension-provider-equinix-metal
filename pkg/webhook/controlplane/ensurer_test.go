@@ -69,12 +69,12 @@ var _ = Describe("Ensurer", func() {
 			},
 		)
 		extObjectKey   = client.ObjectKey{Namespace: namespace, Name: "my-shoot"}
-		eContextK8s126 = gcontext.NewInternalGardenContext(
+		eContextK8s131 = gcontext.NewInternalGardenContext(
 			&extensionscontroller.Cluster{
 				Shoot: &gardencorev1beta1.Shoot{
 					Spec: gardencorev1beta1.ShootSpec{
 						Kubernetes: gardencorev1beta1.Kubernetes{
-							Version: "1.26.0",
+							Version: "1.31.0",
 						},
 					},
 					Status: gardencorev1beta1.ShootStatus{
@@ -158,9 +158,9 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s131, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.31.0", annotations)
 		})
 
 		It("should modify existing elements of kube-apiserver deployment", func() {
@@ -191,9 +191,9 @@ var _ = Describe("Ensurer", func() {
 			ensurer := NewEnsurer(c, logger)
 
 			// Call EnsureKubeAPIServerDeployment method and check the result
-			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s126, dep, nil)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, eContextK8s131, dep, nil)
 			Expect(err).To(Not(HaveOccurred()))
-			checkKubeAPIServerDeployment(dep, "1.26.0", annotations)
+			checkKubeAPIServerDeployment(dep, "1.31.0", annotations)
 		})
 	})
 
