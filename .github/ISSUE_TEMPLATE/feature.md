@@ -4,8 +4,6 @@ about: Suggest an enhancement for this extension
 
 ---
 
-<!-- Please ensure that you do not include company internal information. -->
-
 **How to categorize this issue?**
 <!--
 Please select area, kind, and priority for this issue. This helps the community categorizing it.
