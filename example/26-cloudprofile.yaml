@@ -6,8 +6,8 @@ spec:
   type: equinixmetal
   kubernetes:
     versions:
-    - version: 1.27.2
-      #expirationDate: "2023-03-15T23:59:59Z"
+    - version: 1.31.0
+      #expirationDate: "2025-10-28T23:59:59Z"
   machineImages:
   - name: flatcar
     versions:
