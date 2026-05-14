@@ -4,7 +4,7 @@ Please be advised to [Equinix Metal Sunset notice](https://docs.equinix.com/meta
 
 Equinix has stopped commercial sales of Equinix Metal and will sunset the service at the end of June 2026. Customers have to find alternative solutions for their infrastructure.
 
-# [Gardener Extension for Equinix Metal provider](https://gardener.cloud)
+# Gardener Extension for Equinix Metal provider
 
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/gardener-extension-provider-equinix-metal)](https://api.reuse.software/info/github.com/gardener/gardener-extension-provider-equinix-metal)
 [![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener-public/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener-public/pipelines/gardener-extension-provider-equinix-metal-master/jobs/master-head-update-job)
